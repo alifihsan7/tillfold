@@ -141,3 +141,12 @@ Delivery Gate revisi ukuran:
 - Purpose-Gate PASS: ukuran membedakan kebutuhan mouse dan sentuhan; warna, radius, motion, aset, dan data tidak ditambah.
 - Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1 tetap; CTA utama menonjol lewat warna dengan tinggi sama seperti toolbar.
 - Craftsmanship PASS: tidak mengubah sidebar, grid kalender, atau perhitungan; fokus keyboard tetap terlihat, transisi warna saja tetap berlaku, dan dua tema memakai ukuran sama. Peringatan lint hook/img lama tetap ada.
+
+## Penyelarasan atas toolbar
+
+Jarak atas baris kontrol dan bingkai sidebar desktop memakai token `--luma-shell-inset: 16px` agar sejajar, termasuk setelah sidebar diciutkan. Sticky header tetap bekerja pada wadah scroll yang sama; mobile tetap memakai padding atas 10px.
+
+- Hard Gate PASS: build lulus; browser mengukur sidebar dan baris kontrol sama-sama y=16px pada viewport 1915x884, sidebar terbuka maupun ciut. Mobile 390px tetap padding 10px dan scrollWidth 390px.
+- Purpose-Gate PASS: satu token menyatakan batas tepi shell; tidak menambah panel atau dekorasi.
+- Liveliness PASS: dials tetap 1/2/1, tidak menambah motion.
+- Craftsmanship PASS: perubahan hanya menyelaraskan posisi desktop; tombol dan navigasi tetap bekerja, tidak mengubah data atau tema.

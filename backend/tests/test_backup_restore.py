@@ -239,9 +239,11 @@ def test_backup_restore_preserves_reconciliation_records(recovery, kind, expecte
     assert client.delete(f"/transactions/{adjustment.id}").status_code == 409
 
 
-def test_previous_backup_format_still_restores(recovery):
+@pytest.mark.parametrize("version", [1, 2])
+def test_previous_backup_format_still_restores(recovery, version):
     client, db, users, current = recovery
     payload = download(client)
-    payload["version"] = 1
+    payload["version"] = version
+    payload["data"].pop("subscription_payments")
     current[0] = users[1]
     assert client.post("/backup/restore", json=payload).status_code == 200

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { BillPaymentModal } from "./BillPaymentModal";
 import { Plus, Trash2, Calendar, Edit2, Clock, Pause, Play } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 
@@ -16,6 +17,12 @@ export interface SubscriptionItem {
   notes?: string;
   days_until_due?: number;
   next_billing_date?: string;
+  payment_period?: string | null;
+  payment_due_date?: string | null;
+  is_paid?: boolean;
+  paid_date?: string | null;
+  payment_transaction_id?: number | null;
+  paid_amount?: number | null;
 }
 
 export interface SubscriptionsData {
@@ -33,6 +40,7 @@ interface SubscriptionsViewProps {
   onDelete: (id: number) => void;
   onEdit?: (sub: SubscriptionItem) => void;
   loading?: boolean;
+  onPaymentChanged?: () => void;
 }
 
 export function SubscriptionsView({
@@ -43,7 +51,11 @@ export function SubscriptionsView({
   onDelete,
   onEdit,
   loading,
+  onPaymentChanged,
 }: SubscriptionsViewProps) {
+  const [payId, setPayId] = useState<number | null>(null);
+  const currentDate = new Date();
+  const today = currentDate.getFullYear() + "-" + String(currentDate.getMonth() + 1).padStart(2, "0") + "-" + String(currentDate.getDate()).padStart(2, "0");
   return (
     <div className="ai7-subscriptions space-y-8">
       {/* Top Metrics Cards */}
@@ -165,9 +177,10 @@ export function SubscriptionsView({
             const isYearly = sub.billing_cycle === "yearly";
             const missingDate = isYearly && !sub.next_billing_date;
             const days = sub.days_until_due ?? 99;
-            const isExpired = isExact && days < 0;
-            const isToday = days === 0;
-            const isUpcoming = days <= 3 && days >= 0;
+            const paymentOverdue = !sub.is_paid && sub.is_active && Boolean(sub.payment_due_date && sub.payment_due_date < today);
+            const isExpired = paymentOverdue || (!sub.is_paid && isExact && days < 0);
+            const isToday = !sub.is_paid && days === 0;
+            const isUpcoming = !sub.is_paid && days <= 3 && days >= 0;
 
             return (
               <div
@@ -196,7 +209,7 @@ export function SubscriptionsView({
                   </div>
                   <span
                     className={`text-xs font-sans px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap ${
-                      !sub.is_active
+                      sub.is_paid ? "bg-mintRise/10 border-mintRise/30 text-mintRise" : !sub.is_active
                         ? "bg-white/[0.04] border-luma-smokeline text-zinc-400"
                         : isExpired
                         ? "bg-coralFall/20 border-coralFall/40 text-coralFall font-semibold"
@@ -207,7 +220,7 @@ export function SubscriptionsView({
                         : "bg-mintRise/10 border-mintRise/30 text-mintRise font-semibold"
                     }`}
                   >
-                    {!sub.is_active
+                    {sub.is_paid ? "Lunas periode ini" : paymentOverdue ? "Belum dicatat" : !sub.is_active
                       ? "Dijeda"
                       : missingDate
                       ? "Tanggal belum diatur"
@@ -251,7 +264,14 @@ export function SubscriptionsView({
                   </div>
                 )}
 
+                {sub.payment_due_date && <p className="text-xs text-luma-smoke">
+                  Periode jatuh tempo {sub.payment_due_date}{sub.is_paid ? " · Dibayar " + formatRupiah(sub.paid_amount ?? sub.amount) + " pada " + sub.paid_date : " · Belum dicatat pembayarannya"}
+                </p>}
+
                 <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-luma-smokeline">
+                  {sub.is_active && sub.payment_period && !sub.is_paid && onPaymentChanged &&
+                    <button type="button" onClick={() => setPayId(sub.id)} aria-label={"Catat pembayaran " + sub.name}
+                      className="luma-action-primary">Catat pembayaran</button>}
                   {onEdit && (
                     <button
                       type="button"
@@ -288,6 +308,8 @@ export function SubscriptionsView({
         </div>
         )}
       </div>
+      {payId !== null && <BillPaymentModal key={payId} subscriptionId={payId}
+        onClose={() => setPayId(null)} onChanged={() => onPaymentChanged?.()} />}
     </div>
   );
 }

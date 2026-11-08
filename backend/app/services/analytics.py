@@ -194,12 +194,14 @@ def compute_safe_to_spend_metrics(
     has_non_operasional_pockets = any(p.role != "operasional" for p in account_pockets)
     if has_non_operasional_pockets and account_pockets:
         from app.api.v1.endpoints.jago_pockets import classify_pocket_transaction_for_account
+        from app.services.subscription_payments import payment_pocket_slugs
         pocket_by_slug = {p.slug: p for p in account_pockets}
+        payment_pockets = payment_pocket_slugs(db, user_id, account_pockets)
 
         pocket_spent = 0
         spent_by_date: dict[str, int] = {}
         for tx in expenses_on_pocket_acc:
-            matched_slug = classify_pocket_transaction_for_account(tx, account_pockets)
+            matched_slug = classify_pocket_transaction_for_account(tx, account_pockets, payment_pockets)
             matched_p = pocket_by_slug.get(matched_slug)
             p_role = matched_p.role if matched_p else "operasional"
             if p_role == "operasional":

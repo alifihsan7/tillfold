@@ -78,7 +78,7 @@ def test_adjustments_change_balances_without_changing_reports(reconcile, actual)
     assert client.delete(f"/transactions/{data['transaction_id']}").status_code == 409
     exported = client.get("/backup/export")
     assert exported.status_code == 200
-    assert exported.json()["version"] == 2
+    assert exported.json()["version"] == 3
     assert client.post("/backup/preview", json=exported.json()).json()["total_balance"] == actual
     categories.sync_transaction_categories(db, 1)
     from app.models.category import Category

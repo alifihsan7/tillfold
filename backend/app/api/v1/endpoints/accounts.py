@@ -12,6 +12,7 @@ from app.models.jago_pocket import JagoPocket
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.user import User
+from app.models.subscription import Subscription, SubscriptionPayment
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate, PocketBreakdownItem
 from app.schemas.jago_pocket import JagoPocketsSummaryResponse
@@ -292,6 +293,12 @@ def update_account(
             Transaction.user_id == current_user.id,
             Transaction.account == old_name
         ).update({Transaction.account: new_name}, synchronize_session=False)
+        db.query(Subscription).filter(
+            Subscription.user_id == current_user.id, Subscription.account == old_name,
+        ).update({Subscription.account: new_name}, synchronize_session=False)
+        db.query(SubscriptionPayment).filter(
+            SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.account == old_name,
+        ).update({SubscriptionPayment.account: new_name}, synchronize_session=False)
 
         # Update PaycheckConfig jika menggunakan akun lama
         cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == current_user.id).first()
@@ -354,6 +361,12 @@ def delete_account(
         raise HTTPException(status_code=400, detail="Minimal harus ada 1 rekening aktif")
 
     acc_name = acc.name
+    db.query(SubscriptionPayment).filter(
+        SubscriptionPayment.user_id == current_user.id,
+        SubscriptionPayment.transaction_id.in_(db.query(Transaction.id).filter(
+            Transaction.user_id == current_user.id, Transaction.account == acc_name,
+        )),
+    ).delete(synchronize_session=False)
     # Hapus seluruh transaksi yang terkait rekening ini
     db.query(Transaction).filter(
         Transaction.user_id == current_user.id,

@@ -21,6 +21,7 @@ from app.core.parser import parse_transaction, parse_multi_transactions, parse_a
 from app.core.transfer import find_paired_transfer
 from app.db.session import SessionLocal, Base, engine
 from app.models.transaction import Transaction
+from app.models.subscription import SubscriptionPayment
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.account import Account
 from app.models.jago_pocket import JagoPocket
@@ -613,6 +614,7 @@ def handle_subs(chat_id: int, db: Session, user: Optional[User] = None, bot_toke
     user_id = user.id
     from app.models.subscription import Subscription
     from app.api.v1.endpoints.subscriptions import compute_due_info, monthly_commitment_twelfths
+    from app.services.subscription_payments import payment_status
 
     subs = db.query(Subscription).filter(Subscription.user_id == user_id, Subscription.is_active == True).all()
     if not subs:
@@ -631,7 +633,9 @@ def handle_subs(chat_id: int, db: Session, user: Optional[User] = None, bot_toke
     subs.sort(key=get_sort_key)
 
     for s in subs:
-        total += monthly_commitment_twelfths(s)
+        payment = payment_status(db, s, now_date)
+        if not (s.billing_type == "exact_date" and payment["is_paid"]):
+            total += monthly_commitment_twelfths(s)
         days_until, next_date = compute_due_info(s, now_date)
         if days_until is None:
             due_str = "Atur tanggal tagihan tahunan"
@@ -652,6 +656,8 @@ def handle_subs(chat_id: int, db: Session, user: Optional[User] = None, bot_toke
             else:
                 due_str = f"🗓️ {next_date} ({days_until} hari lagi)"
 
+        if payment["is_paid"]:
+            due_str = f"Lunas periode ini pada {payment['paid_date']} ({format_rp(payment['paid_amount'])})"
         unit = "periode" if (s.billing_type or "fixed_day") == "exact_date" else "tahun" if s.billing_cycle == "yearly" else "bulan"
         cycle_badge = " [Tahunan]" if s.billing_cycle == "yearly" else ""
         account_str = f" • `{s.account}`" if s.account else ""
@@ -870,7 +876,7 @@ def handle_batal(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
         return
     user_id = user.id
-    last = db.query(Transaction).filter(Transaction.user_id == user_id).order_by(desc(Transaction.id)).first()
+    last = db.query(Transaction).filter(Transaction.user_id == user_id).order_by(desc(Transaction.id)).with_for_update().first()
     if not last:
         send_message(chat_id, "⚠️ Tidak ada transaksi yang bisa dibatalkan.", bot_token=bot_token)
         return
@@ -879,6 +885,9 @@ def handle_batal(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
         send_message(chat_id, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru di dashboard untuk koreksi.", bot_token=bot_token)
         return
 
+    db.query(SubscriptionPayment).filter(
+        SubscriptionPayment.user_id == user_id, SubscriptionPayment.transaction_id == last.id,
+    ).delete(synchronize_session=False)
     deleted_info = {
         "description": last.description,
         "amount": last.amount,

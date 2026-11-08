@@ -2171,6 +2171,7 @@ export default function FinanceDashboard() {
                 onToggleActive={handleToggleSubscription}
                 onDelete={handleDeleteSubscription}
                 onEdit={(sub) => setSubToEdit(sub)}
+                onPaymentChanged={fetchData}
                 loading={loading}
               />
             )}

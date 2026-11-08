@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, Date, ForeignKey, func
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, Date, ForeignKey, UniqueConstraint, func
 from app.db.session import Base
 from app.models.user import User
 
@@ -17,4 +17,21 @@ class Subscription(Base):
     exact_due_date = Column(Date, nullable=True)  # One-time expiry or annual billing anchor
     is_active = Column(Boolean, nullable=False, default=True)
     notes = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class SubscriptionPayment(Base):
+    __tablename__ = "subscription_payments"
+    __table_args__ = (UniqueConstraint("subscription_id", "period_key"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True, index=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    subscription_name = Column(String(100), nullable=False)
+    period_key = Column(String(30), nullable=False)
+    due_date = Column(Date, nullable=False)
+    paid_date = Column(Date, nullable=False)
+    amount = Column(BigInteger, nullable=False)
+    account = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

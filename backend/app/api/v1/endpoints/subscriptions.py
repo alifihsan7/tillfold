@@ -9,7 +9,11 @@ from sqlalchemy import desc
 
 from app.db.session import get_db
 from app.models.account import Account
-from app.models.subscription import Subscription
+from app.models.subscription import Subscription, SubscriptionPayment
+from app.models.transaction import Transaction
+from app.services.subscription_payments import billing_period, payment_for_period, payment_status
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from app.models.jago_pocket import JagoPocket
 from app.models.user import User
 from app.api.deps import get_current_user
@@ -23,6 +27,85 @@ from app.core.config import settings
 
 router = APIRouter()
 WIB = zoneinfo.ZoneInfo(settings.TIMEZONE)
+
+
+class RecordBillPayment(BaseModel):
+    period: str
+    expected_amount: int = Field(gt=0, le=9_000_000_000_000_000)
+    expected_account: str
+    paid_date: Optional[date] = None
+    existing_transaction_id: Optional[int] = Field(default=None, gt=0)
+
+
+def payment_result(payment):
+    return {"transaction_id": payment.transaction_id, "paid_date": payment.paid_date,
+            "amount": payment.amount, "account": payment.account, "period": payment.period_key}
+
+
+@router.get("/{sub_id}/payment")
+def preview_payment(sub_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    sub = db.query(Subscription).filter(Subscription.id == sub_id, Subscription.user_id == current_user.id).first()
+    if sub is None:
+        raise HTTPException(404, "Tagihan tidak ditemukan.")
+    today = datetime.now(WIB).date()
+    candidates = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id, Transaction.type == "expense",
+        Transaction.amount == sub.amount, Transaction.account == sub.account, Transaction.date <= today,
+        ~Transaction.id.in_(db.query(SubscriptionPayment.transaction_id)),
+    ).order_by(Transaction.date.desc(), Transaction.id.desc()).limit(20).all()
+    return {"name": sub.name, "amount": sub.amount, "account": sub.account, "is_active": sub.is_active,
+            **payment_status(db, sub, today),
+            "candidates": [{"id": tx.id, "date": tx.date, "description": tx.description} for tx in candidates]}
+
+
+@router.post("/{sub_id}/payment")
+def record_payment(sub_id: int, payload: RecordBillPayment,
+                   current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    sub = db.query(Subscription).filter(
+        Subscription.id == sub_id, Subscription.user_id == current_user.id,
+    ).with_for_update().first()
+    if sub is None:
+        raise HTTPException(404, "Tagihan tidak ditemukan.")
+    today = datetime.now(WIB).date()
+    period, due = billing_period(sub, today)
+    if period is None or period != payload.period:
+        raise HTTPException(409, "Periode tagihan berubah atau tanggalnya belum lengkap. Muat ulang tagihan.")
+    existing = payment_for_period(db, current_user.id, sub.id, period)
+    if existing:
+        return payment_result(existing)
+    if not sub.is_active:
+        raise HTTPException(409, "Aktifkan tagihan sebelum mencatat pembayaran.")
+    if sub.amount != payload.expected_amount or sub.account != payload.expected_account:
+        raise HTTPException(409, "Nominal atau rekening tagihan berubah. Muat ulang sebelum melanjutkan.")
+    if not db.query(Account.id).filter(Account.user_id == current_user.id, Account.name == sub.account).first():
+        raise HTTPException(409, "Rekening pembayaran tidak tersedia. Ubah rekening tagihan terlebih dahulu.")
+    if payload.existing_transaction_id is not None:
+        tx = db.query(Transaction).filter(
+            Transaction.id == payload.existing_transaction_id, Transaction.user_id == current_user.id,
+        ).with_for_update().first()
+        if tx is None or tx.type != "expense" or tx.amount != sub.amount or tx.account != sub.account or tx.date > today:
+            raise HTTPException(409, "Transaksi tidak sesuai dengan rekening dan nominal tagihan.")
+        if db.query(SubscriptionPayment.id).filter(SubscriptionPayment.transaction_id == tx.id).first():
+            raise HTTPException(409, "Transaksi ini sudah dipakai untuk pembayaran tagihan.")
+    else:
+        paid_date = payload.paid_date or today
+        if paid_date > today:
+            raise HTTPException(400, "Tanggal pembayaran belum terjadi.")
+        tx = Transaction(user_id=current_user.id, type="expense", amount=sub.amount,
+                         account=sub.account, category=sub.category, description=f"Pembayaran {sub.name}",
+                         date=paid_date, raw_text=f"bill-payment:{sub.id}:{period}")
+        db.add(tx)
+        db.flush()
+    payment = SubscriptionPayment(user_id=current_user.id, subscription_id=sub.id, transaction_id=tx.id,
+                                  subscription_name=sub.name, period_key=period, due_date=due,
+                                  paid_date=tx.date, amount=tx.amount, account=tx.account)
+    db.add(payment)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Pembayaran sudah dicatat atau transaksi sudah digunakan. Muat ulang tagihan.")
+    return payment_result(payment)
 
 def compute_due_info(sub_or_day, now_date: date, billing_type: str = "fixed_day", exact_due_date: Optional[date] = None):
     if isinstance(sub_or_day, Subscription):
@@ -98,7 +181,15 @@ def get_subscriptions(
 
     for s in subs:
         days_until, next_date = compute_due_info(s, now_date)
-        if s.is_active:
+        paid_status = payment_status(db, s, now_date)
+        completed_once = s.billing_type == "exact_date" and paid_status["is_paid"]
+        if completed_once:
+            days_until, next_date = None, None
+        elif paid_status["is_paid"] and next_date == str(paid_status["payment_due_date"]):
+            days_until, next_date = compute_due_info(s, paid_status["payment_due_date"] + timedelta(days=1))
+            if next_date:
+                days_until = (date.fromisoformat(next_date) - now_date).days
+        if s.is_active and not completed_once:
             monthly_twelfths += monthly_commitment_twelfths(s)
             active_cnt += 1
             if days_until is not None and 0 <= days_until <= 7:
@@ -118,7 +209,8 @@ def get_subscriptions(
             notes=s.notes,
             created_at=s.created_at,
             days_until_due=days_until,
-            next_billing_date=next_date
+            next_billing_date=next_date,
+            **paid_status,
         ))
 
     # Sort items: active first, then soonest days_until_due
@@ -178,7 +270,8 @@ def create_subscription(
         notes=sub.notes,
         created_at=sub.created_at,
         days_until_due=days_until,
-        next_billing_date=next_date
+        next_billing_date=next_date,
+        **payment_status(db, sub, now_date),
     )
 
 @router.put("/{sub_id}", response_model=SubscriptionResponse)
@@ -223,7 +316,8 @@ def update_subscription(
         notes=sub.notes,
         created_at=sub.created_at,
         days_until_due=days_until,
-        next_billing_date=next_date
+        next_billing_date=next_date,
+        **payment_status(db, sub, now_date),
     )
 
 @router.delete("/{sub_id}")
@@ -238,6 +332,9 @@ def delete_subscription(
 
     if db.query(JagoPocket.id).filter(JagoPocket.subscription_id == sub.id).first():
         raise HTTPException(status_code=409, detail="Lepaskan hubungan kantong sebelum menghapus tagihan")
+    db.query(SubscriptionPayment).filter(
+        SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.subscription_id == sub.id,
+    ).update({"subscription_id": None}, synchronize_session=False)
     db.delete(sub)
     db.commit()
     return {"status": "success", "message": f"Langganan '{sub.name}' berhasil dihapus"}

@@ -34,6 +34,12 @@ class SubscriptionResponse(SubscriptionBase):
     created_at: datetime
     days_until_due: Optional[int] = None
     next_billing_date: Optional[str] = None
+    payment_period: Optional[str] = None
+    payment_due_date: Optional[date] = None
+    is_paid: bool = False
+    paid_date: Optional[date] = None
+    payment_transaction_id: Optional[int] = None
+    paid_amount: Optional[int] = None
 
     class Config:
         from_attributes = True

@@ -18,7 +18,7 @@ from app.models.user import User, TelegramLink
 from app.services.telegram_link import create_link
 from app.models.account import Account
 from app.models.transaction import Transaction
-from app.models.subscription import Subscription
+from app.models.subscription import Subscription, SubscriptionPayment
 from app.models.goal import Goal
 from app.models.category import Category
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckSession
@@ -369,6 +369,7 @@ def delete_my_account(
     db.query(TelegramLink).filter(TelegramLink.user_id == user_id).delete()
 
     # Hapus seluruh relasi data pengguna secara permanen
+    db.query(SubscriptionPayment).filter(SubscriptionPayment.user_id == user_id).delete()
     db.query(Transaction).filter(Transaction.user_id == user_id).delete()
     db.query(Subscription).filter(Subscription.user_id == user_id).delete()
     db.query(Goal).filter(Goal.user_id == user_id).delete()

@@ -16,6 +16,7 @@ from app.models.transaction import Transaction
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt
 from app.models.account import Account
 from app.models.user import User
+from app.models.subscription import SubscriptionPayment
 from app.api.deps import get_current_user
 from app.schemas.transaction import (
     TransactionCreate,
@@ -287,13 +288,19 @@ def update_transaction(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == current_user.id).first()
+    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == current_user.id).with_for_update().first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
     if tx.type in ("adjustment_in", "adjustment_out"):
         raise HTTPException(409, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru untuk koreksi.")
     update_data = payload.model_dump(exclude_unset=True)
+    payment = db.query(SubscriptionPayment).filter(
+        SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.transaction_id == tx.id,
+    ).with_for_update().first()
+    if payment and any(update_data.get(field) not in (None, getattr(tx, field))
+                       for field in ("type", "amount", "account", "category", "date")):
+        raise HTTPException(409, "Hapus transaksi pembayaran lalu catat ulang tagihan untuk mengoreksi nominal, rekening, atau tanggal.")
     transfer_types = ("transfer_out", "transfer_in")
     requested_type = update_data.get("type") or tx.type
     receipt = lock_paycheck_receipt(db, tx)
@@ -345,7 +352,7 @@ def delete_transaction(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == current_user.id).first()
+    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == current_user.id).with_for_update().first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
@@ -358,6 +365,9 @@ def delete_transaction(
         db.delete(receipt)
 
     deleted_ids = [tx.id]
+    db.query(SubscriptionPayment).filter(
+        SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.transaction_id == tx.id,
+    ).delete(synchronize_session=False)
     if tx.type in ("transfer_out", "transfer_in"):
         allocations = receipt_allocations(db, receipt) if receipt else []
         pair = find_paired_transfer(db, tx)

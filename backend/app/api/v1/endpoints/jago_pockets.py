@@ -343,10 +343,12 @@ def classify_jago_transaction(tx: Transaction) -> str:
 classify_pocket_transaction = classify_jago_transaction
 
 
-def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[JagoPocket]) -> str:
+def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[JagoPocket], payment_pockets=None) -> str:
     """Classifies an expense transaction to the most appropriate pocket slug for a parent account."""
     if not pockets:
         return "utama"
+    if payment_pockets and tx.id in payment_pockets:
+        return payment_pockets[tx.id]
 
     p_slugs = {p.slug: p for p in pockets}
     if "gym" in p_slugs or "claude" in p_slugs:
@@ -448,8 +450,10 @@ def compute_pockets_summary(
     ).all()
 
     spent_by_slug: dict[str, int] = defaultdict(int)
+    from app.services.subscription_payments import payment_pocket_slugs
+    payment_pockets = payment_pocket_slugs(db, user_id, ordered_pockets)
     for tx in expenses:
-        slug = classify_pocket_transaction_for_account(tx, ordered_pockets)
+        slug = classify_pocket_transaction_for_account(tx, ordered_pockets, payment_pockets)
         spent_by_slug[slug] += int(tx.amount)
 
     linked_ids = [p.subscription_id for p in ordered_pockets if p.subscription_id]

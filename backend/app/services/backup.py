@@ -17,7 +17,7 @@ from app.models.paycheck import (
     LegacyPaycheckCycle, PaycheckBucket, PaycheckConfig, PaycheckCycle,
     PaycheckReceipt, PaycheckSession,
 )
-from app.models.subscription import Subscription
+from app.models.subscription import Subscription, SubscriptionPayment
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.paycheck import PaycheckStep
@@ -30,6 +30,7 @@ MODELS = {
     "paycheck_buckets": PaycheckBucket, "paycheck_sessions": PaycheckSession,
     "paycheck_cycles": PaycheckCycle, "legacy_paycheck_cycles": LegacyPaycheckCycle,
     "paycheck_receipts": PaycheckReceipt, "pockets": JagoPocket,
+    "subscription_payments": SubscriptionPayment,
 }
 MAX_BYTES = 25 * 1024 * 1024
 TAG = re.compile(r"\[(pair_id|paycheck_receipt):(\d+)\]")
@@ -74,7 +75,7 @@ def export_backup(db: Session, user_id: int):
                         row["raw_text"] = f"[pair_id:{pair.id}] {raw}"
             rows.append(row)
         data[name] = rows
-    return {"format": "tillfold-backup", "version": 2,
+    return {"format": "tillfold-backup", "version": 3,
             "exported_at": datetime.now(timezone.utc).isoformat(), "data": data}
 
 
@@ -126,9 +127,14 @@ def json_rows(value):
 
 
 def validate_backup(payload):
-    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2):
+    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3):
         invalid()
     data = payload.get("data")
+    if isinstance(data, dict) and payload["version"] in (1, 2):
+        if set(data) == set(MODELS) - {"subscription_payments"}:
+            data = {**data, "subscription_payments": []}
+        elif data.get("subscription_payments"):
+            invalid()
     if not isinstance(data, dict) or set(data) != set(MODELS):
         invalid()
     parsed = {}
@@ -158,6 +164,8 @@ def validate_backup(payload):
         ("paycheck_cycles", "session_id", "paycheck_sessions"),
         ("paycheck_receipts", "transaction_id", "transactions"),
         ("pockets", "account_id", "accounts"), ("pockets", "subscription_id", "subscriptions"),
+        ("subscription_payments", "subscription_id", "subscriptions"),
+        ("subscription_payments", "transaction_id", "transactions"),
     ]:
         for row in parsed[name]:
             if row[field] is not None and row[field] not in indexes.get(target, {}):
@@ -173,6 +181,16 @@ def validate_backup(payload):
     linked = [row["subscription_id"] for row in parsed["pockets"] if row["subscription_id"] is not None]
     if len(linked) != len(set(linked)):
         invalid()
+    paid_transactions, paid_periods = set(), set()
+    for payment in parsed["subscription_payments"]:
+        tx = indexes["transactions"][payment["transaction_id"]]
+        period = (payment["subscription_id"], payment["period_key"])
+        if payment["transaction_id"] in paid_transactions or (payment["subscription_id"] is not None and period in paid_periods):
+            invalid()
+        paid_transactions.add(payment["transaction_id"])
+        paid_periods.add(period)
+        if tx["type"] != "expense" or (tx["amount"], tx["account"], tx["date"]) != (payment["amount"], payment["account"], payment["paid_date"]):
+            invalid()
     for row in parsed["transactions"]:
         if row["type"] not in (*POSITIVE_TYPES, *NEGATIVE_TYPES):
             invalid()
@@ -217,7 +235,7 @@ def summary(data):
 def restore_backup(db: Session, user: User, data):
     db.query(User).filter(User.id == user.id).with_for_update().one()
     populated = any(scoped(db, model, user.id).first() is not None for model in (
-        Account, Transaction, Subscription, Goal, PaycheckSession, PaycheckReceipt, LegacyPaycheckCycle,
+        Account, Transaction, Subscription, Goal, PaycheckSession, PaycheckReceipt, LegacyPaycheckCycle, SubscriptionPayment,
     ))
     from app.api.v1.endpoints.jago_pockets import DEFAULT_POCKET_SPECS
 
@@ -262,6 +280,10 @@ def restore_backup(db: Session, user: User, data):
             elif name == "pockets":
                 if row["account_id"] is not None:
                     row["account_id"] = maps["accounts"][row["account_id"]]
+                if row["subscription_id"] is not None:
+                    row["subscription_id"] = maps["subscriptions"][row["subscription_id"]]
+            elif name == "subscription_payments":
+                row["transaction_id"] = maps["transactions"][row["transaction_id"]]
                 if row["subscription_id"] is not None:
                     row["subscription_id"] = maps["subscriptions"][row["subscription_id"]]
             obj = model(**row)

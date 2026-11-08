@@ -43,7 +43,11 @@ def record_receipt_mutation(
 
     if existing:
         logger.info(f"Transaction ref {clean_ref} already recorded (ID: {existing.id})")
-        s2s_snippet = get_safe_to_spend_snippet(db, user_id=user_id)
+        s2s_snippet = ""
+        try:
+            s2s_snippet = get_safe_to_spend_snippet(db, user_id=user_id)
+        except Exception as e:
+            logger.error(f"Error calculating safe-to-spend snippet for existing tx {existing.id}: {e}", exc_info=True)
         return {
             "ok": True,
             "already_recorded": True,
@@ -96,7 +100,11 @@ def record_receipt_mutation(
     logger.info(f"Recorded receipt transaction ID {tx.id} for ref {clean_ref}: {amount} in {account_name}")
 
     # 4. Compute updated Safe-to-Spend
-    s2s_snippet = get_safe_to_spend_snippet(db, user_id=user_id)
+    s2s_snippet = ""
+    try:
+        s2s_snippet = get_safe_to_spend_snippet(db, user_id=user_id)
+    except Exception as e:
+        logger.error(f"Error calculating safe-to-spend snippet post-commit for tx {tx.id}: {e}", exc_info=True)
 
     return {
         "ok": True,

@@ -169,7 +169,7 @@ def get_safe_to_spend_snippet(db: Session, user_id: int) -> str:
         pace_icon = "🔴"
         pace_label = "Agak Boros"
 
-    return f"🛡️ **Safe-to-Spend:** {format_rp(metrics.safe_daily)} / hari ({pace_icon} {pace_label} • Sisa {metrics.days_remaining} hari)"
+    return f"🛡️ *Safe-to-Spend:* {format_rp(metrics.safe_daily)} / hari ({pace_icon} {pace_label} • Sisa {metrics.days_remaining} hari)"
 
 def get_main_keyboard() -> dict:
     url = settings.APP_BASE_URL

@@ -318,3 +318,91 @@ def test_record_receipt_api_endpoint(db_session):
         assert data2["already_recorded"] is True
     finally:
         app.dependency_overrides.clear()
+
+def test_record_receipt_mutation_s2s_exception_resilience(db_session, monkeypatch):
+    import app.services.receipt_service as rs
+    def broken_s2s(db, user_id):
+        raise RuntimeError("Simulated cycle calculation failure")
+    monkeypatch.setattr(rs, "get_safe_to_spend_snippet", broken_s2s)
+
+    res = rs.record_receipt_mutation(
+        db=db_session,
+        user_id=1,
+        ref_number="REF-RESILIENCE-001",
+        merchant="Aegis Guard Cafe",
+        amount=25000,
+        account_name="Mandiri",
+        category="Makanan & Minuman",
+        tx_date=date(2026, 11, 8),
+        raw_summary="Testing s2s resilience"
+    )
+    assert res["ok"] is True
+    assert res["s2s"] == ""
+    assert res["transaction_id"] > 0
+
+    # Repeat for idempotency check with broken s2s
+    res2 = rs.record_receipt_mutation(
+        db=db_session,
+        user_id=1,
+        ref_number="REF-RESILIENCE-001",
+        merchant="Aegis Guard Cafe",
+        amount=25000,
+        account_name="Mandiri",
+        category="Makanan & Minuman",
+        tx_date=date(2026, 11, 8),
+        raw_summary="Testing s2s resilience dup"
+    )
+    assert res2["ok"] is True
+    assert res2["already_recorded"] is True
+    assert res2["s2s"] == ""
+
+def test_safe_to_spend_snippet_legacy_markdown_syntax(db_session):
+    from app.bot.bot import get_safe_to_spend_snippet
+    snippet = get_safe_to_spend_snippet(db_session, user_id=1)
+    assert "*Safe-to-Spend:*" in snippet
+    assert "**Safe-to-Spend:**" not in snippet
+
+def test_receipt_radar_callback_authorization_rejected(monkeypatch):
+    import sys
+    hermes_scripts = "/home/alifihsan/.hermes/scripts"
+    if hermes_scripts not in sys.path:
+        sys.path.insert(0, hermes_scripts)
+    import tillfold_receipt_radar as radar
+
+    calls = []
+    def fake_post(url, json=None, timeout=None):
+        calls.append({"url": url, "json": json})
+        class DummyResp:
+            status_code = 200
+            def json(self):
+                return {"ok": True}
+        return DummyResp()
+
+    monkeypatch.setattr(radar.requests, "post", fake_post)
+
+    # 1. Unauthorized user
+    unauth_cb = {
+        "id": "cb_unauth_1",
+        "data": "rcpt_rec:REF123:Mandiri",
+        "message": {"message_id": 999, "chat": {"id": radar.CHAT_ID}},
+        "from": {"id": 999999999}
+    }
+    radar.handle_callback_query(unauth_cb)
+    assert len(calls) == 1
+    assert calls[0]["json"]["callback_query_id"] == "cb_unauth_1"
+    assert "Akses ditolak" in calls[0]["json"]["text"]
+    assert calls[0]["json"]["show_alert"] is True
+
+    # 2. Unauthorized chat
+    calls.clear()
+    unauth_chat_cb = {
+        "id": "cb_unauth_2",
+        "data": "rcpt_rec:REF123:Mandiri",
+        "message": {"message_id": 999, "chat": {"id": -1001234567890}},
+        "from": {"id": radar.ALLOWED_USER_ID}
+    }
+    radar.handle_callback_query(unauth_chat_cb)
+    assert len(calls) == 1
+    assert calls[0]["json"]["callback_query_id"] == "cb_unauth_2"
+    assert "Akses ditolak" in calls[0]["json"]["text"]
+

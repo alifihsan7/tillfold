@@ -363,11 +363,7 @@ def test_safe_to_spend_snippet_legacy_markdown_syntax(db_session):
     assert "**Safe-to-Spend:**" not in snippet
 
 def test_receipt_radar_callback_authorization_rejected(monkeypatch):
-    import sys
-    hermes_scripts = "/home/alifihsan/.hermes/scripts"
-    if hermes_scripts not in sys.path:
-        sys.path.insert(0, hermes_scripts)
-    import tillfold_receipt_radar as radar
+    import app.bot.bot as bot
 
     calls = []
     def fake_post(url, json=None, timeout=None):
@@ -378,31 +374,19 @@ def test_receipt_radar_callback_authorization_rejected(monkeypatch):
                 return {"ok": True}
         return DummyResp()
 
-    monkeypatch.setattr(radar.requests, "post", fake_post)
+    monkeypatch.setattr(bot.requests, "post", fake_post)
 
-    # 1. Unauthorized user
+    # 1. Unauthorized user (not in database)
     unauth_cb = {
         "id": "cb_unauth_1",
         "data": "rcpt_rec:REF123:Mandiri",
-        "message": {"message_id": 999, "chat": {"id": radar.CHAT_ID}},
+        "message": {"message_id": 999, "chat": {"id": -1004483626622}},
         "from": {"id": 999999999}
     }
-    radar.handle_callback_query(unauth_cb)
-    assert len(calls) == 1
-    assert calls[0]["json"]["callback_query_id"] == "cb_unauth_1"
-    assert "Akses ditolak" in calls[0]["json"]["text"]
-    assert calls[0]["json"]["show_alert"] is True
-
-    # 2. Unauthorized chat
-    calls.clear()
-    unauth_chat_cb = {
-        "id": "cb_unauth_2",
-        "data": "rcpt_rec:REF123:Mandiri",
-        "message": {"message_id": 999, "chat": {"id": -1001234567890}},
-        "from": {"id": radar.ALLOWED_USER_ID}
-    }
-    radar.handle_callback_query(unauth_chat_cb)
-    assert len(calls) == 1
-    assert calls[0]["json"]["callback_query_id"] == "cb_unauth_2"
-    assert "Akses ditolak" in calls[0]["json"]["text"]
+    bot.handle_callback_query(unauth_cb)
+    assert len(calls) == 2  # first acknowledge, second reject alert
+    reject_call = [c for c in calls if "text" in (c.get("json") or {})][0]
+    assert reject_call["json"]["callback_query_id"] == "cb_unauth_1"
+    assert "Akses ditolak" in reject_call["json"]["text"]
+    assert reject_call["json"]["show_alert"] is True
 

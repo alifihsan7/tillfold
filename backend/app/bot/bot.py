@@ -1491,7 +1491,151 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
     send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token)
 
 
+def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None):
+    cb_id = callback_query.get("id")
+    tg_user = callback_query.get("from", {})
+    sender_id = tg_user.get("id")
+    msg = callback_query.get("message", {})
+    chat_id = msg.get("chat", {}).get("id")
+    msg_id = msg.get("message_id")
+    data = callback_query.get("data", "")
+    token = bot_token or settings.TELEGRAM_BOT_TOKEN
+
+    if not sender_id or not cb_id:
+        return
+
+    try:
+        requests.post(f"https://api.telegram.org/bot{token}/answerCallbackQuery", json={"callback_query_id": cb_id}, timeout=5)
+    except Exception:
+        pass
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(
+            User.telegram_chat_id == sender_id,
+            User.is_active == True,
+        ).first()
+
+        if not user:
+            try:
+                requests.post(f"https://api.telegram.org/bot{token}/answerCallbackQuery", json={
+                    "callback_query_id": cb_id,
+                    "text": "Akses ditolak: Akun Telegram belum terhubung ke Tillfold.",
+                    "show_alert": True,
+                }, timeout=5)
+            except Exception:
+                pass
+            return
+
+        if not data.startswith("rcpt_"):
+            return
+
+        parts = data.split(":")
+        action = parts[0]
+        ref_num = parts[1] if len(parts) > 1 else ""
+
+        from app.core.receipt_store import get_pending_receipt, delete_pending_receipt
+
+        if action == "rcpt_ign":
+            delete_pending_receipt(ref_num)
+            edit_text = (
+                f"❌ **RECEIPT DIABAIKAN**\n"
+                f"Struk referensi `{ref_num}` telah diabaikan dan tidak dicatat ke Tillfold."
+            )
+            requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": edit_text,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": []},
+            }, timeout=8)
+
+        elif action == "rcpt_rec":
+            chosen_acc = parts[2] if len(parts) > 2 else "Mandiri"
+            entry = get_pending_receipt(ref_num)
+            if not entry:
+                requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": msg_id,
+                    "text": f"⚠️ **TRANSAKSI KEDALUWARSA**\nData draf struk `{ref_num}` tidak ditemukan atau sudah diproses.",
+                    "parse_mode": "Markdown",
+                    "reply_markup": {"inline_keyboard": []},
+                }, timeout=8)
+                return
+
+            p = entry.get("parsed", entry)
+            nominal = p.get("nominal", 0)
+            merchant = p.get("merchant", "Transaksi")
+            cat_name = p.get("category", "Makanan & Minuman")
+            bank = p.get("bank", "Bank").upper()
+            tx_date_str = p.get("date")
+
+            try:
+                tx_date = datetime.fromisoformat(tx_date_str).date()
+            except Exception:
+                tx_date = datetime.now(WIB).date()
+
+            existing = db.query(Transaction).filter(
+                Transaction.user_id == user.id,
+                Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_num}]%"),
+            ).first()
+
+            if existing:
+                edit_text = (
+                    f"ℹ️ **SUDAH TERCATAT SEBELUMNYA**\n"
+                    f"Transaksi referensi `{ref_num}` sudah ada di buku besar Tillfold."
+                )
+            else:
+                acc = db.query(Account).filter(Account.user_id == user.id, Account.name == chosen_acc).first()
+                if not acc:
+                    chosen_acc = "Mandiri"
+
+                tx = Transaction(
+                    user_id=user.id,
+                    type="expense",
+                    amount=nominal,
+                    account=chosen_acc,
+                    category=cat_name,
+                    description=f"{merchant} (Struk {bank})",
+                    raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded via Telegram approval from {bank}",
+                    date=tx_date,
+                )
+                db.add(tx)
+                db.commit()
+                db.refresh(tx)
+
+                s2s_snippet = get_safe_to_spend_snippet(db, user_id=user.id)
+                delete_pending_receipt(ref_num)
+
+                edit_text = (
+                    f"✅ **TRANSAKSI BERHASIL DICATAT KE TILLFOLD**\n\n"
+                    f"• **Merchant**: `{merchant}`\n"
+                    f"• **Nominal**: `Rp {nominal:,}`\n"
+                    f"• **Rekening**: `{chosen_acc}`\n"
+                    f"• **Kategori**: `{cat_name}`\n"
+                    f"• **No. Ref**: `{ref_num}`\n\n"
+                    f"{s2s_snippet}"
+                )
+
+            requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": edit_text,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": []},
+            }, timeout=8)
+    except Exception as e:
+        logger.error(f"Error handling callback query: {e}")
+    finally:
+        db.close()
+
+
 def process_update(update: dict, bot_token: Optional[str] = None, user_override: Optional[User] = None):
+    callback_query = update.get("callback_query")
+    if callback_query:
+        handle_callback_query(callback_query, bot_token=bot_token)
+        return
+
     message = update.get("message")
     if not message:
         return

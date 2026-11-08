@@ -499,3 +499,118 @@ def test_account_deletion_cannot_leave_half_a_transfer(ledger, account_name):
     assert db.query(Transaction).count() == 3
     assert client.delete(f"/transactions/{pair['out_transaction_id']}").status_code == 200
     assert client.delete(f"/accounts/{account.id}").status_code == 200
+
+
+
+def custom_salary(client):
+    response = client.post("/paycheck/record", json={
+        "request_key": "b024d618-1c4f-463a-9f79-c82c46cd20b4", "total_amount": 1000,
+        "date": date.today().isoformat(), "account": "Bank", "cycle_type": "weekly",
+    })
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_custom_allocation_changes_plan_only_and_keeps_defaults(ledger):
+    client, db = ledger
+    db.add(Account(user_id=1, name="Savings", type="tabungan", initial_balance=0))
+    db.commit()
+    salary = custom_salary(client)
+    default = client.get("/paycheck/config").json()["buckets"]
+    ids = {row["name"]: row["id"] for row in client.get("/accounts").json()}
+    payload = {"expected_allocations": salary["allocations"], "allocations": [
+        {"account_id": ids["Cash"], "amount": 200}, {"account_id": ids["Savings"], "amount": 300},
+    ]}
+    response = client.put(f"/paycheck/record/{salary['id']}/allocations", json=payload)
+    assert response.status_code == 200, response.text
+    assert sum(row["amount"] for row in response.json()["allocations"]) == 500
+    assert balances(client) == {"Bank": 1000, "Cash": 0, "Savings": 0}
+    assert db.query(Transaction).count() == 1
+    assert client.get("/paycheck/config").json()["buckets"] == default
+    for name in ("Cash", "Savings"):
+        assert client.post(f"/paycheck/record/{salary['id']}/transfer/{ids[name]}").status_code == 200
+    assert balances(client) == {"Bank": 500, "Cash": 200, "Savings": 300}
+
+
+@pytest.mark.parametrize("target, amount, transfer_id, status", [
+    ("source", 100, None, 400), ("missing", 100, None, 400), ("foreign", 100, None, 400),
+    ("cash", 1001, None, 400), ("cash", -1, None, 422), ("cash", 100, 999, 400),
+])
+def test_invalid_custom_allocation_keeps_plan_and_ledger(ledger, target, amount, transfer_id, status):
+    client, db = ledger
+    db.add(User(id=2, username="allocation-peer", full_name="Peer", hashed_password="unused", is_active=True))
+    db.flush()
+    foreign = Account(user_id=2, name="Peer", type="operasional", initial_balance=0)
+    db.add(foreign)
+    db.commit()
+    salary = custom_salary(client)
+    own = {row["name"]: row["id"] for row in client.get("/accounts").json()}
+    account_id = {"source": own["Bank"], "cash": own["Cash"], "missing": 99999, "foreign": foreign.id}[target]
+    response = client.put(f"/paycheck/record/{salary['id']}/allocations", json={
+        "expected_allocations": salary["allocations"],
+        "allocations": [{"account_id": account_id, "amount": amount, "transfer_id": transfer_id}],
+    })
+    assert response.status_code == status, response.text
+    assert client.get("/paycheck/record/latest").json()["allocations"] == salary["allocations"]
+    assert balances(client) == {"Bank": 1000, "Cash": 0}
+
+
+def test_custom_allocation_locks_paid_rows_and_rejects_stale_forms(ledger):
+    client, db = ledger
+    salary = custom_salary(client)
+    allocation = salary["allocations"][0]
+    paid = client.post(f"/paycheck/record/{salary['id']}/transfer/{allocation['account_id']}").json()
+    url = f"/paycheck/record/{salary['id']}/allocations"
+    assert client.put(url, json={"expected_allocations": salary["allocations"], "allocations": []}).status_code == 409
+    assert client.put(url, json={"expected_allocations": paid["allocations"], "allocations": []}).status_code == 409
+    changed = [{**paid["allocations"][0], "amount": 1}]
+    assert client.put(url, json={"expected_allocations": paid["allocations"], "allocations": changed}).status_code == 409
+    assert client.put(url, json={"expected_allocations": paid["allocations"], "allocations": paid["allocations"]}).status_code == 200
+    assert balances(client) == {"Bank": 500, "Cash": 500}
+
+
+def test_empty_allocation_can_be_resumed_and_duplicate_targets_are_rejected(ledger):
+    client, db = ledger
+    salary = custom_salary(client)
+    url = f"/paycheck/record/{salary['id']}/allocations"
+    allocation = salary["allocations"][0]
+    assert client.put(url, json={"expected_allocations": salary["allocations"], "allocations": [allocation, allocation]}).status_code == 400
+    assert client.put(url, json={"expected_allocations": salary["allocations"], "allocations": []}).status_code == 200
+    assert client.get("/paycheck/record/latest").json()["id"] == salary["id"]
+    assert client.put("/paycheck/record/99999/allocations", json={"expected_allocations": [], "allocations": []}).status_code == 404
+
+
+def test_history_paginates_all_time_and_computes_totals_before_pagination(ledger):
+    client, db = ledger
+    db.add_all([Transaction(user_id=1, type="expense", amount=10, account="Bank", category="Old",
+                           description=f"Expense {index}", date=date(2025, 1, 1)) for index in range(130)])
+    db.add(Transaction(user_id=1, type="income", amount=2000, account="Bank", category="Salary",
+                       description="Income", date=date(2026, 11, 1)))
+    db.commit()
+    assert len(client.get("/transactions", params={"start_date": "2026-11-01", "end_date": "2026-11-30"}).json()) == 1
+    response = client.get("/transactions/history")
+    assert response.status_code == 200, response.text
+    page = response.json()
+    assert (page["total"], page["income"], page["expense"], page["net"]) == (131, 2000, 1300, 700)
+    assert len(page["items"]) == 25
+    last = client.get("/transactions/history", params={"skip": 125, "limit": 25}).json()
+    assert len(last["items"]) == 6
+    first = client.get("/transactions/history", params={"start_date": "2025-01-01", "end_date": "2025-01-01", "sort": "date-asc"}).json()
+    assert first["total"] == 130
+    assert client.get("/transactions/history", params={"search": "Old", "type": "expense", "account": "Bank"}).json()["total"] == 130
+    assert client.get("/transactions/history", params={"start_date": "2026-11-30", "end_date": "2026-11-01"}).status_code == 400
+
+
+def test_history_filters_transfer_adjustment_and_owner(ledger):
+    client, db = ledger
+    client.post("/transactions/transfer", json={"from_account": "Bank", "to_account": "Cash", "amount": 100})
+    db.add(User(id=2, username="history-peer", full_name="Peer", hashed_password="unused", is_active=True))
+    db.flush()
+    db.add(Transaction(user_id=2, type="expense", amount=999, account="Peer", category="Test", description="Peer", date=date.today()))
+    db.add(Transaction(user_id=1, type="adjustment_in", amount=50, account="Bank", category="Test", description="Adjustment", date=date.today()))
+    db.commit()
+    transfer = client.get("/transactions/history", params={"type": "transfer"}).json()
+    assert transfer["total"] == 2
+    assert transfer["income"] == transfer["expense"] == transfer["net"] == 0
+    assert client.get("/transactions/history", params={"type": "adjustment"}).json()["total"] == 1
+    assert client.get("/transactions/history", params={"account": "Peer"}).json()["total"] == 0

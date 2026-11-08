@@ -25,6 +25,7 @@ from app.schemas.paycheck import (
     PaycheckSessionOut,
     PaycheckStartRequest,
     PaycheckRecordRequest,
+    ReceiptAllocationsUpdate,
 )
 from app.api.v1.endpoints.transactions import add_transfer_pair
 from app.services.paycheck_cycles import preserve_legacy_cycles, receipt_allocations
@@ -52,8 +53,11 @@ def latest_paycheck_receipt(current_user: User = Depends(get_current_user), db: 
     ).order_by(PaycheckReceipt.transaction_id.desc())
     account_ids = {account.id for account in db.query(Account.id).filter(Account.user_id == current_user.id)}
     for receipt in receipts:
-        if any(item["amount"] > 0 and not item["transfer_id"] and item["account_id"] in account_ids
-               for item in receipt_allocations(db, receipt)):
+        allocations = receipt_allocations(db, receipt)
+        source = db.get(Transaction, receipt.transaction_id).account
+        has_target = db.query(Account.id).filter(Account.user_id == current_user.id, Account.name != source).first() is not None
+        if (not allocations and has_target) or any(item["amount"] > 0 and not item["transfer_id"] and item["account_id"] in account_ids
+               for item in allocations):
             return receipt_out(db, receipt)
     return None
 
@@ -127,6 +131,42 @@ def record_paycheck(
         receipt = receipts.first()
         if receipt is None:
             raise
+    return receipt_out(db, receipt)
+
+
+@router.put("/record/{receipt_id}/allocations")
+def update_receipt_allocations(
+    receipt_id: int, payload: ReceiptAllocationsUpdate,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
+):
+    receipt = db.query(PaycheckReceipt).filter(
+        PaycheckReceipt.user_id == current_user.id, PaycheckReceipt.transaction_id == receipt_id,
+    ).with_for_update().first()
+    if not receipt:
+        raise HTTPException(404, "Catatan gaji tidak ditemukan.")
+    current = receipt_allocations(db, receipt)
+    fingerprint = lambda rows: sorted((row["account_id"], row["amount"], row["transfer_id"] or 0) for row in rows)
+    if fingerprint(current) != fingerprint([row.model_dump() for row in payload.expected_allocations]):
+        raise HTTPException(409, "Pembagian gaji sudah berubah. Tutup lalu buka kembali untuk memuat data terbaru.")
+    tx = db.get(Transaction, receipt_id)
+    if not tx or tx.type != "income":
+        raise HTTPException(409, "Catatan gaji sudah berubah.")
+    requested = [row.model_dump() for row in payload.allocations]
+    if len({row["account_id"] for row in requested}) != len(requested):
+        raise HTTPException(400, "Setiap rekening hanya boleh muncul sekali.")
+    paid = {row["account_id"]: row for row in current if row["transfer_id"]}
+    proposed = {row["account_id"]: row for row in requested}
+    if any(proposed.get(account_id) != row for account_id, row in paid.items()):
+        raise HTTPException(409, "Transfer yang sudah tercatat tidak dapat diubah dari pembagian gaji.")
+    owned = {row.id: row.name for row in db.query(Account).filter(Account.user_id == current_user.id)}
+    for row in requested:
+        if row["account_id"] not in paid:
+            if row["transfer_id"] or row["account_id"] not in owned or owned[row["account_id"]] == tx.account:
+                raise HTTPException(400, "Pilih rekening tujuan milik Anda yang berbeda dari rekening penerima gaji.")
+    if sum(row["amount"] for row in requested) > tx.amount:
+        raise HTTPException(400, "Total pembagian melebihi nominal gaji.")
+    receipt.allocations_json = json.dumps([row for row in requested if row["amount"] > 0 or row["transfer_id"]])
+    db.commit()
     return receipt_out(db, receipt)
 
 

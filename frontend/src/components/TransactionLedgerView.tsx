@@ -1,5 +1,6 @@
+import { authFetch } from "@/lib/api";
 import { DateField } from "@/components/ui/DateField";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   X,
@@ -49,7 +50,6 @@ export function TransactionLedgerView({
   onEdit,
   onDelete,
   onOpenAddModal,
-  loading,
 }: TransactionLedgerViewProps) {
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,18 +64,22 @@ export function TransactionLedgerView({
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
+  const [history, setHistory] = useState<{ items: Transaction[]; total: number; income: number; expense: number; net: number }>({ items: [], total: 0, income: 0, expense: 0, net: 0 });
+  const [loading, setLoading] = useState(true);
+  const [historyError, setHistoryError] = useState("");
+  const [retry, setRetry] = useState(0);
 
   // Dynamic Categories from API categories + available transactions
   const categoryOptions: SelectOption[] = useMemo(() => {
     const apiCats = categories ? categories.map((c) => c.name) : [];
-    const txCats = transactions.map((tx) => tx.category).filter(Boolean);
+    const txCats = [...transactions, ...history.items].map((tx) => tx.category).filter(Boolean);
     const uniqueCats = Array.from(new Set([...apiCats, ...txCats])).sort();
 
     return [
       { value: "all", label: "Semua kategori" },
       ...uniqueCats.map((cat) => ({ value: cat, label: cat })),
     ];
-  }, [categories, transactions]);
+  }, [categories, transactions, history.items]);
 
   // Type filter options
   const typeOptions: SelectOption[] = [
@@ -114,144 +118,63 @@ export function TransactionLedgerView({
     { value: "amount-asc", label: "Nominal: Terkecil → Terbesar" },
   ];
 
-  // Helper date filters
-  const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+  const daysAgo = (days: number) => {
+    const day = new Date(`${todayStr}T12:00:00Z`);
+    day.setUTCDate(day.getUTCDate() - days);
+    return day.toISOString().slice(0, 10);
+  };
+  const sevenDaysAgoStr = daysAgo(6);
+  const thirtyDaysAgoStr = daysAgo(29);
+  const currentYearMonth = todayStr.slice(0, 7);
+  const cycleStart = currentCycle?.start_date;
+  const cycleEnd = currentCycle?.end_date;
 
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
-
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
-
-  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-  // Filter & Sort Logic
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      // 1. Search Query Filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchDesc = (tx.description || "").toLowerCase().includes(q);
-        const matchCat = (tx.category || "").toLowerCase().includes(q);
-        const matchAcc = (tx.account || "").toLowerCase().includes(q);
-        if (!matchDesc && !matchCat && !matchAcc) return false;
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setHistoryError("");
+      try {
+        const params = new URLSearchParams({ skip: String((currentPage - 1) * pageSize), limit: String(pageSize), sort: sortBy });
+        if (activeAccount !== "all") params.set("account", activeAccount);
+        if (typeFilter !== "all") params.set("type", typeFilter);
+        if (categoryFilter !== "all") params.set("category", categoryFilter);
+        if (searchQuery.trim()) params.set("search", searchQuery.trim());
+        if (dateFilter === "cycle" && cycleStart && cycleEnd) {
+          params.set("start_date", cycleStart);
+          params.set("end_date", cycleEnd);
+        } else if (dateFilter === "this_month") {
+          params.set("start_date", `${currentYearMonth}-01`);
+          params.set("end_date", todayStr);
+        } else if (dateFilter === "last_7_days" || dateFilter === "last_30_days") {
+          params.set("start_date", dateFilter === "last_7_days" ? sevenDaysAgoStr : thirtyDaysAgoStr);
+          params.set("end_date", todayStr);
+        } else if (dateFilter === "custom") {
+          if (customStartDate) params.set("start_date", customStartDate);
+          if (customEndDate) params.set("end_date", customEndDate);
+        }
+        const response = await authFetch(`/api/v1/transactions/history?${params}`, { signal: controller.signal, cache: "no-store" });
+        if (!response.ok) throw new Error("Riwayat gagal dimuat. Coba lagi.");
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        const lastPage = Math.max(1, Math.ceil(data.total / pageSize));
+        if (currentPage > lastPage) { setCurrentPage(lastPage); return; }
+        setHistory(data);
+      } catch (error) {
+        if (!controller.signal.aborted) setHistoryError(error instanceof Error ? error.message : "Riwayat gagal dimuat.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
+    }, searchQuery.trim() ? 250 : 0);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [transactions, retry, currentPage, sortBy, activeAccount, typeFilter, categoryFilter, searchQuery,
+      dateFilter, customStartDate, customEndDate, cycleStart, cycleEnd,
+      currentYearMonth, todayStr, sevenDaysAgoStr, thirtyDaysAgoStr]);
 
-      // 2. Account Filter
-      if (activeAccount !== "all") {
-        const txAcc = (tx.account || "").toLowerCase();
-        const tab = activeAccount.toLowerCase();
-        const matchTab =
-          txAcc === tab ||
-          txAcc.includes(tab) ||
-          (tab.includes("jago") && txAcc.includes("jago"));
-        if (!matchTab) return false;
-      }
-
-      // 3. Type Filter
-      if (typeFilter !== "all") {
-        if (typeFilter === "adjustment" && tx.type !== "adjustment_in" && tx.type !== "adjustment_out") return false;
-        if (typeFilter === "expense" && tx.type !== "expense") return false;
-        if (typeFilter === "income" && tx.type !== "income") return false;
-        if (
-          typeFilter === "transfer" &&
-          tx.type !== "transfer_in" &&
-          tx.type !== "transfer_out"
-        )
-          return false;
-      }
-
-      // 4. Category Filter
-      if (categoryFilter !== "all") {
-        if (tx.category !== categoryFilter) return false;
-      }
-
-      // 5. Date Filter
-      if (dateFilter === "cycle" && currentCycle?.start_date && currentCycle?.end_date) {
-        if (tx.date < currentCycle.start_date || tx.date > currentCycle.end_date) return false;
-      } else if (dateFilter === "this_month") {
-        if (!tx.date.startsWith(currentYearMonth)) return false;
-      } else if (dateFilter === "last_7_days") {
-        if (tx.date < sevenDaysAgoStr || tx.date > todayStr) return false;
-      } else if (dateFilter === "last_30_days") {
-        if (tx.date < thirtyDaysAgoStr || tx.date > todayStr) return false;
-      } else if (dateFilter === "custom") {
-        if (customStartDate && tx.date < customStartDate) return false;
-        if (customEndDate && tx.date > customEndDate) return false;
-      }
-
-      return true;
-    });
-  }, [
-    transactions,
-    searchQuery,
-    activeAccount,
-    typeFilter,
-    categoryFilter,
-    dateFilter,
-    customStartDate,
-    customEndDate,
-    currentCycle,
-    currentYearMonth,
-    sevenDaysAgoStr,
-    thirtyDaysAgoStr,
-    todayStr,
-  ]);
-
-  // Sort filtered transactions
-  const sortedTransactions = useMemo(() => {
-    const list = [...filteredTransactions];
-    list.sort((a, b) => {
-      if (sortBy === "date-desc") {
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
-        return b.id - a.id;
-      }
-      if (sortBy === "date-asc") {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        return a.id - b.id;
-      }
-      if (sortBy === "amount-desc") {
-        return b.amount - a.amount;
-      }
-      if (sortBy === "amount-asc") {
-        return a.amount - b.amount;
-      }
-      return 0;
-    });
-    return list;
-  }, [filteredTransactions, sortBy]);
-
-  // Pagination Slicing
-  const totalPages = Math.ceil(sortedTransactions.length / pageSize) || 1;
-  const paginatedTransactions = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return sortedTransactions.slice(start, start + pageSize);
-  }, [sortedTransactions, currentPage, pageSize]);
-
-  // Quick Stats Agregat Real-Time
-  const stats = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-
-    filteredTransactions.forEach((tx) => {
-      if (tx.type === "income") {
-        income += tx.amount;
-      } else if (tx.type === "expense") {
-        expense += tx.amount;
-      }
-    });
-
-    const net = income - expense;
-    return {
-      count: filteredTransactions.length,
-      income,
-      expense,
-      net,
-    };
-  }, [filteredTransactions]);
+  const totalPages = Math.max(1, Math.ceil(history.total / pageSize));
+  const paginatedTransactions = history.items;
+  const stats = { count: history.total, income: history.income, expense: history.expense, net: history.net };
 
   // Active filters count
   const activeFiltersCount = useMemo(() => {
@@ -280,6 +203,10 @@ export function TransactionLedgerView({
 
   return (
     <div className="space-y-5">
+      <p className="text-sm text-luma-smoke">“Semua waktu” mencakup seluruh riwayat, di luar periode dashboard.</p>
+      {historyError && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-luma-coral">
+        <span>{historyError}</span><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button>
+      </div>}
       {/* 1. QUICK-STATS KPI BAR (REAL-TIME AGGREGATES) */}
       <div className="ai7-metric-grid grid gap-4">
         {/* Total Transaksi */}
@@ -320,7 +247,7 @@ export function TransactionLedgerView({
               </div>
             )}
             <p className="text-xs text-zinc-400 mt-0.5 truncate">
-              Kas masuk & transfer terima
+              Pemasukan sesuai filter
             </p>
           </div>
         </div>
@@ -342,7 +269,7 @@ export function TransactionLedgerView({
               </div>
             )}
             <p className="text-xs text-zinc-400 mt-0.5 truncate">
-              Belanja & transfer keluar
+              Pengeluaran sesuai filter
             </p>
           </div>
         </div>
@@ -567,7 +494,7 @@ export function TransactionLedgerView({
         />
 
         {/* 4. PAGINATION FOOTER */}
-        {sortedTransactions.length > pageSize && (
+        {history.total > pageSize && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 pt-1 text-xs text-zinc-400 font-sans">
             <div>
               Menampilkan{" "}
@@ -576,11 +503,11 @@ export function TransactionLedgerView({
               </strong>{" "}
               -{" "}
               <strong className="text-white">
-                {Math.min(currentPage * pageSize, sortedTransactions.length)}
+                {Math.min(currentPage * pageSize, history.total)}
               </strong>{" "}
               dari{" "}
               <strong className="text-white">
-                {sortedTransactions.length}
+                {history.total}
               </strong>{" "}
               transaksi terfilter
             </div>
@@ -589,9 +516,9 @@ export function TransactionLedgerView({
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                disabled={loading || currentPage === 1}
                 className="p-2 rounded-xl border border-luma-smokeline bg-obsidian-card hover:bg-white/[0.06] text-white disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                title="Halaman Sebelumnya"
+                title="Halaman sebelumnya" aria-label="Halaman sebelumnya"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -603,9 +530,9 @@ export function TransactionLedgerView({
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                disabled={loading || currentPage === totalPages}
                 className="p-2 rounded-xl border border-luma-smokeline bg-obsidian-card hover:bg-white/[0.06] text-white disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                title="Halaman Berikutnya"
+                title="Halaman berikutnya" aria-label="Halaman berikutnya"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

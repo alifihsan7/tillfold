@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_current_user, get_strict_current_user
-from app.api.v1.endpoints import accounts, paycheck, subscriptions, auth
+from app.api.v1.endpoints import accounts, paycheck, subscriptions, auth, transactions
 from app.bot import bot
 from app.db.session import Base, get_db
 from app.models.account import Account
@@ -43,7 +43,7 @@ def telegram(monkeypatch):
         db.add(PaycheckBucket(config_id=2, account="Cash", percentage=50, purpose="Belanja"))
         db.commit()
         app = FastAPI()
-        for name, router in [("accounts", accounts.router), ("paycheck", paycheck.router), ("subscriptions", subscriptions.router), ("auth", auth.router)]:
+        for name, router in [("accounts", accounts.router), ("paycheck", paycheck.router), ("subscriptions", subscriptions.router), ("auth", auth.router), ("transactions", transactions.router)]:
             app.include_router(router, prefix="/" + name)
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[get_current_user] = lambda: db.get(User, 2)
@@ -361,3 +361,14 @@ def test_media_failure_rolls_back_transfers_expenses_and_message_key(telegram, m
     monkeypatch.setattr(bot, "SessionLocal", factory)
     bot.process_update(payload)
     assert len(rows(db)) == 3
+
+
+def test_telegram_expense_appears_in_web_history_outside_dashboard_period(telegram):
+    db, engine, client, send, extract = telegram
+    bot.process_update(update(1, "makan 20k Cash"))
+    assert client.get("/transactions", params={"start_date": "2020-01-01", "end_date": "2020-01-31"}).json() == []
+    history = client.get("/transactions/history").json()
+    assert history["total"] == 1
+    assert history["expense"] == 20000
+    assert history["items"][0]["account"] == "Cash"
+    assert next(row for row in client.get("/accounts").json() if row["name"] == "Cash")["current_balance"] == -20000

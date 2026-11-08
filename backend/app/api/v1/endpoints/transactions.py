@@ -9,7 +9,7 @@ import zoneinfo
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func, case
 
 from app.db.session import get_db
 from app.models.transaction import Transaction
@@ -49,15 +49,25 @@ def get_transactions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
+    query = filtered_transactions(db, current_user.id, month, start_date, end_date, category, account, type, search)
+    return query.order_by(Transaction.date.desc(), Transaction.id.desc()).offset(skip).limit(limit).all()
 
-    if start_date and end_date:
+
+def filtered_transactions(db, user_id, month=None, start_date=None, end_date=None, category=None, account=None, type=None, search=None):
+    query = db.query(Transaction).filter(Transaction.user_id == user_id)
+
+    if start_date or end_date:
         try:
-            s_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-            e_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-            query = query.filter(Transaction.date >= s_dt, Transaction.date <= e_dt)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid start_date/end_date format, use YYYY-MM-DD")
+            s_dt = date.fromisoformat(start_date) if start_date else None
+            e_dt = date.fromisoformat(end_date) if end_date else None
+            if s_dt and e_dt and s_dt > e_dt:
+                raise ValueError("Tanggal terbalik")
+            if s_dt:
+                query = query.filter(Transaction.date >= s_dt)
+            if e_dt:
+                query = query.filter(Transaction.date <= e_dt)
+        except (ValueError, TypeError):
+            raise HTTPException(400, "Rentang tanggal tidak valid. Gunakan YYYY-MM-DD dan tanggal awal sebelum tanggal akhir.")
     elif month and month != "all":
         try:
             yr, mo = map(int, month.split("-"))
@@ -75,15 +85,42 @@ def get_transactions(
     if account and account != "all":
         query = query.filter(Transaction.account == account)
     if type and type != "all":
-        query = query.filter(Transaction.type == type)
+        types = {"transfer": ("transfer_in", "transfer_out"), "adjustment": ("adjustment_in", "adjustment_out")}
+        query = query.filter(Transaction.type.in_(types[type])) if type in types else query.filter(Transaction.type == type)
     if search:
         search_filter = f"%{search}%"
         query = query.filter(
             (Transaction.description.ilike(search_filter)) | 
-            (Transaction.raw_text.ilike(search_filter))
+            (Transaction.raw_text.ilike(search_filter)) |
+            (Transaction.category.ilike(search_filter)) | (Transaction.account.ilike(search_filter))
         )
 
-    return query.order_by(Transaction.date.desc(), Transaction.id.desc()).offset(skip).limit(limit).all()
+    return query
+
+
+@router.get("/history")
+def transaction_history(
+    skip: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100),
+    start_date: Optional[date] = None, end_date: Optional[date] = None,
+    category: Optional[str] = None, account: Optional[str] = None,
+    type: Optional[str] = None, search: Optional[str] = None,
+    sort: str = Query("date-desc", pattern="^(date|amount)-(asc|desc)$"),
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
+):
+    query = filtered_transactions(db, current_user.id, start_date=str(start_date) if start_date else None,
+                                  end_date=str(end_date) if end_date else None, category=category,
+                                  account=account, type=type, search=search)
+    count, income, expense = query.with_entities(
+        func.count(Transaction.id),
+        func.coalesce(func.sum(case((Transaction.type == "income", Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)), 0),
+    ).one()
+    column = Transaction.amount if sort.startswith("amount") else Transaction.date
+    order = column.asc() if sort.endswith("asc") else column.desc()
+    items = query.order_by(order, Transaction.id.desc()).offset(skip).limit(limit).all()
+    return {"items": [TransactionOut.model_validate(item) for item in items], "total": count,
+            "income": int(income), "expense": int(expense), "net": int(income - expense)}
+
 
 def require_owned_accounts(db: Session, user_id: int, *names: str):
     owned = {row.name for row in db.query(Account).filter(

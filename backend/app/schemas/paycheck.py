@@ -93,3 +93,14 @@ class PaycheckRecordRequest(BaseModel):
     cycle_type: Optional[Literal["weekly", "biweekly", "monthly", "custom"]] = None
     cycle_days: Optional[int] = Field(default=None, ge=1, le=365)
     save_cycle_default: bool = False
+
+
+class ReceiptAllocation(BaseModel):
+    account_id: int = Field(gt=0)
+    amount: int = Field(ge=0, le=9_000_000_000_000_000)
+    transfer_id: Optional[int] = None
+
+
+class ReceiptAllocationsUpdate(BaseModel):
+    allocations: List[ReceiptAllocation] = Field(max_length=100)
+    expected_allocations: List[ReceiptAllocation] = Field(max_length=100)

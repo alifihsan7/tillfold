@@ -357,6 +357,7 @@ export default function FinanceDashboard() {
   };
   const mainContentRef = useRef<HTMLElement>(null);
   const dashboardRequestRef = useRef(0);
+  const dashboardBusyRef = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaycheckModalOpen, setIsPaycheckModalOpen] = useState(false);
   const [isPayrollSettingsOpen, setIsPayrollSettingsOpen] = useState(false);
@@ -725,9 +726,11 @@ export default function FinanceDashboard() {
     initUser();
   }, []);
 
-  const fetchData = async () => {
+  const fetchDashboard = async (background = false) => {
+    if (background && dashboardBusyRef.current) return;
+    dashboardBusyRef.current = true;
     const requestId = ++dashboardRequestRef.current;
-    setOverviewError(null);
+    if (!background) setOverviewError(null);
     const token = getAuthToken();
     if (!token) {
       setTransactions([]);
@@ -752,11 +755,12 @@ export default function FinanceDashboard() {
       setGoals([]);
       setActivePaycheckSession(null);
       setLoading(false);
+      dashboardBusyRef.current = false;
       return;
     }
 
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
 
       const data = await loadDashboardData(authFetch, selectedPeriod);
       if (requestId !== dashboardRequestRef.current) return;
@@ -792,15 +796,32 @@ export default function FinanceDashboard() {
       setOverviewError(err instanceof Error ? err.message : "Koneksi terputus. Coba muat ulang ringkasan.");
       console.error("Fetch error:", err);
     } finally {
-      if (requestId === dashboardRequestRef.current) setLoading(false);
+      if (requestId === dashboardRequestRef.current) { setLoading(false); dashboardBusyRef.current = false; }
     }
   };
+
+  const fetchData = () => fetchDashboard();
 
   useEffect(() => {
     if (currentUser) {
       fetchData();
     }
   }, [selectedPeriod, currentUser]);
+
+  const externalRefreshRef = useRef(() => {});
+  externalRefreshRef.current = () => { if (currentUser) void fetchDashboard(true); };
+  useEffect(() => {
+    if (!currentUser) return;
+    const refresh = () => { if (document.visibilityState === "visible") externalRefreshRef.current(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const interval = window.setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      window.clearInterval(interval);
+    };
+  }, [currentUser]);
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -2711,6 +2732,7 @@ export default function FinanceDashboard() {
       <RecordPaycheckModal
         isOpen={isPaycheckModalOpen && !activePaycheckSession && !isPayrollSettingsOpen}
         accounts={customAccounts.map(({ name }) => name)}
+        allocationAccounts={customAccounts.flatMap((item) => item.id ? [{ id: item.id, name: item.name }] : [])}
         onClose={() => setIsPaycheckModalOpen(false)}
         onSuccess={(cycle) => {
           if (!cycle) {

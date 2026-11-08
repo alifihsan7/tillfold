@@ -6,6 +6,7 @@ interface CurrencyInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
   accent?: "amber" | "cyan" | "mint" | "coral";
   quickAmounts?: number[];
   className?: string;
@@ -18,6 +19,7 @@ export function CurrencyInput({
   onChange,
   placeholder = "0",
   required = false,
+  disabled = false,
   quickAmounts,
   className = "",
   autoFocus = false,
@@ -54,6 +56,7 @@ export function CurrencyInput({
           inputMode="numeric"
           autoFocus={autoFocus}
           required={required}
+          disabled={disabled}
           value={formatDisplay(value)}
           onChange={handleInputChange}
           placeholder={placeholder}

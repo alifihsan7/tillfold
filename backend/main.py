@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.api.v1.router import api_router
 from app.db.session import engine, Base
 from app.db.pocket_schema import ensure_pocket_subscription_schema
+from app.db.account_schema import ensure_account_archive_schema
 import app.models.transaction
 import app.models.subscription
 import app.models.account
@@ -19,6 +20,7 @@ import app.models.jago_pocket
 
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
+ensure_account_archive_schema(engine)
 
 def ensure_pocket_schema_compatibility():
     """Idempotently adds account_id and role columns to jago_pockets if table predates schema update."""

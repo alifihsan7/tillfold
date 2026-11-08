@@ -383,9 +383,10 @@ export default function FinanceDashboard() {
   const [isExportingCSV, setIsExportingCSV] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [customAccounts, setCustomAccounts] = useState<AccountItem[]>([]);
+  const activeAccounts = useMemo(() => customAccounts.filter((account) => !account.is_archived), [customAccounts]);
   const availableAccountNames = useMemo(() => {
     if (customAccounts.length > 0) {
-      return customAccounts.map((a) => a.name);
+      return customAccounts.filter((account) => !account.is_archived).map((a) => a.name);
     }
     return ["Rekening Utama", "Uang Tunai (Cash)", "Tabungan"];
   }, [customAccounts]);
@@ -454,14 +455,20 @@ export default function FinanceDashboard() {
   const [paycheckConfig, setPaycheckConfig] = useState<{ id?: number; total_salary?: number; pocket_account?: string; source_account?: string; cycle_days?: number; cycle_type?: string } | null>(null);
   const [paycheckBuckets, setPaycheckBuckets] = useState<{ account: string; percentage: number; purpose?: string }[]>([]);
 
-  const billAccountOptions = customAccounts.map(({ name }) => ({ value: name, label: name }));
+  const billAccountOptions = useMemo(() => {
+    const options = activeAccounts.map(({ name }) => ({ value: name, label: name }));
+    if (subToEdit?.account && !options.some((option) => option.value === subToEdit.account)) {
+      options.push({ value: subToEdit.account, label: `${subToEdit.account} (arsip)` });
+    }
+    return options;
+  }, [activeAccounts, subToEdit?.account]);
 
   // Auto-sync subAccount to available accounts
   useEffect(() => {
     setSubAccount((previous) =>
-      customAccounts.some((account) => account.name === previous) ? previous : customAccounts[0]?.name || ""
+      billAccountOptions.some((account) => account.value === previous) ? previous : activeAccounts[0]?.name || ""
     );
-  }, [customAccounts]);
+  }, [activeAccounts, billAccountOptions]);
 
   // SPA Hash Routing sync & browser Back/Forward navigation listener
   useEffect(() => {
@@ -833,8 +840,8 @@ export default function FinanceDashboard() {
 
   // Dynamic account options for modals
   const availableAccountOptions = useMemo(() => {
-    if (customAccounts.length > 0) {
-      return customAccounts.map((ca) => ({
+    if (activeAccounts.length > 0) {
+      return activeAccounts.map((ca) => ({
         value: ca.name,
         label: `${ca.name} (${ca.tag || "Akun"})`,
         color: ca.color === "cyanHub" ? "bg-cyan-500" : ca.color === "teal" ? "bg-teal-500" : ca.color === "purpleLock" ? "bg-purple-500" : ca.color === "blue" ? "bg-blue-600" : ca.color === "coralFall" ? "bg-rose-500" : "bg-amber-500",
@@ -842,14 +849,14 @@ export default function FinanceDashboard() {
       }));
     }
     return TX_ACCOUNT_OPTIONS;
-  }, [customAccounts]);
+  }, [activeAccounts]);
 
   // Dynamic tab list for transaction filtering
   const allAccountTabs = useMemo(() => {
     const tabs = [{ id: "all", label: "Semua" }];
     if (customAccounts.length > 0) {
       customAccounts.forEach((ca) => {
-        tabs.push({ id: ca.name, label: ca.name });
+        tabs.push({ id: ca.name, label: ca.is_archived ? `${ca.name} (arsip)` : ca.name });
       });
     } else {
       TX_ACCOUNT_OPTIONS.forEach((opt) => {
@@ -1984,7 +1991,7 @@ export default function FinanceDashboard() {
             <AccountPockets
               cycleStart={summary.start_date}
               cycleEnd={summary.end_date}
-              accounts={customAccounts}
+              accounts={activeAccounts}
               formatRupiah={formatRupiah}
               refreshSignal={jagoRefreshSignal}
               onToast={showToast}
@@ -2370,6 +2377,7 @@ export default function FinanceDashboard() {
                   formatRupiah={formatRupiah}
                   loading={loading}
                   onAccountDeleted={fetchData}
+                  onArchiveChanged={fetchData}
                   onReconciled={fetchData}
                   onEditAccount={(acc) => setAccountToEdit(acc)}
                 />
@@ -2382,7 +2390,7 @@ export default function FinanceDashboard() {
                 <AccountPockets
                   cycleStart={summary.start_date}
                   cycleEnd={summary.end_date}
-                  accounts={customAccounts}
+                  accounts={activeAccounts}
                   formatRupiah={formatRupiah}
                   refreshSignal={jagoRefreshSignal}
                   onToast={showToast}
@@ -2731,8 +2739,8 @@ export default function FinanceDashboard() {
 
       <RecordPaycheckModal
         isOpen={isPaycheckModalOpen && !activePaycheckSession && !isPayrollSettingsOpen}
-        accounts={customAccounts.map(({ name }) => name)}
-        allocationAccounts={customAccounts.flatMap((item) => item.id ? [{ id: item.id, name: item.name }] : [])}
+        accounts={activeAccounts.map(({ name }) => name)}
+        allocationAccounts={activeAccounts.flatMap((item) => item.id ? [{ id: item.id, name: item.name }] : [])}
         onClose={() => setIsPaycheckModalOpen(false)}
         onSuccess={(cycle) => {
           if (!cycle) {
@@ -2797,7 +2805,8 @@ export default function FinanceDashboard() {
         onClose={() => setTxToEdit(null)}
         transaction={txToEdit}
         onSuccess={fetchData}
-        accountOptions={availableAccountOptions}
+        accountOptions={txToEdit && !availableAccountOptions.some((option) => option.value === txToEdit.account)
+          ? [...availableAccountOptions, { value: txToEdit.account, label: `${txToEdit.account} (arsip)` }] : availableAccountOptions}
         categoryOptions={dynamicTxCategoryOptions}
       />
 
@@ -2839,7 +2848,8 @@ export default function FinanceDashboard() {
         isOpen={goalToEdit !== null}
         onClose={() => setGoalToEdit(null)}
         onSuccess={fetchData}
-        availableAccounts={availableAccountNames}
+        availableAccounts={goalToEdit?.linked_account && !availableAccountNames.includes(goalToEdit.linked_account)
+          ? [...availableAccountNames, goalToEdit.linked_account] : availableAccountNames}
       />
 
       {/* Confirm Delete Goal Modal */}

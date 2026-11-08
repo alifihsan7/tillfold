@@ -185,7 +185,7 @@ def test_payments_survive_backup_restore_and_account_rename(bills):
     assert client.put("/accounts/1", json={"name": "Bank baru"}).status_code == 200
     exported = client.get("/backup/export")
     assert exported.status_code == 200, exported.text
-    assert exported.json()["version"] == 3
+    assert exported.json()["version"] == 4
     current[0] = users[2]
     restored = client.post("/backup/restore", json=exported.json())
     assert restored.status_code == 200, restored.text

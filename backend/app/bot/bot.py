@@ -749,7 +749,7 @@ def normalize_account(raw: str, db: Optional[Session] = None, user_id: Optional[
         return None
     r = raw.strip().lower()
     if db is not None and user_id is not None:
-        names = [acc.name for acc in db.query(Account).filter(Account.user_id == user_id).all()]
+        names = [acc.name for acc in db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).all()]
         exact = [name for name in names if name.casefold() == r.casefold()]
         if len(exact) == 1:
             return exact[0]
@@ -782,7 +782,7 @@ def handle_transfer(chat_id: int, text: str, db: Session, user: Optional[User] =
     user_id = user.id
     clean = text.strip()
 
-    user_accs = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id.asc()).all()
+    user_accs = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).order_by(Account.id.asc()).with_for_update().all()
     acc_options_str = ", ".join(f"`{a.name}`" for a in user_accs) if user_accs else "Belum ada rekening. Tambahkan melalui web."
 
     if clean.lower() in ["/transfer", "/tf", "transfer", "tf", "🔄 transfer"]:
@@ -941,12 +941,12 @@ def handle_gajian(chat_id: int, text: str, db: Session, user: Optional[User] = N
     from app.services.paycheck_cycles import receipt_allocations
     import uuid
 
-    if not db.query(Account.id).filter(Account.user_id == user_id).first():
+    if not db.query(Account.id).filter(Account.user_id == user_id, Account.is_archived == False).first():
         send_message(chat_id, "Tambahkan rekening di web sebelum mencatat gaji.", bot_token=bot_token)
         return
     cfg = get_or_seed_config(db, user_id)
     buckets = get_or_seed_buckets(db, cfg.id)
-    user_accs = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id.asc()).all()
+    user_accs = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).order_by(Account.id.asc()).with_for_update().all()
     accounts_by_name = {a.name: a for a in user_accs}
 
     source_account = cfg.source_account if (cfg.source_account and cfg.source_account in accounts_by_name) else (user_accs[0].name if user_accs else "Rekening Utama")
@@ -1146,9 +1146,10 @@ def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_to
 
 def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
     from app.schemas.transaction import TransactionCreate
-    accounts = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id).all()
+    accounts = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).order_by(Account.id).with_for_update().all()
     if not accounts:
         raise ValueError("Tambahkan rekening di web sebelum mencatat transaksi.")
+    known_accounts = db.query(Account).filter(Account.user_id == user_id).all()
     cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
     names = {account.name for account in accounts}
     normalized = []
@@ -1160,7 +1161,7 @@ def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
         item = dict(original)
         if text_items:
             raw = item.get("raw_text", "")
-            matched = [account.name for account in accounts if re.search(
+            matched = [account.name for account in known_accounts if re.search(
                 r"(?<!\w)" + re.escape(account.name) + r"(?!\w)", raw, re.IGNORECASE)]
             # Prefer the complete account name over another name contained inside it.
             matched = [name for name in matched if not any(name.casefold() in other.casefold() and name != other for other in matched)]
@@ -1439,7 +1440,7 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
                             voice_prefix=f"Suara: {transcribed_text}\n\n")
         return
 
-    db_accounts = [a.name for a in db.query(Account).filter(Account.user_id == user_id).all()]
+    db_accounts = [a.name for a in db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).all()]
     all_accounts = db_accounts
 
     from app.services.ai_extractor import extract_from_media
@@ -1605,6 +1606,8 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 def main():
     print("Connecting to PostgreSQL and creating tables if not exist...")
     Base.metadata.create_all(bind=engine)
+    from app.db.account_schema import ensure_account_archive_schema
+    ensure_account_archive_schema(engine)
     print("Setting up Telegram bot commands menu...")
     setup_bot_commands()
     print("Tillfold shared bot started listening...")

@@ -68,6 +68,7 @@ class AccountUpdate(BaseModel):
 
 
 class AccountResponse(AccountBase):
+    is_archived: bool = False
     id: int
     current_balance: int = 0
     created_at: datetime

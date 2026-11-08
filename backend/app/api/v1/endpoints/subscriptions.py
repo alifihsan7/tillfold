@@ -77,7 +77,7 @@ def record_payment(sub_id: int, payload: RecordBillPayment,
         raise HTTPException(409, "Aktifkan tagihan sebelum mencatat pembayaran.")
     if sub.amount != payload.expected_amount or sub.account != payload.expected_account:
         raise HTTPException(409, "Nominal atau rekening tagihan berubah. Muat ulang sebelum melanjutkan.")
-    if not db.query(Account.id).filter(Account.user_id == current_user.id, Account.name == sub.account).first():
+    if not db.query(Account.id).filter(Account.user_id == current_user.id, Account.name == sub.account, Account.is_archived == False).with_for_update().first():
         raise HTTPException(409, "Rekening pembayaran tidak tersedia. Ubah rekening tagihan terlebih dahulu.")
     if payload.existing_transaction_id is not None:
         tx = db.query(Transaction).filter(
@@ -231,10 +231,13 @@ def create_subscription(
 ):
     account_name = sub_in.account.strip()
     if not account_name:
-        account = db.query(Account).filter(Account.user_id == current_user.id).order_by(Account.id).first()
+        account = db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False).order_by(Account.id).first()
         if account is None:
             raise HTTPException(status_code=400, detail="Tambahkan rekening terlebih dahulu.")
         account_name = account.name
+
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    require_owned_accounts(db, current_user.id, account_name)
 
     sub = Subscription(
         user_id=current_user.id,
@@ -286,6 +289,9 @@ def update_subscription(
         raise HTTPException(status_code=404, detail="Langganan tidak ditemukan")
 
     update_data = sub_in.model_dump(exclude_unset=True)
+    if update_data.get("account") and update_data["account"] != sub.account:
+        from app.api.v1.endpoints.transactions import require_owned_accounts
+        require_owned_accounts(db, current_user.id, update_data["account"])
     if "account" in update_data and (not update_data["account"] or not update_data["account"].strip()):
         raise HTTPException(status_code=400, detail="Rekening tagihan tidak boleh kosong")
     if "account" in update_data and update_data["account"].strip().casefold() != sub.account.strip().casefold():

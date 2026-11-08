@@ -35,12 +35,14 @@ router = APIRouter()
 
 def receipt_out(db: Session, receipt: PaycheckReceipt):
     tx = db.get(Transaction, receipt.transaction_id)
-    accounts = {a.id: a.name for a in db.query(Account).filter(Account.user_id == receipt.user_id)}
+    account_rows = db.query(Account).filter(Account.user_id == receipt.user_id).all()
+    accounts = {a.id: a.name for a in account_rows}
+    archived = {a.id for a in account_rows if a.is_archived}
     return {
         "id": tx.id, "account": tx.account, "amount": tx.amount, "date": tx.date,
         "cycle_end": receipt.cycle_end,
         "allocations": [
-            {**item, "account": accounts.get(item["account_id"])}
+            {**item, "account": accounts.get(item["account_id"]), "account_archived": item["account_id"] in archived}
             for item in receipt_allocations(db, receipt)
         ],
     }
@@ -55,7 +57,7 @@ def latest_paycheck_receipt(current_user: User = Depends(get_current_user), db: 
     for receipt in receipts:
         allocations = receipt_allocations(db, receipt)
         source = db.get(Transaction, receipt.transaction_id).account
-        has_target = db.query(Account.id).filter(Account.user_id == current_user.id, Account.name != source).first() is not None
+        has_target = db.query(Account.id).filter(Account.user_id == current_user.id, Account.name != source, Account.is_archived == False).first() is not None
         if (not allocations and has_target) or any(item["amount"] > 0 and not item["transfer_id"] and item["account_id"] in account_ids
                for item in allocations):
             return receipt_out(db, receipt)
@@ -77,7 +79,7 @@ def record_paycheck(
     if receipt:
         return receipt_out(db, receipt)
 
-    accounts = {a.name: a for a in db.query(Account).filter(Account.user_id == user_id)}
+    accounts = {a.name: a for a in db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False)}
     if payload.account not in accounts:
         raise HTTPException(400, "Pilih rekening penerima yang tersedia.")
     if payload.date > datetime.now(WIB).date():
@@ -116,6 +118,8 @@ def record_paycheck(
             allocations.append({"account_id": accounts[account].id, "amount": amount, "transfer_id": None})
             remaining -= amount
 
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    require_owned_accounts(db, user_id, payload.account)
     label = "Gaji" if payload.start_cycle else "Gaji tambahan"
     tx = Transaction(user_id=user_id, account=payload.account, type="income", amount=payload.total_amount,
                      category=label, description=label, date=payload.date)
@@ -158,7 +162,7 @@ def update_receipt_allocations(
     proposed = {row["account_id"]: row for row in requested}
     if any(proposed.get(account_id) != row for account_id, row in paid.items()):
         raise HTTPException(409, "Transfer yang sudah tercatat tidak dapat diubah dari pembagian gaji.")
-    owned = {row.id: row.name for row in db.query(Account).filter(Account.user_id == current_user.id)}
+    owned = {row.id: row.name for row in db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False)}
     for row in requested:
         if row["account_id"] not in paid:
             if row["transfer_id"] or row["account_id"] not in owned or owned[row["account_id"]] == tx.account:
@@ -193,11 +197,13 @@ def confirm_paycheck_transfer(
     if tx is None:
         raise HTTPException(404, "Catatan gaji tidak ditemukan.")
     target = db.get(Account, account_id)
-    source = db.query(Account.id).filter(Account.user_id == current_user.id, Account.name == tx.account).first()
-    if not source or not target or target.user_id != current_user.id or tx.account == target.name or tx.type != "income":
+    source = db.query(Account.id).filter(Account.user_id == current_user.id, Account.name == tx.account, Account.is_archived == False).first()
+    if not source or not target or target.user_id != current_user.id or target.is_archived or tx.account == target.name or tx.type != "income":
         raise HTTPException(409, "Rekening atau catatan gaji sudah berubah.")
     if sum(row["amount"] for row in allocations if row["transfer_id"]) + item["amount"] > tx.amount:
         raise HTTPException(409, "Total alokasi melebihi nominal gaji.")
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    require_owned_accounts(db, current_user.id, tx.account, target.name)
     tx_out, tx_in = add_transfer_pair(
         db, current_user.id, tx.account, target.name, item["amount"], datetime.now(WIB).date(), "Pembagian gaji",
     )
@@ -212,7 +218,7 @@ def get_or_seed_config(db: Session, user_id: int = 1) -> PaycheckConfig:
     cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
     if not cfg:
         from app.models.account import Account
-        user_accs = db.query(Account).filter(Account.user_id == user_id).all()
+        user_accs = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).all()
         source_name = user_accs[0].name if user_accs else "Rekening Utama"
         pocket_acc = next((a for a in user_accs if a.type == "operasional"), None)
         pocket_name = pocket_acc.name if pocket_acc else source_name
@@ -236,7 +242,7 @@ def get_or_seed_buckets(db: Session, config_id: int = 1) -> List[PaycheckBucket]
     if not buckets:
         cfg = db.query(PaycheckConfig).filter(PaycheckConfig.id == config_id).first()
         from app.models.account import Account
-        user_accs = db.query(Account).filter(Account.user_id == cfg.user_id).all() if cfg else []
+        user_accs = db.query(Account).filter(Account.user_id == cfg.user_id, Account.is_archived == False).all() if cfg else []
         if user_accs:
             n = len(user_accs)
             even_pct = round(100.0 / n, 2)
@@ -484,9 +490,10 @@ def get_paycheck_config_and_buckets(
 ):
     cfg = get_or_seed_config(db, current_user.id)
     buckets = get_or_seed_buckets(db, cfg.id)
+    active_names = {row.name for row in db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False)}
     return {
         "config": PaycheckConfigOut.from_orm(cfg),
-        "buckets": [PaycheckBucketOut.from_orm(b) for b in buckets],
+        "buckets": [PaycheckBucketOut.from_orm(b) for b in buckets if b.account in active_names],
     }
 
 @router.put("/config", response_model=PaycheckConfigOut)
@@ -495,6 +502,8 @@ def update_paycheck_config(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    require_owned_accounts(db, current_user.id, payload.source_account, payload.pocket_account)
     cfg = get_or_seed_config(db, current_user.id)
     cfg.source_account = payload.source_account
     cfg.use_gate = payload.use_gate
@@ -523,7 +532,7 @@ def update_paycheck_buckets(
         raise HTTPException(400, "Setiap rekening hanya boleh memiliki satu alokasi.")
     if sum(Decimal(str(bucket.percentage)) for bucket in payload) > 100:
         raise HTTPException(400, "Total pembagian tidak boleh melebihi 100%.")
-    owned = {name for (name,) in db.query(Account.name).filter(Account.user_id == current_user.id)}
+    owned = {name for (name,) in db.query(Account.name).filter(Account.user_id == current_user.id, Account.is_archived == False)}
     if any(name not in owned for name in names):
         raise HTTPException(400, "Pilih rekening alokasi yang tersedia.")
     cfg = get_or_seed_config(db, current_user.id)
@@ -580,6 +589,16 @@ def start_paycheck_session(
         except OverflowError:
             raise HTTPException(status_code=400, detail="Tanggal akhir siklus tidak valid.")
 
+    cfg = get_or_seed_config(db, current_user.id)
+    buckets = get_or_seed_buckets(db, cfg.id)
+    active_names = {row.name for row in db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False)}
+    buckets = [bucket for bucket in buckets if bucket.account in active_names]
+    amounts = compute_bucket_amounts(payload.total_amount, buckets, payload.allocations)
+    steps = generate_steps(cfg, buckets, amounts)
+
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    require_owned_accounts(db, current_user.id, *(step.target_account for step in steps if step.creates_income))
+
     # Cancel any existing active session to avoid stale dangling sessions
     active = db.query(PaycheckSession).filter(
         PaycheckSession.user_id == current_user.id,
@@ -591,10 +610,7 @@ def start_paycheck_session(
         s.status = "cancelled"
     db.commit()
 
-    cfg = get_or_seed_config(db, current_user.id)
-    buckets = get_or_seed_buckets(db, cfg.id)
-    amounts = compute_bucket_amounts(payload.total_amount, buckets, payload.allocations)
-    steps = generate_steps(cfg, buckets, amounts)
+    require_owned_accounts(db, current_user.id, *(step.target_account for step in steps if step.creates_income))
 
     # Pre-record income for auto steps (e.g. Sisa di BRI 1 and Sisa di Jago)
     for s in steps:
@@ -659,6 +675,10 @@ def toggle_paycheck_step(
 
     if not target_step:
         raise HTTPException(status_code=404, detail="Langkah transfer tidak ditemukan")
+
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    if not target_step["is_done"]:
+        require_owned_accounts(db, current_user.id, *(step["target_account"] for step in steps_data if step.get("creates_income") and not step.get("transaction_id")))
 
     # Toggle
     now_done = not target_step["is_done"]
@@ -756,6 +776,8 @@ def complete_all_paycheck_steps(
         raise HTTPException(status_code=404, detail="Sesi gajian tidak ditemukan")
 
     steps_data = json.loads(session.steps_json)
+    from app.api.v1.endpoints.transactions import require_owned_accounts
+    require_owned_accounts(db, current_user.id, *(step["target_account"] for step in steps_data if step.get("creates_income") and not step.get("transaction_id")))
     for s in steps_data:
         if not s["is_done"]:
             s["is_done"] = True

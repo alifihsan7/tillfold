@@ -51,6 +51,7 @@ def resolve_pocket_account(
     are protected from accidental selection as the default operational pocket.
     """
     accounts_list: List[Account] = user_accs if user_accs is not None else db.query(Account).filter(Account.user_id == user_id).all()
+    accounts_list = [account for account in accounts_list if not account.is_archived]
     user_acc_names = [a.name for a in accounts_list]
 
     if cfg is None:

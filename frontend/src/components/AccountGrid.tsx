@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { CreditCard, Trash2, AlertTriangle, X, Edit2 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 import { authFetch } from "@/lib/api";
+import { CustomModal } from "./ui/CustomModal";
 import { ReconcileAccountModal } from "./ReconcileAccountModal";
 
 export interface AccountItem {
@@ -12,6 +13,7 @@ export interface AccountItem {
   color?: string;
   initial_balance?: number;
   current_balance?: number;
+  is_archived?: boolean;
 }
 
 interface AccountGridProps {
@@ -32,6 +34,7 @@ interface AccountGridProps {
   onAccountDeleted?: () => void;
   onEditAccount?: (acc: AccountItem) => void;
   onReconciled?: () => void;
+  onArchiveChanged?: () => void;
 }
 
 const ACCOUNT_COLOR_DOTS: Record<string, string> = {
@@ -108,7 +111,30 @@ export function getDefaultTagForType(type?: string): string {
   }
 }
 
-export function AccountGrid({ summary, customAccounts = [], formatRupiah, loading, onAccountDeleted, onEditAccount, onReconciled }: AccountGridProps) {
+export function AccountGrid({ summary, customAccounts = [], formatRupiah, loading, onAccountDeleted, onEditAccount, onReconciled, onArchiveChanged }: AccountGridProps) {
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<AccountItem | null>(null);
+  const [archivePending, setArchivePending] = useState(false);
+  const [archiveError, setArchiveError] = useState("");
+  const archiveAccount = async () => {
+    if (!archiveTarget?.id || archivePending) return;
+    setArchivePending(true);
+    setArchiveError("");
+    try {
+      const response = await authFetch(`/api/v1/accounts/${archiveTarget.id}/archive`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_archived: !archiveTarget.is_archived }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(typeof data?.detail === "string" ? data.detail : "Status rekening gagal disimpan.");
+      }
+      setArchiveTarget(null);
+      onArchiveChanged?.();
+    } catch (error) {
+      setArchiveError(error instanceof Error ? error.message : "Status rekening gagal disimpan.");
+    } finally { setArchivePending(false); }
+  };
   const [reconcileId, setReconcileId] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -238,11 +264,13 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
           isPocket,
           cycleBadge,
           isCustom: true,
+          is_archived: !!ca.is_archived,
         };
       })
     : genericDefaultAccounts.map((acc) => ({
         ...acc,
         roleBadge: getAccountRoleBadge(acc.type),
+        is_archived: false,
       }));
 
   if (loading) {
@@ -277,8 +305,15 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
   }
 
   return (
-    <div className="ai7-account-grid">
-      {allDisplayAccounts.map((acc) => {
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Status rekening">
+        <button type="button" aria-pressed={!showArchived} onClick={() => setShowArchived(false)} className={showArchived ? "luma-action-secondary" : "luma-action-primary"}>Aktif ({allDisplayAccounts.filter((account) => !account.is_archived).length})</button>
+        <button type="button" aria-pressed={showArchived} onClick={() => setShowArchived(true)} className={showArchived ? "luma-action-primary" : "luma-action-secondary"}>Arsip ({allDisplayAccounts.filter((account) => account.is_archived).length})</button>
+      </div>
+      {showArchived && <p className="text-sm text-luma-smoke">Saldo dan riwayat rekening arsip tetap tersimpan.</p>}
+      {showArchived && !allDisplayAccounts.some((account) => account.is_archived) && <p className="luma-matte p-4 text-sm text-luma-smoke">Belum ada rekening yang diarsipkan.</p>}
+      <div className="ai7-account-grid">
+      {allDisplayAccounts.filter((account) => account.is_archived === showArchived).map((acc) => {
         const hasPlafon = acc.allocated > 0;
         const pctUsed = hasPlafon ? Math.min(100, Math.round((acc.spent / acc.allocated) * 100)) : 0;
         const isInvest = (acc.type || "").toLowerCase() === "investasi"
@@ -374,7 +409,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
             </div>
 
             <div className="mt-4 pt-3 border-t border-luma-smokeline">
-              {isInvest ? (
+              {acc.is_archived ? <p className="text-xs text-luma-smoke">Diarsipkan · tersedia di riwayat</p> : isInvest ? (
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-0.5 text-xs text-luma-sage font-sans">
                     <span className="whitespace-nowrap">Target Portofolio</span>
@@ -432,13 +467,34 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
                   </span>
                 </div>
               )}
-              {acc.id && onReconciled && <button type="button" onClick={() => setReconcileId(acc.id!)}
+              {acc.id && !acc.is_archived && onReconciled && <button type="button" onClick={() => setReconcileId(acc.id!)}
                 aria-label={"Cocokkan saldo " + acc.name} className="luma-action-secondary mt-3 w-full">Cocokkan saldo</button>}
+              {acc.id && onArchiveChanged && <button type="button" className="luma-action-secondary mt-3 w-full"
+                disabled={!acc.is_archived && allDisplayAccounts.filter((account) => !account.is_archived).length <= 1}
+                aria-label={`${acc.is_archived ? "Aktifkan kembali" : "Arsipkan"} rekening ${acc.name}`}
+                onClick={() => { setArchiveError(""); setArchiveTarget({ id: acc.id, name: acc.name, is_archived: acc.is_archived }); }}>
+                {acc.is_archived ? "Aktifkan kembali" : "Arsipkan rekening"}
+              </button>}
+
             </div>
           </div>
         );
       })}
 
+      </div>
+      <CustomModal isOpen={!!archiveTarget} onClose={() => { if (!archivePending) setArchiveTarget(null); }}
+        title={archiveTarget?.is_archived ? "Aktifkan rekening?" : "Arsipkan rekening?"} maxWidth="md">
+        <div className="space-y-4">
+          <p className="text-sm"><strong>{archiveTarget?.name}</strong></p>
+          <p className="text-sm text-luma-smoke">{archiveTarget?.is_archived ? "Rekening akan tersedia lagi untuk transaksi baru." : "Rekening disembunyikan dari pilihan transaksi baru. Saldo dan riwayat tetap tersimpan."}</p>
+          {!archiveTarget?.is_archived && <p className="text-sm text-luma-smoke">Jika dipakai sebagai default gaji atau belanja, rekening aktif lain akan menggantikannya.</p>}
+          {archiveError && <p role="alert" className="text-sm text-luma-coral">{archiveError}</p>}
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" disabled={archivePending} className="luma-action-secondary" onClick={() => setArchiveTarget(null)}>Batal</button>
+            <button type="button" disabled={archivePending} className="luma-action-primary" onClick={() => void archiveAccount()}>{archivePending ? "Menyimpan…" : archiveTarget?.is_archived ? "Aktifkan kembali" : "Arsipkan"}</button>
+          </div>
+        </div>
+      </CustomModal>
       {/* Modal Konfirmasi Hapus Rekening — Luma smoked glass */}
       {reconcileId !== null && <ReconcileAccountModal key={reconcileId} accountId={reconcileId}
         onClose={() => setReconcileId(null)} onSuccess={() => onReconciled?.()} />}

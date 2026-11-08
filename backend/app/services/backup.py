@@ -75,7 +75,7 @@ def export_backup(db: Session, user_id: int):
                         row["raw_text"] = f"[pair_id:{pair.id}] {raw}"
             rows.append(row)
         data[name] = rows
-    return {"format": "tillfold-backup", "version": 3,
+    return {"format": "tillfold-backup", "version": 4,
             "exported_at": datetime.now(timezone.utc).isoformat(), "data": data}
 
 
@@ -127,7 +127,7 @@ def json_rows(value):
 
 
 def validate_backup(payload):
-    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3):
+    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4):
         invalid()
     data = payload.get("data")
     if isinstance(data, dict) and payload["version"] in (1, 2):
@@ -149,6 +149,10 @@ def validate_backup(payload):
         required = {column.name for column in columns}
         rows, keys = [], set()
         for row in data[name]:
+            if model is Account and isinstance(row, dict) and payload["version"] < 4:
+                if row.get("is_archived"):
+                    invalid()
+                row = {**row, "is_archived": False}
             if not isinstance(row, dict) or set(row) != required:
                 invalid()
             decoded = {column.name: decode_value(column, row[column.name]) for column in columns}
@@ -170,6 +174,8 @@ def validate_backup(payload):
         for row in parsed[name]:
             if row[field] is not None and row[field] not in indexes.get(target, {}):
                 invalid()
+    if parsed["accounts"] and all(row["is_archived"] for row in parsed["accounts"]):
+        invalid()
     if len(parsed["paycheck_configs"]) > 1:
         invalid()
     if len({row["name"] for row in parsed["accounts"]}) != len(parsed["accounts"]):

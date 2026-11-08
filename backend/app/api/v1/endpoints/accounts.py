@@ -57,6 +57,8 @@ def reconcile_account(account_id: int, payload: ReconcileRequest,
     ).with_for_update().first()
     if account is None:
         raise HTTPException(404, "Rekening tidak ditemukan.")
+    if account.is_archived:
+        raise HTTPException(409, "Aktifkan kembali rekening sebelum mencatat penyesuaian saldo.")
     marker = f"reconciliation:{payload.request_key}"
     existing = db.query(Transaction).filter(
         Transaction.user_id == current_user.id, Transaction.account == account.name,
@@ -174,6 +176,7 @@ def get_accounts(
 
         results.append(AccountResponse(
             id=acc.id,
+            is_archived=acc.is_archived,
             name=acc.name,
             type=acc.type,
             tag=acc.tag,
@@ -342,9 +345,38 @@ def update_account(
         tag=acc.tag,
         color=acc.color,
         initial_balance=acc.initial_balance,
+        is_archived=acc.is_archived,
         current_balance=int(bal),
         created_at=acc.created_at
     )
+
+class AccountArchiveRequest(BaseModel):
+    is_archived: bool
+
+
+@router.put("/{account_id}/archive")
+def set_account_archive(account_id: int, payload: AccountArchiveRequest,
+                        current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Serialize archive changes per user so concurrent requests cannot archive the last two accounts.
+    db.query(User).filter(User.id == current_user.id).with_for_update().one()
+    account = db.query(Account).filter(Account.id == account_id, Account.user_id == current_user.id).with_for_update().first()
+    if not account:
+        raise HTTPException(404, "Rekening tidak ditemukan.")
+    if payload.is_archived and not account.is_archived:
+        active = db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False,
+                                           Account.id != account_id).order_by(Account.id).all()
+        if not active:
+            raise HTTPException(409, "Sisakan minimal satu rekening aktif.")
+        cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == current_user.id).first()
+        if cfg:
+            if cfg.source_account == account.name:
+                cfg.source_account = next((row.name for row in active if row.type == "gajian"), active[0].name)
+            if cfg.pocket_account == account.name:
+                cfg.pocket_account = next((row.name for row in active if row.type == "operasional"), active[0].name)
+    account.is_archived = payload.is_archived
+    db.commit()
+    return {"id": account.id, "is_archived": account.is_archived}
+
 
 @router.delete("/{account_id}")
 def delete_account(
@@ -352,12 +384,13 @@ def delete_account(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    db.query(User).filter(User.id == current_user.id).with_for_update().one()
     acc = db.query(Account).filter(Account.id == account_id, Account.user_id == current_user.id).first()
     if not acc:
         raise HTTPException(status_code=404, detail="Rekening tidak ditemukan")
 
     total_accs = db.query(Account).filter(Account.user_id == current_user.id).count()
-    if total_accs <= 1:
+    if total_accs <= 1 or (not acc.is_archived and db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False).count() <= 1):
         raise HTTPException(status_code=400, detail="Minimal harus ada 1 rekening aktif")
 
     acc_name = acc.name

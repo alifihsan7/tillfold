@@ -616,6 +616,7 @@ def create_pocket(
         acc = db.query(Account).filter(
             Account.id == payload.account_id,
             Account.user_id == current_user.id,
+            Account.is_archived == False,
         ).first()
         if not acc:
             raise HTTPException(
@@ -626,10 +627,11 @@ def create_pocket(
         # Default fallback to operational or first account
         acc = db.query(Account).filter(
             Account.user_id == current_user.id,
+            Account.is_archived == False,
             Account.type == "operasional",
         ).first()
         if not acc:
-            acc = db.query(Account).filter(Account.user_id == current_user.id).first()
+            acc = db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False).first()
 
     # Generate or sanitize slug
     slug = payload.slug.strip().lower() if payload.slug else None
@@ -742,7 +744,7 @@ def update_pockets_batch(
             if item_acc_id is not None:
                 if pocket.subscription_id and item_acc_id != pocket.account_id:
                     raise HTTPException(status_code=409, detail="Lepaskan hubungan tagihan sebelum memindahkan kantong")
-                acc_exists = db.query(Account).filter(Account.id == item_acc_id, Account.user_id == current_user.id).first()
+                acc_exists = db.query(Account).filter(Account.id == item_acc_id, Account.user_id == current_user.id, Account.is_archived == False).first()
                 if acc_exists:
                     pocket.account_id = item_acc_id
 
@@ -874,7 +876,7 @@ def update_single_pocket(
     if payload.account_id is not None:
         if pocket.subscription_id and payload.account_id != pocket.account_id:
             raise HTTPException(status_code=409, detail="Lepaskan hubungan tagihan sebelum memindahkan kantong")
-        acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == current_user.id).first()
+        acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == current_user.id, Account.is_archived == False).first()
         if not acc:
             raise HTTPException(status_code=404, detail="Rekening tidak ditemukan")
         pocket.account_id = payload.account_id

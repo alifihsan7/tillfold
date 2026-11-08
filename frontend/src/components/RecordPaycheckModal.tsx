@@ -13,7 +13,7 @@ interface Receipt {
   account: string;
   date: string;
   cycle_end: string | null;
-  allocations: { account_id: number; account: string | null; amount: number; transfer_id: number | null }[];
+  allocations: { account_id: number; account: string | null; amount: number; transfer_id: number | null; account_archived?: boolean }[];
 }
 
 interface Props {
@@ -194,8 +194,8 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
                       <li key={item.account_id} className="flex flex-wrap items-center justify-between gap-2 border-b border-luma-smokeline py-2">
                         <div className="min-w-0"><p>{item.account || "Rekening tidak tersedia"}</p><p className="text-sm text-luma-smoke">{rupiah.format(item.amount)}</p></div>
                         {item.transfer_id ? <span className="text-sm text-luma-sage">Tercatat</span> :
-                          <button type="button" className="luma-action-secondary" disabled={pending || !item.account}
-                            onClick={() => void submit(`/api/v1/paycheck/record/${receipt.id}/transfer/${item.account_id}`)}>Catat transfer</button>}
+                          <button type="button" className="luma-action-secondary" disabled={pending || !item.account || item.account_archived}
+                            onClick={() => void submit(`/api/v1/paycheck/record/${receipt.id}/transfer/${item.account_id}`)}>{item.account_archived ? "Rekening diarsipkan" : "Catat transfer"}</button>}
                       </li>
                     ))}
                     {receipt.allocations.length === 0 && <li className="text-sm text-luma-smoke">Belum ada pembagian. Pilih “Sesuaikan pembagian” untuk menambah tujuan.</li>}

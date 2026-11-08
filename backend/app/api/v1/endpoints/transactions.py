@@ -124,10 +124,10 @@ def transaction_history(
 
 def require_owned_accounts(db: Session, user_id: int, *names: str):
     owned = {row.name for row in db.query(Account).filter(
-        Account.user_id == user_id, Account.name.in_(names),
-    ).all()}
+        Account.user_id == user_id, Account.name.in_(names), Account.is_archived == False,
+    ).order_by(Account.id).with_for_update().all()}
     if any(name not in owned for name in names):
-        raise HTTPException(400, "Pilih rekening yang terdaftar di akun Anda.")
+        raise HTTPException(400, "Pilih rekening aktif yang terdaftar di akun Anda.")
 
 
 @router.post("", response_model=TransactionOut)
@@ -250,7 +250,7 @@ def execute_paycheck_split(
 
     buckets = db.query(PaycheckBucket).filter(PaycheckBucket.config_id == cfg.id).order_by(PaycheckBucket.sort_order.asc()).all() if cfg else []
     if not buckets:
-        user_accs = db.query(Account).filter(Account.user_id == current_user.id).all()
+        user_accs = db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False).all()
         if user_accs:
             n = len(user_accs)
             even_pct = round(100.0 / n, 1)
@@ -266,6 +266,9 @@ def execute_paycheck_split(
             buckets = [
                 PaycheckBucket(account="Rekening Utama", percentage=100.0, purpose="Kebutuhan Pokok")
             ]
+
+    active_names = {row.name for row in db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False)}
+    buckets = [bucket for bucket in buckets if bucket.account in active_names]
 
     allocations_plan = []
     allocated_sum = 0
@@ -344,7 +347,7 @@ def update_transaction(
     if tx.type in ("adjustment_in", "adjustment_out"):
         raise HTTPException(409, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru untuk koreksi.")
     update_data = payload.model_dump(exclude_unset=True)
-    if update_data.get("account") is not None:
+    if update_data.get("account") is not None and update_data["account"] != tx.account:
         require_owned_accounts(db, current_user.id, update_data["account"])
     payment = db.query(SubscriptionPayment).filter(
         SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.transaction_id == tx.id,

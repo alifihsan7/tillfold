@@ -217,3 +217,14 @@ Perbaikan: Tab/Shift+Tab menutup opsi dan memindahkan fokus relatif terhadap tom
 - Purpose-Gate PASS: tidak menambah fitur atau dekorasi; memperbaiki urutan fokus yang terputus oleh portal.
 - Liveliness PASS: tidak mengubah dials, warna, layout atau motion.
 - Craftsmanship PASS: perilaku diuji di dalam dan luar dialog dengan form asli; API/data tidak berubah. Ini satu bug yang direproduksi dan diperbaiki, bukan klaim seluruh aplikasi bebas bug. Peringatan lint hook/img lama tetap ada.
+
+## Bug fokus popup kalender di dalam dialog
+
+Reproduksi: pada form Catat transaksi, buka pemilih tanggal dan Tab dari tanggal terakhir. Fokus sebelumnya keluar ke BODY, karena focus trap hanya mencari tombol di panel dalam, sedangkan kalender di-portal ke root dialog.
+
+Perbaikan: focus trap mengambil kontrol dari root dialog miliknya, sehingga kalender termasuk dalam urutan Tab tanpa mengambil kontrol dari halaman belakang.
+
+- Hard Gate PASS: build lulus; sebelum perbaikan browser menunjukkan fokus BODY di luar dialog. Setelah perbaikan, Tab tanggal terakhir menuju tombol Tutup dialog, Shift+Tab kembali ke tanggal terakhir. Escape pertama menutup kalender dan fokus ke Pilih tanggal; Escape berikutnya menutup form. Tidak menyimpan transaksi.
+- Purpose-Gate PASS: memperbaiki cakupan fokus saja; tidak menambah fitur, dependency, dekorasi atau motion.
+- Liveliness PASS: dials dan visual tetap.
+- Craftsmanship PASS: diuji melalui form dan popup asli; perubahan satu lokasi, tidak mengubah nilai tanggal, data, atau API. Peringatan lint hook/img lama tetap ada.

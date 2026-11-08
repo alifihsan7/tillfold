@@ -32,7 +32,8 @@ export function CustomModal({
         onCloseRef.current();
       }
       if (e.key === "Tab" && isOpen && dialogRef.current) {
-        const controls = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        const focusRoot = dialogRef.current.closest('[role="dialog"]') || dialogRef.current;
+        const controls = Array.from(focusRoot.querySelectorAll<HTMLElement>(
           'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
         )).filter((element) => element.getClientRects().length > 0);
         const first = controls[0];

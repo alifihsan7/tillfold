@@ -432,6 +432,30 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 }
 .luma-balance-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .luma-balance-panel > * { position: relative; z-index: 1; }
+/* Static grain and an upper-edge reflection identify the single glass surface. */
+.luma-balance-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .075;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+.luma-balance-panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 28px;
+  right: 28px;
+  height: 1px;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / .65) 32%, rgb(255 255 255 / .24) 72%, transparent);
+}
+.light .luma-balance-panel::before { opacity: .045; }
 .luma-panel-label { font-size: 12px; font-weight: 500; color: var(--luma-ivory); }
 .luma-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; color: #f4f1ec; border-radius: var(--ai7-radius-control); }
 .luma-icon-button:hover { background: rgba(255,255,255,.1); }

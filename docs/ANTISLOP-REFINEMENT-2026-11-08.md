@@ -190,3 +190,19 @@ Delivery Gate untuk lingkup ini:
 - Purpose-Gate PASS: warna permukaan menunjukkan tingkat informasi, aksen menunjukkan fungsi, dan shadow hanya pada overlay. Tidak menambah glow, gradient, ilustrasi atau motion.
 - Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1; ink dan lapisan abu kebiruan memberi karakter light mode tanpa menambah aksen kategori baru.
 - Craftsmanship PASS: browser memverifikasi halaman/panel/input berbeda warna, dan dark mode tetap #151517/#232326. Ukuran kontrol, radius, posisi toolbar, serta perilaku keyboard dipertahankan. Pengujian ini tidak mengklaim kontras setiap teks pada semua layar atau pengukuran performa lapangan.
+
+## Grain dan kilau statis panel saldo
+
+Pengguna memilih grain tipis dan kilau tepi pada panel saldo saja. Tujuannya menandai satu permukaan glass utama, sementara panel data lain tetap solid.
+
+- Grain berupa tile SVG grayscale 160px yang tertanam dalam CSS, tanpa file eksternal atau library. Opacity dark 0.075 dan light 0.045.
+- Pantulan tepi atas berupa garis gradient putih setinggi 1px, bukan gradient tambahan pada seluruh permukaan.
+- Kedua pseudo-element memakai pointer-events none dan z-index 0; isi panel tetap di z-index 1. Tidak menutup teks, menangkap klik, atau mengubah ukuran panel.
+- Tidak ada animation, event pointer, parallax, atau loop; reduced-motion tidak membutuhkan animasi pengganti.
+
+Delivery Gate lingkup visual ini:
+
+- Hard Gate PASS: production build lulus; browser memverifikasi animation none, lapisan isi di atas tekstur, dan sembunyikan/tampilkan saldo tetap bekerja. Mobile 390px tidak overflow. Tidak mengubah data, API, label atau navigasi.
+- Purpose-Gate PASS: grain dan kilau diminta pengguna untuk menandai satu panel glass; tidak menyebar efek ke seluruh kartu atau menambah glow.
+- Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1 tetap; karakter datang dari tekstur statis yang tipis.
+- Craftsmanship PASS: dark/light diperiksa dengan opacity berbeda; tidak ada library, unduhan aset, atau motion baru. Peringatan lint hook/img lama tetap ada; tidak melaporkan angka performa yang tidak diukur.

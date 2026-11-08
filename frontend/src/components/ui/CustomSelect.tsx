@@ -215,7 +215,7 @@ export function CustomSelect({
                       )}
                     </div>
                   </div>
-                  {isSelected && <Check className="w-4 h-4 text-amberGold shrink-0" />}
+                  {isSelected && <Check className="w-4 h-4 text-luma-transfer shrink-0" />}
                 </button>
               );
             })}

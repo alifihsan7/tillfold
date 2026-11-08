@@ -98,7 +98,7 @@ export function TransactionTable({
                       <span
                         className={`inline-block px-3 py-1 rounded-badge text-xs font-sans font-medium border whitespace-nowrap ${
                           isAdjustment ? "bg-white/[0.04] border-luma-smokeline text-luma-smoke" : isTransfer
-                            ? "bg-luma-gold/10 border-luma-gold/30 text-luma-gold"
+                            ? "bg-luma-transfer/10 border-luma-transfer/30 text-luma-transfer"
                             : getCategoryBadgeClasses(tx.category)
                         }`}
                       >
@@ -110,7 +110,7 @@ export function TransactionTable({
                     </td>
                     <td
                       className={`ai7-type-amount py-4 px-4 sm:px-6 text-right whitespace-nowrap ${
-                        isAdjustment ? "text-luma-ivory" : isPositive ? "text-luma-sage" : isTransferOut ? "text-luma-gold" : "text-luma-coral"
+                        isAdjustment ? "text-luma-ivory" : isTransfer ? "text-luma-transfer" : isIncome ? "text-luma-sage" : "text-luma-coral"
                       }`}
                     >
                       {isPositive ? "+" : "-"} {formatRupiah(tx.amount)}

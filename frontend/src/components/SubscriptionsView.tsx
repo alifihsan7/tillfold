@@ -214,10 +214,10 @@ export function SubscriptionsView({
                         : isExpired
                         ? "bg-coralFall/20 border-coralFall/40 text-coralFall font-semibold"
                         : isToday
-                        ? "bg-coralFall/20 border-coralFall/40 text-coralFall font-semibold animate-pulse"
+                        ? "bg-amberGold/20 border-amberGold/40 text-amberGold font-semibold"
                         : isUpcoming
                         ? "bg-amberGold/20 border-amberGold/40 text-amberGold font-semibold"
-                        : "bg-mintRise/10 border-mintRise/30 text-mintRise font-semibold"
+                        : "bg-white/[0.04] border-luma-smokeline text-luma-smoke font-semibold"
                     }`}
                   >
                     {sub.is_paid ? "Lunas periode ini" : paymentOverdue ? "Belum dicatat" : !sub.is_active

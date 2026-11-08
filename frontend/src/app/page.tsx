@@ -1184,7 +1184,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-ember" : "text-luma-smoke"}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-transfer" : "text-luma-smoke"}`} />
                   <span className="luma-sidebar-copy truncate whitespace-nowrap">{item.name}</span>
                 </button>
               );
@@ -1211,7 +1211,7 @@ export default function FinanceDashboard() {
                   : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
               }`}
             >
-              <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-ember" : "text-luma-smoke"}`} />
+              <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-transfer" : "text-luma-smoke"}`} />
               <span className="luma-sidebar-copy truncate whitespace-nowrap">Pengaturan</span>
             </button>
           </nav>
@@ -1375,7 +1375,7 @@ export default function FinanceDashboard() {
                           : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
                       }`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-ember" : "text-luma-smoke"}`} />
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-transfer" : "text-luma-smoke"}`} />
                       <span className="truncate whitespace-nowrap">{item.name}</span>
                     </button>
                   );
@@ -1399,7 +1399,7 @@ export default function FinanceDashboard() {
                         : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
                     }`}
                   >
-                    <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-ember" : "text-luma-smoke"}`} />
+                    <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-transfer" : "text-luma-smoke"}`} />
                     <span className="truncate whitespace-nowrap">Pengaturan</span>
                   </button>
                 </nav>
@@ -1510,7 +1510,7 @@ export default function FinanceDashboard() {
               aria-current={isActive ? "page" : undefined}
               className={`luma-touch flex flex-col items-center justify-center py-1 px-1.5 rounded-2xl transition min-w-[52px] min-h-[44px] select-none ${
                 isActive
-                  ? "text-luma-ember font-semibold"
+                  ? "text-luma-transfer font-semibold"
                   : "text-luma-smoke hover:text-luma-ivory"
               }`}
             >

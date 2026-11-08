@@ -54,32 +54,32 @@ export function getAccountRoleBadge(type?: string): { label: string; className: 
     case "operasional":
       return {
         label: "Operasional",
-        className: "bg-amberGold/15 text-amberGold border-amberGold/30",
+        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
       };
     case "tagihan":
       return {
         label: "Tagihan",
-        className: "bg-coralFall/15 text-coralFall border-coralFall/30",
+        className: "bg-luma-gold/15 text-luma-gold border-luma-gold/30",
       };
     case "darurat":
       return {
         label: "Dana darurat",
-        className: "bg-cyanHub/15 text-cyanHub border-cyanHub/30",
+        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
       };
     case "tabungan":
       return {
         label: "Tabungan",
-        className: "bg-purpleLock/15 text-purpleLock border-purpleLock/30",
+        className: "bg-luma-sage/15 text-luma-sage border-luma-sage/30",
       };
     case "investasi":
       return {
         label: "Investasi",
-        className: "bg-purpleLock/15 text-purpleLock border-purpleLock/30",
+        className: "bg-luma-sage/15 text-luma-sage border-luma-sage/30",
       };
     case "ewallet":
       return {
         label: "E-wallet",
-        className: "bg-cyanHub/15 text-cyanHub border-cyanHub/30",
+        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
       };
     default:
       return {

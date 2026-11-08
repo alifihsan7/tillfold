@@ -98,7 +98,7 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-sans">
           <span className="flex items-center gap-1.5 text-luma-smoke">
-            <span className="w-2.5 h-2.5 rounded-full bg-luma-ember inline-block" aria-hidden="true"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-luma-coral inline-block" aria-hidden="true"></span>
             Aktual
           </span>
           <span className="flex items-center gap-1.5 text-luma-smoke">
@@ -160,11 +160,7 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
                   {isPastOrToday && (
                     <div
                       style={{ height: `${actualHeight}%` }}
-                      className={`w-full transition-all duration-500 ${
-                        actualHeight > idealHeight
-                          ? "bg-luma-coral/80 group-hover:bg-luma-coral"
-                          : "bg-luma-ember/80 group-hover:bg-luma-ember"
-                      }`}
+                      className="w-full transition-all duration-500 bg-luma-coral/80 group-hover:bg-luma-coral"
                     ></div>
                   )}
                 </div>

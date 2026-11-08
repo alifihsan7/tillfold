@@ -206,7 +206,7 @@ export function TransactionLedgerView({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Tampilan transaksi">
+      <div className="ai7-view-selection flex flex-wrap gap-2" role="group" aria-label="Tampilan transaksi">
         <button type="button" aria-pressed={viewMode === "list"} className={viewMode === "list" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("list")}><Receipt className="h-4 w-4" aria-hidden="true" /> Daftar</button>
         <button type="button" aria-pressed={viewMode === "calendar"} className={viewMode === "calendar" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("calendar")}><Calendar className="h-4 w-4" aria-hidden="true" /> Kalender</button>
       </div>
@@ -222,7 +222,7 @@ export function TransactionLedgerView({
         <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between gap-2 text-zinc-400">
             <span className="text-xs font-medium truncate">Total transaksi</span>
-            <Receipt className="w-4 h-4 text-amberGold shrink-0" />
+            <Receipt className="w-4 h-4 text-luma-smoke shrink-0" />
           </div>
           <div className="mt-2.5">
             {loading ? (
@@ -321,11 +321,12 @@ export function TransactionLedgerView({
               <button
                 key={tab.id}
                 type="button"
+                aria-pressed={activeAccount === tab.id}
                 onClick={() => {
                   setActiveAccount(tab.id);
                   setCurrentPage(1);
                 }}
-                className={`text-xs px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`ai7-account-selection text-xs px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   activeAccount === tab.id
                     ? "text-slate-950 bg-amberGold font-semibold shadow-sm"
                     : "text-zinc-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-luma-smokeline"

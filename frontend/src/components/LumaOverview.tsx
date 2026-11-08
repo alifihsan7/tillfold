@@ -94,9 +94,9 @@ export function LumaOverview({ totalBalance, income, expense, accountCount, safe
         <div className="luma-section-heading"><h2>Arus kas</h2><span>Periode ini</span></div>
         <div className="luma-flow-line"><span>Masuk</span><div className="luma-flow-track"><div style={{ width: `${Math.max(0, income) / flowMax * 100}%` }} className="luma-flow-income" /></div><strong>{privateAmount(income)}</strong></div>
         <div className="luma-flow-line"><span>Keluar</span><div className="luma-flow-track"><div style={{ width: `${Math.max(0, expense) / flowMax * 100}%` }} className="luma-flow-expense" /></div><strong>{privateAmount(expense)}</strong></div>
-        <div className="luma-flow-net"><span>Selisih</span><span>{privateAmount(income - expense)}</span></div>
+        <div className="luma-flow-net"><span>Selisih</span><span className={income - expense < 0 ? "text-luma-coral" : "text-luma-ivory"}>{privateAmount(income - expense)}</span></div>
       </section>
-      <section className="luma-matte luma-daily-panel" aria-label="Batas belanja harian">
+      <section className="luma-matte luma-daily-panel" data-pace={paceStatus} aria-label="Batas belanja harian">
         <div className="luma-section-heading"><h2>Batas belanja harian</h2></div>
         {pocketBudget === null ? <div className="luma-budget-empty"><p>Anggaran belum diatur.</p><button type="button" className="luma-text-action" onClick={onOpenPaycheck}>Atur siklus gajian</button></div> : <>
         <div className="luma-daily-amount">{periodEnded ? "Periode berakhir" : privateAmount(safeDaily)}{!periodEnded && <span>/ hari</span>}</div>

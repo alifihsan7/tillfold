@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* Luma Design System (Dark Glass v2.0) — warm organic palette */
+        /* Ink & Silver with semantic accents. */
         luma: {
           charcoal: "rgb(var(--luma-charcoal-rgb) / <alpha-value>)",
           coal: "rgb(var(--luma-coal-rgb) / <alpha-value>)",
@@ -21,6 +21,7 @@ const config: Config = {
           sage: "rgb(var(--luma-sage-rgb) / <alpha-value>)",
           coral: "rgb(var(--luma-coral-rgb) / <alpha-value>)",
           gold: "rgb(var(--luma-gold-rgb) / <alpha-value>)",
+          transfer: "rgb(var(--luma-transfer-rgb) / <alpha-value>)",
         },
         obsidian: {
           bg: "rgb(var(--obsidian-bg-rgb) / <alpha-value>)",

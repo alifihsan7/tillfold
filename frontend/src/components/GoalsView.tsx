@@ -396,7 +396,7 @@ export function GoalsView({
                       aria-label={`Progres ${goal.name}`}
                     >
                       <div
-                        className={`h-full ${theme.barBg} transition-all duration-700 rounded-full`}
+                        className={`h-full bg-luma-sage transition-all duration-700 rounded-full`}
                         style={{ width: `${Math.min(100, Math.max(3, goal.percentage))}%` }}
                       />
                     </div>

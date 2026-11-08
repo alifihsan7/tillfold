@@ -95,7 +95,7 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
       </div>
     </div>
     <div className="grid grid-cols-3 gap-2 sm:gap-3">
-      {[{ label: "Pemasukan", value: data?.totals.income, color: "text-luma-sage" }, { label: "Pengeluaran", value: data?.totals.expense, color: "text-luma-coral" }, { label: "Selisih", value: data?.totals.net, color: "text-luma-ivory" }].map((item) => <div key={item.label} className="luma-matte min-w-0 p-2 sm:p-4">
+      {[{ label: "Pemasukan", value: data?.totals.income, color: "text-luma-sage" }, { label: "Pengeluaran", value: data?.totals.expense, color: "text-luma-coral" }, { label: "Selisih", value: data?.totals.net, color: (data?.totals.net ?? 0) < 0 ? "text-luma-coral" : "text-luma-ivory" }].map((item) => <div key={item.label} className="luma-matte min-w-0 p-2 sm:p-4">
         <p className="text-[11px] text-luma-smoke sm:text-sm">{item.label}</p>{loading ? <Skeleton className="mt-2 h-7 w-full max-w-28" /> : <p className={`mt-1 text-sm font-semibold tabular-nums sm:text-xl ${item.color}`} title={item.value === undefined ? "Belum tersedia" : formatRupiah(item.value)}>
           {item.value === undefined ? <span className="text-xs">Belum tersedia</span> : <><span className="calendar-value-compact">{item.value < 0 ? "−" : ""}Rp{compactRupiah(Math.abs(item.value))}</span><span className="calendar-value-full truncate">{formatRupiah(item.value)}</span></>}
         </p>}
@@ -115,11 +115,11 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
           const otherCount = (day?.transfer_count || 0) + (day?.adjustment_count || 0);
           return <button key={date} type="button" disabled={loading || !data} aria-current={date === today ? "date" : undefined}
             aria-pressed={selected === date} aria-label={data ? `${longDate(date)}. Pemasukan ${formatRupiah(day?.income || 0)}. Pengeluaran ${formatRupiah(day?.expense || 0)}. ${day?.count || 0} catatan, ${otherCount} mutasi transfer atau penyesuaian.` : `${longDate(date)}. Data belum tersedia.`}
-            onClick={() => openDate(date)} className={`flex min-h-[100px] min-w-0 flex-col items-stretch gap-1 bg-luma-charcoal p-1 text-left text-luma-ivory transition-colors hover:bg-luma-coal focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-luma-ember disabled:cursor-wait sm:min-h-[120px] sm:p-2 ${date === today ? "shadow-[inset_0_0_0_2px_var(--luma-ember)]" : ""}`}>
+            onClick={() => openDate(date)} className={`flex min-h-[100px] min-w-0 flex-col items-stretch gap-1 bg-luma-charcoal p-1 text-left text-luma-ivory transition-colors hover:bg-luma-coal focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-luma-ember disabled:cursor-wait sm:min-h-[120px] sm:p-2 ${date === today ? "shadow-[inset_0_0_0_2px_var(--luma-transfer)]" : ""}`}>
             <span className="text-xs font-semibold sm:text-sm">{Number(date.slice(-2))}{date === today && <span className="sr-only">, hari ini</span>}</span>
             {day && day.income > 0 && <span className="min-w-0 calendar-day-amount font-medium tabular-nums text-luma-sage" title={`Pemasukan ${formatRupiah(day.income)}`}><span className="calendar-value-compact">+{compactRupiah(day.income)}</span><span className="calendar-value-full truncate">+{formatRupiah(day.income)}</span></span>}
             {day && day.expense > 0 && <span className="min-w-0 calendar-day-amount font-medium tabular-nums text-luma-coral" title={`Pengeluaran ${formatRupiah(day.expense)}`}><span className="calendar-value-compact">−{compactRupiah(day.expense)}</span><span className="calendar-value-full truncate">−{formatRupiah(day.expense)}</span></span>}
-            {otherCount > 0 && <span className="mt-auto flex items-center gap-0.5 text-[10px] text-luma-smoke sm:text-xs" title="Transfer atau penyesuaian saldo"><ArrowLeftRight className="h-3 w-3 shrink-0" aria-hidden="true" /><span>{otherCount}</span><span className="hidden lg:inline">mutasi</span></span>}
+            {otherCount > 0 && <span className="mt-auto flex items-center gap-0.5 text-[10px] text-luma-transfer sm:text-xs" title="Transfer atau penyesuaian saldo"><ArrowLeftRight className="h-3 w-3 shrink-0" aria-hidden="true" /><span>{otherCount}</span><span className="hidden lg:inline">mutasi</span></span>}
           </button>;
         })}
       </div>

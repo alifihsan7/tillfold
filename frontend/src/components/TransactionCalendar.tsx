@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from "lucide-react";
 import { authFetch } from "@/lib/api";
-import { calendarDate, monthCells, shiftCalendarMonth, compactRupiah } from "@/lib/transactionCalendar";
+import { calendarDate, monthCells, shiftCalendarMonth, compactRupiah, expenseHeatLevel } from "@/lib/transactionCalendar";
 import { CustomSelect } from "./ui/CustomSelect";
 import { CustomModal } from "./ui/CustomModal";
 import { TransactionTable, Transaction } from "./TransactionTable";
@@ -42,6 +42,7 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
   const cells = useMemo(() => monthCells(year, month), [year, month]);
   const byDate = useMemo(() => new Map(data?.days.map((day) => [day.date, day])), [data]);
   const selectedDay = selected ? byDate.get(selected) : undefined;
+  const maximumExpense = Math.max(0, ...(data?.days.map((day) => day.expense) || []));
   const years = Array.from(new Set([...knownYears, year, ...Array.from({ length: 11 }, (_, index) => year - 5 + index)])).filter((value) => value >= 1 && value <= 9999).sort((a, b) => b - a);
 
   useEffect(() => {
@@ -104,6 +105,12 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
     <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="ai7-type-section">{months[month - 1]} {year}</h2><p className="text-xs text-luma-smoke">Transfer di luar arus kas.</p></div>
     {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-luma-coral"><p>{error}</p><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button></div>}
     <p role="status" aria-live="polite" className="text-sm text-luma-smoke">{loading ? "Memuat kalender…" : error ? "" : data?.totals.count === 0 ? "Belum ada transaksi bulan ini. Klik tanggal untuk melihat rincian." : "Klik tanggal untuk melihat transaksi harian."}</p>
+    {maximumExpense > 0 && <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-luma-smoke">
+      <span>Intensitas pengeluaran bulan ini</span>
+      <div className="flex items-center gap-1.5" role="img" aria-label="Skala pengeluaran relatif pada bulan dan rekening terpilih, dari lebih rendah ke lebih tinggi">
+        <span>Rendah</span>{[1, 2, 3, 4].map((level) => <span key={level} className="calendar-heat-key" data-expense-level={level} aria-hidden="true" />)}<span>Tinggi</span>
+      </div>
+    </div>}
     <div className="overflow-hidden rounded-2xl border border-luma-smokeline" role="group" aria-label={`Kalender transaksi ${months[month - 1]} ${year}`} aria-busy={loading}>
       <div className="grid grid-cols-7 border-b border-luma-smokeline bg-luma-coal">
         {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => <div key={day} className="py-2 text-center text-xs font-medium text-luma-smoke">{day}</div>)}
@@ -114,6 +121,7 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
           const day = byDate.get(date);
           const otherCount = (day?.transfer_count || 0) + (day?.adjustment_count || 0);
           return <button key={date} type="button" disabled={loading || !data} aria-current={date === today ? "date" : undefined}
+            data-expense-level={expenseHeatLevel(day?.expense || 0, maximumExpense)}
             aria-pressed={selected === date} aria-label={data ? `${longDate(date)}. Pemasukan ${formatRupiah(day?.income || 0)}. Pengeluaran ${formatRupiah(day?.expense || 0)}. ${day?.count || 0} catatan, ${otherCount} mutasi transfer atau penyesuaian.` : `${longDate(date)}. Data belum tersedia.`}
             onClick={() => openDate(date)} className={`flex min-h-[100px] min-w-0 flex-col items-stretch gap-1 bg-luma-charcoal p-1 text-left text-luma-ivory transition-colors hover:bg-luma-coal focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-luma-ember disabled:cursor-wait sm:min-h-[120px] sm:p-2 ${date === today ? "shadow-[inset_0_0_0_2px_var(--luma-transfer)]" : ""}`}>
             <span className="text-xs font-semibold sm:text-sm">{Number(date.slice(-2))}{date === today && <span className="sr-only">, hari ini</span>}</span>

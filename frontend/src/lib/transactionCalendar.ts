@@ -28,3 +28,8 @@ export function compactRupiah(amount: number): string {
   }
   return amount.toLocaleString("id-ID");
 }
+
+export function expenseHeatLevel(expense: number, maximum: number): number {
+  if (!Number.isFinite(expense) || !Number.isFinite(maximum) || expense <= 0 || maximum <= 0) return 0;
+  return Math.min(4, Math.ceil(expense / maximum * 4));
+}

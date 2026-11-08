@@ -813,6 +813,18 @@ textarea:focus-visible,
 }
 
 .transaction-finance-calendar { container-type: inline-size; }
+.transaction-finance-calendar [data-expense-level="1"] { --calendar-heat: 4%; }
+.transaction-finance-calendar [data-expense-level="2"] { --calendar-heat: 8%; }
+.transaction-finance-calendar [data-expense-level="3"] { --calendar-heat: 12%; }
+.transaction-finance-calendar [data-expense-level="4"] { --calendar-heat: 16%; }
+.luma-app .transaction-calendar-grid > button[data-expense-level]:not([data-expense-level="0"]),
+.calendar-heat-key {
+  background-color: color-mix(in srgb, var(--luma-coral) var(--calendar-heat), var(--luma-charcoal));
+}
+.luma-app .transaction-calendar-grid > button[data-expense-level]:not([data-expense-level="0"]):hover {
+  background-color: color-mix(in srgb, var(--luma-coral) calc(var(--calendar-heat) + 4%), var(--luma-charcoal));
+}
+.calendar-heat-key { display: inline-block; width: 14px; height: 14px; border: 1px solid var(--luma-smokeline); border-radius: 3px; }
 .calendar-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: end; }
 .calendar-period-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .calendar-month-actions { justify-self: end; }

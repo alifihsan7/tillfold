@@ -124,3 +124,25 @@ class TransferResponse(BaseModel):
     out_transaction_id: int
     in_transaction_id: int
     date: dt_date
+
+class ReceiptRecordRequest(BaseModel):
+    ref_number: str
+    merchant: str
+    amount: int = Field(..., gt=0, le=9_000_000_000_000_000)
+    account: str
+    category: str
+    date: dt_date
+    raw_summary: Optional[str] = ""
+    type: Optional[str] = "expense"
+
+class ReceiptRecordResponse(BaseModel):
+    ok: bool
+    already_recorded: bool
+    transaction_id: int
+    merchant: str
+    amount: int
+    account: str
+    category: str
+    date: Optional[str] = None
+    s2s: Optional[str] = None
+    message: Optional[str] = None

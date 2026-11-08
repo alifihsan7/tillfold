@@ -28,7 +28,10 @@ from app.schemas.transaction import (
     PaycheckAllocationItem,
     TransferCreate,
     TransferResponse,
+    ReceiptRecordRequest,
+    ReceiptRecordResponse,
 )
+from app.services.receipt_service import record_receipt_mutation
 from app.core.config import settings
 from app.core.transfer import find_paired_transfer
 from app.services.paycheck_cycles import receipt_allocations
@@ -518,3 +521,26 @@ def export_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@router.post("/receipts/record", response_model=ReceiptRecordResponse)
+def record_receipt(
+    payload: ReceiptRecordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Internal endpoint to safely record bank receipt transactions with idempotency."""
+    res = record_receipt_mutation(
+        db=db,
+        user_id=current_user.id,
+        ref_number=payload.ref_number,
+        merchant=payload.merchant,
+        amount=payload.amount,
+        account_name=payload.account,
+        category=payload.category,
+        tx_date=payload.date,
+        raw_summary=payload.raw_summary or "",
+        tx_type=payload.type or "expense"
+    )
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to record receipt"))
+    return res

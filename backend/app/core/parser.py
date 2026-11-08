@@ -30,7 +30,7 @@ CATEGORY_RULES = [
         "bihun", "bubur", "pecel", "lele", "soto", "nasi", "ayam", "bebek", "sate", 
         "bakso", "rawon", "gudeg", "warteg", "padang", "geprek", "rendang", "resto", 
         "makan", "minum", "lunch", "dinner", "sarapan", "breakfast", "kantin", "warung",
-        "burger", "pizza", "mcd", "kfc"
+        "burger", "pizza", "mcd", "kfc", "warmindo", "chicken", "crispy"
     ]),
     ("Jajan / Ngopi", [
         "warkop", "kopi", "coffee", "cafe", "kafe", "starbucks", "kenangan", "janji jiwa", 
@@ -55,6 +55,7 @@ CATEGORY_RULES = [
     ]),
     ("Transportasi", [
         "bensin", "pertalite", "pertamax", "shell", "solar", "gojek", "goride", 
+        "spbu", "pertamina", 
         "gocar", "grab", "grabcar", "grabike", "maxim", "parkir", "tol", "kereta", 
         "krl", "mrt", "lrt", "busway", "transjakarta", "ojol", "angkot", "service motor", 
         "cuci motor", "cuci mobil"

@@ -67,15 +67,15 @@
   color-scheme: light;
 
   /* RGB channels for Light Mode */
-  --obsidian-bg-rgb: 243 243 245;
-  --obsidian-panel-rgb: 253 253 254;
-  --obsidian-card-rgb: 253 253 254;
-  --obsidian-hover-rgb: 229 229 234;
-  --obsidian-border-rgb: 209 209 218;
-  --obsidian-border-strong-rgb: 144 144 159;
-  --slate-primary-rgb: 36 36 43;
-  --slate-secondary-rgb: 95 95 109;
-  --slate-muted-rgb: 95 95 109;
+  --obsidian-bg-rgb: 233 238 243;
+  --obsidian-panel-rgb: 251 252 254;
+  --obsidian-card-rgb: 242 245 248;
+  --obsidian-hover-rgb: 224 231 239;
+  --obsidian-border-rgb: 197 207 218;
+  --obsidian-border-strong-rgb: 123 137 154;
+  --slate-primary-rgb: 32 42 55;
+  --slate-secondary-rgb: 68 83 104;
+  --slate-muted-rgb: 68 83 104;
   --amber-gold-rgb: 104 79 19;
   --mint-rise-rgb: 42 88 64;
   --coral-fall-rgb: 134 54 45;
@@ -83,15 +83,15 @@
   --purple-lock-rgb: 42 88 64;
 
   /* Standard CSS variables for Light Mode */
-  --obsidian-bg: #f3f3f5;
-  --obsidian-panel: #fdfdfe;
-  --obsidian-card: #fdfdfe;
-  --obsidian-hover: #e5e5ea;
-  --obsidian-border: #d1d1da;
-  --obsidian-border-strong: #90909f;
-  --slate-primary: #24242b;
-  --slate-secondary: #5f5f6d;
-  --slate-muted: #5f5f6d;
+  --obsidian-bg: #e9eef3;
+  --obsidian-panel: #fbfcfe;
+  --obsidian-card: #f2f5f8;
+  --obsidian-hover: #e0e7ef;
+  --obsidian-border: #c5cfda;
+  --obsidian-border-strong: #7b899a;
+  --slate-primary: #202a37;
+  --slate-secondary: #445368;
+  --slate-muted: #445368;
   --amber-gold: #684f13;
   --mint-rise: #2a5840;
   --coral-fall: #86362d;
@@ -260,10 +260,10 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
    ========================================================================= */
 
 .light {
-  /* Tactile cards with subtle shadow depth */
+  /* Panels sit flat; elevation belongs to overlays. */
   .bg-obsidian-card,
   .bg-obsidian-panel {
-    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    box-shadow: none;
   }
 
   /* Adaptive borders: convert dark-mode border-white/* into crisp tactile Slate-200 borders */
@@ -274,7 +274,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
     border-color: var(--ai7-field-border);
   }
   [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]) {
-    border-color: #F1F5F9;
+    border-color: var(--luma-smokeline);
   }
 
   /* Subtle background pills */
@@ -294,10 +294,10 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   .text-zinc-100,
   .text-zinc-200,
   .text-zinc-300 {
-    color: #334155; /* Slate 700 */
+    color: var(--slate-primary);
   }
   .text-zinc-400 {
-    color: #475569; /* Slate 600 - 5.3:1 contrast against white */
+    color: var(--slate-secondary);
   }
   .text-zinc-500 {
     color: var(--luma-smoke);
@@ -490,15 +490,15 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-recent li > div:first-child { border: 0; border-radius: var(--ai7-radius-control); background: rgba(0,0,0,.14); width: 38px; height: 38px; }
 .luma-recent .font-semibold { font-weight: 500; }
 .light {
-  --luma-charcoal-rgb: 243 243 245; --luma-coal-rgb: 229 229 234;
-  --luma-ivory-rgb: 36 36 43; --luma-smoke-rgb: 95 95 109;
-  --luma-smokeline-rgb: 209 209 218; --luma-sage-rgb: 42 88 64;
+  --luma-charcoal-rgb: 233 238 243; --luma-coal-rgb: 224 231 239;
+  --luma-ivory-rgb: 32 42 55; --luma-smoke-rgb: 68 83 104;
+  --luma-smokeline-rgb: 197 207 218; --luma-sage-rgb: 42 88 64;
   --luma-transfer-rgb: 50 78 105; --luma-transfer: #324e69;
   --luma-ember-rgb: 71 71 85; --luma-coral-rgb: 134 54 45; --luma-gold-rgb: 104 79 19;
-  --luma-charcoal: #f3f3f5; --luma-coal: #e5e5ea; --luma-ivory: #24242b;
-  --luma-smoke: #5f5f6d; --luma-smokeline: #d1d1da;
+  --luma-charcoal: #e9eef3; --luma-coal: #e0e7ef; --luma-ivory: #202a37;
+  --luma-smoke: #445368; --luma-smokeline: #c5cfda;
   --luma-sage: #2a5840; --luma-ember: #474755; --luma-coral: #86362d; --luma-gold: #684f13;
-  --luma-panel-surface: #fdfdfe; --luma-sidebar-surface: #e5e5ea; --luma-balance-surface: #dcdce3;
+  --luma-panel-surface: #fbfcfe; --luma-sidebar-surface: #dde5ee; --luma-balance-surface: #d5e0eb;
 }
 .light .luma-app, .light .luma-main { background: var(--luma-charcoal); }
 .light .luma-sidebar { background: var(--luma-sidebar-surface); border-color: var(--luma-smokeline); }
@@ -507,8 +507,8 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .light .luma-balance-panel {
   --balance-inset: rgba(255,255,255,.42);
   --balance-inset-edge: rgba(255,255,255,.68);
-  background: radial-gradient(ellipse at bottom right, #f7f7fa, transparent 65%), var(--luma-balance-surface);
-  border-color: var(--luma-smokeline);
+  background: var(--luma-balance-surface);
+  border-color: #b7c6d5;
 }
 .light .luma-balance-panel .luma-panel-label,
 .light .luma-balance-panel .luma-balance-number,
@@ -519,9 +519,14 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .light .luma-balance-stats span,
 .light .luma-guest-inset,
 .light .luma-balance-panel .luma-icon-button { color: var(--luma-ivory); }
-.light .luma-balance-panel .luma-action-primary { background: #24242b; color: #f3f3f5; }
-.light .luma-balance-panel .luma-action-secondary { color: var(--luma-ivory); border-color: #8b8b9b; }
-.light .luma-flow-track, .light .luma-quota-track, .light .luma-recent li { background: rgba(36,36,43,.06); }
+.light .luma-balance-panel .luma-action-primary { background: var(--ai7-primary); color: var(--ai7-primary-ink); }
+.light .luma-balance-panel .luma-action-primary:hover:not(:disabled) { background: var(--ai7-primary-hover); }
+.light .luma-balance-panel .luma-action-secondary { color: var(--luma-ivory); border-color: var(--ai7-field-border); }
+.light .luma-flow-track, .light .luma-quota-track { background: var(--obsidian-hover); }
+.light .luma-recent li { background: var(--obsidian-card); }
+.light .luma-recent li > div:first-child { background: var(--luma-coal); }
+.light .luma-dialog-panel { box-shadow: 0 20px 56px rgb(24 40 62 / .18); }
+.light .ai7-select-menu, .light .tillfold-calendar { box-shadow: 0 8px 24px rgb(24 40 62 / .16); }
 .light .luma-recent .luma-glass { background: transparent; }
 .luma-guest-panel { min-height: 360px; }
 .luma-guest-panel h2 { margin: 24px 0 16px; font-size: clamp(26px, 3vw, 38px); line-height: 1.2; letter-spacing: -.035em; font-weight: 500; color: #fff; }
@@ -605,11 +610,11 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   --ai7-selected: #393940;
 }
 .light {
-  --ai7-primary: #353540;
-  --ai7-primary-hover: #24242b;
-  --ai7-primary-ink: #f3f3f5;
-  --ai7-field-border: #858592;
-  --ai7-selected: #e5e5ea;
+  --ai7-primary: #2d4159;
+  --ai7-primary-hover: #202f42;
+  --ai7-primary-ink: #fbfcfe;
+  --ai7-field-border: #7b899a;
+  --ai7-selected: #dbe5f0;
 }
 :is(.luma-app, .luma-dialog-panel) button.bg-amberGold,
 .luma-app button.bg-luma-ivory,

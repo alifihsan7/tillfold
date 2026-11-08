@@ -47,14 +47,14 @@ export function ThemeToggle({
       aria-label={isLight ? "Beralih ke Mode Gelap" : "Beralih ke Mode Terang"}
       className={`relative ${sizeClasses} rounded-full flex items-center justify-center transition-colors group cursor-pointer shrink-0 select-none ${
         isLight
-          ? "bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 shadow-xs"
+          ? "bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline hover:border-luma-smoke text-luma-ivory"
           : "bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline hover:border-amberGold/50 text-amberGold shadow-xs"
       } ${className}`}
     >
       <div className="relative flex items-center justify-center w-full h-full">
         {isLight ? (
           <Moon
-            className={`${iconSize} stroke-[2.2] text-slate-800`}
+            className={`${iconSize} stroke-[2.2] text-luma-ivory`}
           />
         ) : (
           <Sun

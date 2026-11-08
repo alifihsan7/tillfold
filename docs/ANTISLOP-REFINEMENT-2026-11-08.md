@@ -170,3 +170,23 @@ Status terpilih memakai latar tipis dan centang; garis bawah seperti tab dihapus
 - Purpose-Gate PASS: menghapus informasi berulang dan dekorasi yang tidak membantu memilih rekening; tidak mengubah palet atau menambah aset.
 - Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1; pilihan lebih mudah dipindai tanpa animasi baru.
 - Craftsmanship PASS: dark/light diperiksa pada viewport anotasi 1095x884, nama akun dan nilai pemilihan tetap sama; catatan tidak dihapus dari data. Aturan tinggi mobile tetap 44px.
+
+## Audit light mode terarah
+
+Sesuai batas pemakaian yang diminta pengguna, perubahan difokuskan pada token bersama, permukaan, aksen fungsi dan kontrol. Ini bukan audit ulang seluruh fitur atau setiap kombinasi kelas opacity aplikasi.
+
+- Halaman #e9eef3, sidebar #dde5ee, panel #fbfcfe, input/inset #f2f5f8, hover #e0e7ef. Perbedaan ini menunjukkan lapisan tanpa menambah kotak atau dekorasi.
+- Panel saldo #d5e0eb menjadi fokus utama; gradient lama di light mode dihapus. Inset transparan tetap mengelompokkan pemasukan/pengeluaran.
+- Tombol utama #2d4159 dan hover #202f42 memakai karakter ink biru abu. Warna fungsi sage/coral/amber/transfer tidak berubah.
+- Teks sekunder #445368, border input #7b899a. RGB dan hex disamakan agar komponen lama dan baru konsisten.
+- Shadow menyeluruh pada bg-obsidian-card/panel dihapus. Dialog dan dropdown memakai shadow untuk menandai posisi di depan halaman.
+- Hover tombol utama di panel saldo kini mengikuti token hover; sebelumnya tertahan warna tetap. Tombol tema light mengikuti token kontrol, tidak memakai Slate hardcode.
+
+Validasi: satu production build lulus; check-overview dan check-dashboard-data lulus. Peringatan lint hook/img lama tetap ada. Browser lokal memeriksa overview, transaksi, laporan, form transaksi, dropdown, perpindahan tema, dan lebar mobile 390px. Tidak mengubah backend atau data.
+
+Delivery Gate untuk lingkup ini:
+
+- Hard Gate PASS: token teks semantik dan sekunder diuji pada halaman/panel/inset/hover serta tint 10/20%, termasuk brightness tekan 0.98, minimum 4.55:1. Border input terhadap input 3.26:1; teks tombol utama 10.17:1. Input, dropdown, Escape dan Batal bekerja; laporan mobile memiliki scrollWidth 390px pada viewport 390px. Tidak membuat angka, aset, atau klaim produk baru.
+- Purpose-Gate PASS: warna permukaan menunjukkan tingkat informasi, aksen menunjukkan fungsi, dan shadow hanya pada overlay. Tidak menambah glow, gradient, ilustrasi atau motion.
+- Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1; ink dan lapisan abu kebiruan memberi karakter light mode tanpa menambah aksen kategori baru.
+- Craftsmanship PASS: browser memverifikasi halaman/panel/input berbeda warna, dan dark mode tetap #151517/#232326. Ukuran kontrol, radius, posisi toolbar, serta perilaku keyboard dipertahankan. Pengujian ini tidak mengklaim kontras setiap teks pada semua layar atau pengukuran performa lapangan.

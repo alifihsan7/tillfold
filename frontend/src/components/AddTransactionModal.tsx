@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { todayWib } from "@/lib/transactionCalendar";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { CustomModal } from "./ui/CustomModal";
@@ -57,7 +58,7 @@ export function AddTransactionModal({
     return accountOptions[0]?.value || "Rekening Utama";
   });
   const [formCategory, setFormCategory] = useState("Makan");
-  const [formDate, setFormDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [formDate, setFormDate] = useState(() => todayWib());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +95,7 @@ export function AddTransactionModal({
       setFormType("expense");
       setFormAmount("");
       setFormDesc("");
-      setFormDate(new Date().toISOString().split("T")[0]);
+      setFormDate(todayWib());
       setError(null);
       setLoading(false);
 
@@ -142,7 +143,7 @@ export function AddTransactionModal({
           account: formAccount,
           category: formCategory,
           description: formDesc.trim(),
-          date: formDate || new Date().toISOString().split("T")[0],
+          date: formDate || todayWib(),
         }),
       });
 

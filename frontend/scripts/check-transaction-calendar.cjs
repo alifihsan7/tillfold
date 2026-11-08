@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
 }).outputText;
 const source = new Module(filename, module);
 source._compile(compiled, filename);
-const { monthCells, shiftCalendarMonth, compactRupiah, expenseHeatLevel } = source.exports;
+const { monthCells, shiftCalendarMonth, compactRupiah, expenseHeatLevel, todayWib } = source.exports;
 const november = monthCells(2026, 11);
 assert.equal(november.length, 42);
 assert.deepEqual(november.slice(0, 6), Array(6).fill(null));
@@ -34,4 +34,12 @@ assert.equal(expenseHeatLevel(10, 0), 0);
 assert.equal(expenseHeatLevel(NaN, 100), 0);
 assert.equal(expenseHeatLevel(10, Infinity), 0);
 assert.deepEqual([1, 25, 26, 50, 51, 75, 76, 100, 200].map(value => expenseHeatLevel(value, 100)), [1, 1, 2, 2, 3, 3, 4, 4, 4]);
-console.log('PASS: calendar dates, navigation, amounts and zero-safe four-level expense heatmap.');
+for (const [instant, expected] of [
+  ['2026-11-07T16:59:59Z', '2026-11-07'],
+  ['2026-11-07T17:00:00Z', '2026-11-08'],
+  ['2026-11-08T00:00:00Z', '2026-11-08'],
+  ['2026-11-30T17:00:00Z', '2026-12-01'],
+  ['2026-12-31T17:00:00Z', '2027-01-01'],
+  ['2024-02-28T17:00:00Z', '2024-02-29'],
+]) assert.equal(todayWib(new Date(instant)), expected);
+console.log('PASS: calendar grids, heatmap and WIB midnight/month/year/leap-day boundaries.');

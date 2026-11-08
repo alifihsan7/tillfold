@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ArrowLeftRight } from "lucide-react";
 import { authFetch } from "@/lib/api";
-import { calendarDate, monthCells, shiftCalendarMonth, compactRupiah, expenseHeatLevel } from "@/lib/transactionCalendar";
+import { calendarDate, monthCells, shiftCalendarMonth, compactRupiah, expenseHeatLevel, todayWib } from "@/lib/transactionCalendar";
 import { CustomSelect } from "./ui/CustomSelect";
 import { CustomModal } from "./ui/CustomModal";
 import { TransactionTable, Transaction } from "./TransactionTable";
@@ -20,7 +20,6 @@ interface Props {
   refreshSignal: Transaction[]; formatRupiah: (amount: number) => string;
   onEdit: (transaction: Transaction) => void; onDelete: (transaction: Transaction) => void;
 }
-const todayWib = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
 const months = Array.from({ length: 12 }, (_, index) => new Intl.DateTimeFormat("id-ID", { month: "long", timeZone: "UTC" }).format(calendarDate(2000, index + 1, 1)));
 const longDate = (date: string) => new Intl.DateTimeFormat("id-ID", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 

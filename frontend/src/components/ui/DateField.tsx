@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { todayWib } from "@/lib/transactionCalendar";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
@@ -117,7 +118,7 @@ export function DateField({ id, label, value, onChange, min, max, required }: Pr
           aria-expanded={open} aria-controls={open ? uid : undefined}
           onClick={() => {
             if (!open) {
-              setMonth(new Date(validDate(value) ? value : new Date().toISOString().slice(0, 10)));
+              setMonth(new Date(validDate(value) ? value : todayWib()));
               setView("days");
             }
             setOpen(!open);

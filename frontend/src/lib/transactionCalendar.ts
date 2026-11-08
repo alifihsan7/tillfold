@@ -5,6 +5,12 @@ export function calendarDate(year: number, month: number, day: number): Date {
   return value;
 }
 
+export function todayWib(now: Date = new Date()): string {
+  return now.toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit",
+  });
+}
+
 export function monthCells(year: number, month: number): (string | null)[] {
   const first = calendarDate(year, month, 1);
   const offset = (first.getUTCDay() + 6) % 7;

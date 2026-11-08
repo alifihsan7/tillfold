@@ -228,3 +228,14 @@ Perbaikan: focus trap mengambil kontrol dari root dialog miliknya, sehingga kale
 - Purpose-Gate PASS: memperbaiki cakupan fokus saja; tidak menambah fitur, dependency, dekorasi atau motion.
 - Liveliness PASS: dials dan visual tetap.
 - Craftsmanship PASS: diuji melalui form dan popup asli; perubahan satu lokasi, tidak mengubah nilai tanggal, data, atau API. Peringatan lint hook/img lama tetap ada.
+
+## Tanggal default transaksi mengikuti WIB
+
+Bug: form Catat transaksi memakai `toISOString().split("T")[0]`, yaitu tanggal UTC. Pada 00.00-06.59 WIB tanggal tersebut tertinggal sehari, sehingga transaksi baru bisa masuk hari yang salah.
+
+Perbaikan: helper bersama `todayWib` dipakai untuk inisialisasi, reset dan fallback tanggal transaksi, kalender transaksi, serta bulan awal DateField kosong. Validasi tanggal eksplisit dan aritmetika grid kalender tetap UTC agar tanggal manual tidak berubah.
+
+- Hard Gate PASS: checker menguji sesaat sebelum/tepat tengah malam WIB, pergantian bulan/tahun dan 29 Februari; build lulus. Browser memverifikasi tanggal default sesuai WIB, tanggal manual 31 Oktober membuka Oktober, dan pembukaan ulang form kembali ke hari ini. Pengujian browser tidak memalsukan jam OS; batas malam diuji dengan waktu eksplisit pada checker.
+- Purpose-Gate PASS: menyamakan default dengan zona waktu aplikasi; tidak menambah fitur atau dekorasi.
+- Liveliness PASS: tidak mengubah visual atau motion.
+- Craftsmanship PASS: tanggal manual dan transaksi lama tidak ditulis ulang; backend/API tidak berubah, pengujian form dibatalkan tanpa menyimpan. Peringatan lint hook/img lama tetap ada.

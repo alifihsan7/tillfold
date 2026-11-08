@@ -114,7 +114,7 @@ export function PeriodSelector({
         onClick={() => setIsOpen(!isOpen)}
         className="w-full min-w-0 min-h-11 py-2 px-3.5 rounded-[var(--ai7-radius-control)] text-xs font-medium bg-obsidian-card border border-luma-smokeline hover:border-luma-smoke text-slateText-primary hover:bg-obsidian-hover transition inline-flex items-center gap-2 group"
       >
-        <Calendar className="w-3.5 h-3.5 text-luma-ivory shrink-0 group-hover:scale-105 transition-transform" />
+        <Calendar className="w-3.5 h-3.5 text-luma-ivory shrink-0" />
         <span className="min-w-0 flex-1 text-left truncate">
           {currentPeriod.label || "Pilih Periode"}
         </span>

@@ -45,7 +45,7 @@ export function ThemeToggle({
       onClick={toggleTheme}
       title={isLight ? "Beralih ke Obsidian Dark (Mode Gelap)" : "Beralih ke Clean Light (Mode Terang)"}
       aria-label={isLight ? "Beralih ke Mode Gelap" : "Beralih ke Mode Terang"}
-      className={`relative ${sizeClasses} rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 group cursor-pointer shrink-0 select-none ${
+      className={`relative ${sizeClasses} rounded-full flex items-center justify-center transition-colors group cursor-pointer shrink-0 select-none ${
         isLight
           ? "bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 shadow-xs"
           : "bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline hover:border-amberGold/50 text-amberGold shadow-xs"
@@ -54,11 +54,11 @@ export function ThemeToggle({
       <div className="relative flex items-center justify-center w-full h-full">
         {isLight ? (
           <Moon
-            className={`${iconSize} stroke-[2.2] transition-transform duration-500 transform group-hover:-rotate-12 text-slate-800`}
+            className={`${iconSize} stroke-[2.2] text-slate-800`}
           />
         ) : (
           <Sun
-            className={`${iconSize} stroke-[2.2] transition-transform duration-500 transform group-hover:rotate-45 text-amberGold`}
+            className={`${iconSize} stroke-[2.2] text-amberGold`}
           />
         )}
       </div>

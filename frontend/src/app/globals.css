@@ -545,7 +545,16 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-dialog-panel input { font-size: 16px; }
 .luma-dialog-panel input:focus-visible { outline: 2px solid var(--luma-ember); outline-offset: 2px; }
 .light .luma-guest-guide dl > div + div { border-color: var(--luma-smokeline); }
-.luma-app button:not(:disabled):active { transform: translateY(1px); }
+:is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button {
+  transition-property: background-color, border-color, color, filter;
+  transition-duration: 140ms;
+  transition-timing-function: ease;
+}
+:is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button:not(:disabled):active {
+  transform: none;
+  filter: brightness(.98);
+  border-color: var(--luma-smoke);
+}
 .luma-topbar button, .luma-sidebar > div:last-child > button { border-radius: var(--ai7-radius-control); font-weight: 400; }
 .luma-topbar [role=menu] { border-radius: var(--ai7-radius-panel); font-weight: 400; }
 .luma-topbar [role=menu] { background: var(--luma-panel-surface, #3b3835); backdrop-filter: none; }
@@ -739,14 +748,6 @@ textarea:focus-visible,
     transition: width 240ms ease-out;
   }
 
-  .luma-overview-grid :is(.luma-action-primary, .luma-action-secondary) {
-    transition: background-color 150ms ease, transform 120ms ease-out;
-  }
-
-  .luma-overview-grid :is(.luma-action-primary, .luma-action-secondary):active:not(:disabled) {
-    transform: translateY(1px);
-  }
-
   @keyframes luma-balance-enter {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
@@ -759,6 +760,9 @@ textarea:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button {
+    transition-duration: 0ms;
+  }
   .animate-fadeIn {
     animation: none;
   }

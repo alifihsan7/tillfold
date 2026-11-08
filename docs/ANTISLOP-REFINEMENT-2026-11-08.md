@@ -91,3 +91,21 @@ Status di bawah berlaku untuk perubahan dalam dokumen ini. Bukti runtime menggun
 - Browser: hanya satu tombol Tambah tagihan; form membuka dan Batal bekerja.
 - Dropdown di modal: Escape menutup opsi, modal induk tetap terbuka, fokus kembali ke rekening.
 - Tidak mengubah backend, migrasi, atau perhitungan keuangan.
+
+## Revisi respons tombol: warna saja
+
+Pilihan pengguna: perubahan warna yang halus, tanpa mengecil atau bergeser.
+
+- Aturan bersama tombol halaman, dialog dan dropdown menetapkan `transform: none` saat ditekan. Aturan ini juga mengalahkan utility scale lama agar perilaku tidak berbeda antar komponen.
+- Transisi hanya mencakup background, border, teks dan filter selama 140ms. Tekanan mengubah border dan brightness 0.98, tanpa menggeser layout.
+- Ikon tema tidak lagi berputar saat hover; ikon pemilih periode tidak lagi membesar.
+- `prefers-reduced-motion: reduce` menghapus durasi transisi tombol. Perubahan fungsi seperti membuka sidebar atau kalender tetap bekerja.
+
+Delivery Gate untuk revisi interaksi:
+
+- Hard Gate PASS: Next production build lulus; runtime CSS menunjukkan active transform none; tombol halaman, dialog, dropdown dan tombol tambah mobile memakai transisi warna 140ms. Dialog dan dropdown tetap dapat dibuka/ditutup lewat keyboard. Token semantik saat brightness 0.98 memiliki minimum kontras 4.53:1 pada base/panel dan tint 0/10/20% kedua tema. Tidak mengubah data, API, label, aset, atau navigasi.
+- Purpose-Gate PASS: penggelapan 2% dan perubahan border hanya menandai tekanan; tidak menambah glow, shadow, gradient, skala, geseran, atau putaran dekoratif.
+- Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1; respons warna mempertahankan affordance tanpa gerakan pada kontrol.
+- Craftsmanship PASS: satu aturan tombol berlaku juga untuk portal dialog/dropdown; focus ring dan disabled tetap ada. Pemeriksaan browser dilakukan pada light mode, dengan aturan yang sama untuk dark mode; palet tidak berubah. Aturan reduced-motion diperiksa pada sumber CSS, bukan melalui emulasi OS.
+
+Peringatan lint hook/img lama masih muncul saat build. Tidak ada klaim pengujian ulang seluruh alur aplikasi untuk perubahan visual ini.

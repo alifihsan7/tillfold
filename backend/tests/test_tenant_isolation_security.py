@@ -227,6 +227,10 @@ def test_sync_cycle_snapshot_tenant_isolation(db_session, user_one, user_two):
     db_session.add_all([cfg1, tx1_inc, tx1_exp, bucket1, acc1, cfg2, tx2_inc, tx2_exp, bucket2, acc2])
     db_session.commit()
 
+    user_one.google_spreadsheet_id = "test_sheet_id_one"
+    user_two.google_spreadsheet_id = "test_sheet_id_two"
+    db_session.commit()
+
     # Mock Google Sheets API to avoid external network dependency
     mock_ws = MagicMock()
     mock_ws.id = 12345
@@ -238,18 +242,25 @@ def test_sync_cycle_snapshot_tenant_isolation(db_session, user_one, user_two):
     mock_client = MagicMock()
     mock_client.open_by_key.return_value = mock_doc
 
-    with patch("app.services.sheets_sync.get_google_sheets_client", return_value=mock_client), \
-         patch.object(settings, "GOOGLE_SHEETS_SPREADSHEET_ID", "test_sheet_id"):
+    with patch("app.services.sheets_sync.get_google_sheets_client", return_value=mock_client):
 
         res = sync_cycle_snapshot(db_session, user_id=1, cycle_start_date=date.today())
 
         assert res["success"] is True
+        mock_client.open_by_key.assert_called_with("test_sheet_id_one")
         # User 1 has exactly 2 transactions; User 2's transactions must not be counted
         assert res["transaction_count"] == 2
         # User 1 spent 250,000; User 2's 3,500,000 must NOT be included
         assert res["pocket_spent"] == 250000
         # Net balance for User 1: 1,500,000 - 250,000 = 1,250,000
         assert res["total_balance"] == 1250000
+
+        # User 2 sync also opens user 2's sheet
+        res2 = sync_cycle_snapshot(db_session, user_id=2, cycle_start_date=date.today())
+        assert res2["success"] is True
+        mock_client.open_by_key.assert_called_with("test_sheet_id_two")
+        assert res2["transaction_count"] == 2
+        assert res2["pocket_spent"] == 3500000
 
 
 # ============================================================================

@@ -13,6 +13,8 @@ from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.account import Account
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
+from app.models.user import User
+from app.core.helpers import extract_spreadsheet_id
 
 WIB = zoneinfo.ZoneInfo(settings.TIMEZONE)
 
@@ -232,11 +234,12 @@ def sync_cycle_snapshot(
     ).order_by(desc(Transaction.date), desc(Transaction.id)).all()
 
     # 6. Kirim ke Google Sheets
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.google_spreadsheet_id or not user.google_spreadsheet_id.strip():
+        raise ValueError("Google Spreadsheet belum ditautkan. Kirim /set_sheet <link> di bot Telegram atau atur di menu Settings Web.")
+
+    spreadsheet_id = user.google_spreadsheet_id.strip()
     client = get_google_sheets_client()
-    spreadsheet_id = settings.GOOGLE_SHEETS_SPREADSHEET_ID
-    if not spreadsheet_id:
-        raise ValueError("GOOGLE_SHEETS_SPREADSHEET_ID is not set in configuration")
-    
     doc = client.open_by_key(spreadsheet_id)
 
     # Cek apakah worksheet sudah ada

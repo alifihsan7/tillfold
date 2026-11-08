@@ -25,6 +25,8 @@ import {
   X,
   FileSpreadsheet,
   ExternalLink,
+  Copy,
+  Check,
   Target,
   AlertCircle,
   Receipt,
@@ -79,6 +81,7 @@ import {
   setAuthToken,
   UserProfile,
   JagoPocketsSummaryResponse,
+  syncGoogleSheets,
 } from "@/lib/api";
 import { DashboardLoadError, loadDashboardData } from "@/lib/dashboardData";
 import { getCategoryColorDef } from "@/lib/categoryColors";
@@ -341,10 +344,12 @@ function handleTabArrowKeys(event: React.KeyboardEvent<HTMLDivElement>) {
 }
 
 export default function FinanceDashboard() {
-  const googleSheetUrl = process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL;
   const [activeNav, setActiveNav] = useState<string>("Ringkasan");
   const [planSubTab, setPlanSubTab] = useState<"target" | "tagihan">("target");
   const [settingsSubTab, setSettingsSubTab] = useState<"rekening" | "kantong" | "kategori" | "profil">("rekening");
+  const [profileModalTab, setProfileModalTab] = useState<"profile" | "telegram" | "sheets">("profile");
+  const [isSyncingSheets, setIsSyncingSheets] = useState(false);
+  const [copiedSettingsEmail, setCopiedSettingsEmail] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [hideOverviewBalances, setHideOverviewBalances] = useState(false);
   const [sidebarMotion, setSidebarMotion] = useState(false);
@@ -382,6 +387,29 @@ export default function FinanceDashboard() {
       setToastMessage(null);
     }, 3500);
   }, []);
+
+  const handleSyncSheets = useCallback(async () => {
+    if (isSyncingSheets) return;
+    setIsSyncingSheets(true);
+    try {
+      const res = await syncGoogleSheets();
+      showToast(`Google Sheets berhasil disinkronkan (${res.sheet_title || "Snapshot"}).`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Gagal menyinkronkan data ke Google Sheets.");
+    } finally {
+      setIsSyncingSheets(false);
+    }
+  }, [isSyncingSheets, showToast]);
+
+  const handleCopySettingsEmail = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText("ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com");
+      setCopiedSettingsEmail(true);
+      setTimeout(() => setCopiedSettingsEmail(false), 2000);
+    } catch {
+      showToast("Salin manual: ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com");
+    }
+  }, [showToast]);
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -1226,6 +1254,7 @@ export default function FinanceDashboard() {
             title={sidebarCollapsed ? (currentUser ? currentUser.full_name : "Masuk / Akun") : undefined}
             onClick={() => {
               if (currentUser) {
+                setProfileModalTab("profile");
                 setIsProfileModalOpen(true);
               } else {
                 setIsAuthModalOpen(true);
@@ -1296,6 +1325,7 @@ export default function FinanceDashboard() {
           <button
             onClick={() => {
               if (currentUser) {
+                setProfileModalTab("profile");
                 setIsProfileModalOpen(true);
               } else {
                 setIsAuthModalOpen(true);
@@ -1437,19 +1467,53 @@ export default function FinanceDashboard() {
                   )}
                   <span>{isExportingCSV ? "Mengunduh CSV..." : "Ekspor CSV Transaksi"}</span>
                 </button>
-                {currentUser?.id === 1 && googleSheetUrl && (
-                  <a
-                    href={googleSheetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="luma-touch w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-full bg-luma-sage/10 border border-luma-sage/30 text-luma-sage hover:bg-luma-sage/20 transition"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                      <span className="font-semibold">Google Sheets Rapor</span>
+                {currentUser && (
+                  currentUser.google_spreadsheet_id ? (
+                    <div className="space-y-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleSyncSheets}
+                        disabled={isSyncingSheets}
+                        className="luma-touch w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium rounded-full bg-white/[0.05] border border-luma-smokeline text-luma-ivory hover:bg-white/[0.08] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        title="Sinkronisasi data ke Google Sheets"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <RefreshCw className={`w-4 h-4 shrink-0 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
+                          <span className="truncate">{isSyncingSheets ? "Menyinkronkan..." : "Sync Google Sheets"}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-luma-smoke">POST</span>
+                      </button>
+                      <a
+                        href={`https://docs.google.com/spreadsheets/d/${currentUser.google_spreadsheet_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="luma-touch w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium rounded-full bg-luma-sage/10 border border-luma-sage/30 text-luma-sage hover:bg-luma-sage/20 transition"
+                        title="Buka Google Sheets di tab baru"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                          <span className="font-semibold truncate">Buka Spreadsheet</span>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      </a>
                     </div>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileModalTab("sheets");
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="luma-touch w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium rounded-full bg-white/[0.03] border border-dashed border-luma-smokeline text-luma-smoke hover:text-luma-ivory hover:border-luma-sage/40 hover:bg-luma-sage/5 transition cursor-pointer"
+                      title="Tautkan spreadsheet Google Sheets pribadi Anda"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileSpreadsheet className="w-4 h-4 shrink-0 text-luma-smoke" />
+                        <span className="truncate">Tautkan Google Sheets</span>
+                      </div>
+                      <span className="text-[10px] uppercase font-semibold text-luma-sage bg-luma-sage/10 px-1.5 py-0.5 rounded">Setup</span>
+                    </button>
+                  )
                 )}
               </div>
             </div>
@@ -1628,24 +1692,63 @@ export default function FinanceDashboard() {
                       <span className="text-xs font-semibold">Backup &amp; restore</span>
                     </button>}
 
-                    {currentUser?.id === 1 && googleSheetUrl && (
-                      <a
-                        href={googleSheetUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setIsExportMenuOpen(false)}
-                        role="menuitem"
-                        className="luma-touch flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-sage hover:bg-luma-sage/10 transition border-t border-luma-smokeline"
-                      >
-                        <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                        <div className="text-left min-w-0">
-                          <div className="font-semibold text-xs flex items-center gap-1">
-                            Google Sheets Rapor
-                            <ExternalLink className="w-3 h-3 opacity-70" />
+                    {currentUser && (
+                      currentUser.google_spreadsheet_id ? (
+                        <>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={isSyncingSheets}
+                            onClick={() => {
+                              setIsExportMenuOpen(false);
+                              handleSyncSheets();
+                            }}
+                            className="luma-touch w-full flex items-center gap-2.5 rounded-[var(--ai7-radius-control)] px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer disabled:opacity-50 border-t border-luma-smokeline"
+                          >
+                            <RefreshCw className={`h-4 w-4 shrink-0 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
+                            <div className="text-left min-w-0">
+                              <div className="font-semibold text-xs text-luma-ivory">
+                                {isSyncingSheets ? "Menyinkronkan..." : "Sync Google Sheets"}
+                              </div>
+                              <div className="text-xs text-luma-smoke">Kirim snapshot data terbaru</div>
+                            </div>
+                          </button>
+                          <a
+                            href={`https://docs.google.com/spreadsheets/d/${currentUser.google_spreadsheet_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setIsExportMenuOpen(false)}
+                            role="menuitem"
+                            className="luma-touch flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-sage hover:bg-luma-sage/10 transition"
+                          >
+                            <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                            <div className="text-left min-w-0">
+                              <div className="font-semibold text-xs flex items-center gap-1">
+                                Buka Spreadsheet
+                                <ExternalLink className="w-3 h-3 opacity-70" />
+                              </div>
+                              <div className="text-xs text-luma-smoke">Lihat laporan di Google Sheets</div>
+                            </div>
+                          </a>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsExportMenuOpen(false);
+                            setProfileModalTab("sheets");
+                            setIsProfileModalOpen(true);
+                          }}
+                          className="luma-touch w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] transition border-t border-luma-smokeline cursor-pointer"
+                        >
+                          <FileSpreadsheet className="w-4 h-4 shrink-0 text-luma-smoke" />
+                          <div className="text-left min-w-0">
+                            <div className="font-semibold text-xs text-luma-ivory">Tautkan Google Sheets</div>
+                            <div className="text-xs text-luma-smoke">Hubungkan spreadsheet pribadi</div>
                           </div>
-                          <div className="text-xs text-luma-smoke">Spreadsheet sinkronisasi</div>
-                        </div>
-                      </a>
+                        </button>
+                      )
                     )}
                   </div>
                 )}
@@ -2499,7 +2602,10 @@ export default function FinanceDashboard() {
                       {currentUser ? (
                         <button
                           type="button"
-                          onClick={() => setIsProfileModalOpen(true)}
+                          onClick={() => {
+                            setProfileModalTab("profile");
+                            setIsProfileModalOpen(true);
+                          }}
                           className="luma-touch min-h-[44px] px-4 py-2 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition cursor-pointer"
                         >
                           Ubah Profil &amp; Telegram
@@ -2534,29 +2640,115 @@ export default function FinanceDashboard() {
                     </div>
                   </div>
 
-                  {/* Admin Google Sheets Link */}
-                  {currentUser?.id === 1 && googleSheetUrl && (
-                    <div className="space-y-2 pt-2">
+                  {/* Integrasi Google Sheets Universal */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between gap-2">
                       <h3 className="ai7-type-card text-luma-ivory tracking-tight">
-                        Integrasi data
+                        Integrasi Google Sheets
                       </h3>
-                      <a
-                        href={googleSheetUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="luma-touch min-h-[44px] flex items-center justify-between p-4 rounded-2xl bg-luma-sage/10 border border-luma-sage/25 text-luma-sage hover:bg-luma-sage/15 transition"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileSpreadsheet className="w-5 h-5 shrink-0" />
-                          <div>
-                            <div className="text-xs font-semibold">Google Sheets Rapor Keuangan</div>
-                            <div className="text-xs text-luma-smoke">Buka spreadsheet cadangan data terintegrasi</div>
+                      {currentUser?.google_spreadsheet_id ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-mintRise font-medium px-2.5 py-0.5 rounded-full bg-mintRise/10 border border-mintRise/25">
+                          <span className="w-1.5 h-1.5 rounded-full bg-mintRise"></span>
+                          Terhubung
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-luma-smoke font-medium px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-luma-smokeline">
+                          <span className="w-1.5 h-1.5 rounded-full bg-luma-smoke"></span>
+                          Belum Terhubung
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-2xl bg-luma-sage/15 border border-luma-sage/30 text-luma-sage flex items-center justify-center shrink-0">
+                            <FileSpreadsheet className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-luma-ivory">Google Sheets Rapor Keuangan</div>
+                            <div className="text-xs text-luma-smoke mt-0.5 truncate">
+                              {currentUser?.google_spreadsheet_id
+                                ? `ID: ${currentUser.google_spreadsheet_id}`
+                                : "Cadangkan mutasi kas dan sinkronkan snapshot laporan siklus ke spreadsheet pribadi."}
+                            </div>
                           </div>
                         </div>
-                        <ExternalLink className="w-4 h-4 opacity-70" />
-                      </a>
+
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          {currentUser?.google_spreadsheet_id && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={handleSyncSheets}
+                                disabled={isSyncingSheets}
+                                className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              >
+                                <RefreshCw className={`w-3.5 h-3.5 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
+                                <span>{isSyncingSheets ? "Menyinkronkan..." : "Sync Sekarang"}</span>
+                              </button>
+                              <a
+                                href={`https://docs.google.com/spreadsheets/d/${currentUser.google_spreadsheet_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-luma-sage/15 hover:bg-luma-sage/25 text-luma-sage border border-luma-sage/30 text-xs font-semibold transition inline-flex items-center gap-1.5"
+                              >
+                                <span>Buka Spreadsheet</span>
+                                <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                              </a>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (currentUser) {
+                                setProfileModalTab("sheets");
+                                setIsProfileModalOpen(true);
+                              } else {
+                                setIsAuthModalOpen(true);
+                              }
+                            }}
+                            className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.10] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition cursor-pointer"
+                          >
+                            {currentUser?.google_spreadsheet_id ? "Atur Spreadsheet" : "Tautkan Google Sheets"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Microcopy box with 1-click copy */}
+                      <div className="rounded-xl border border-luma-smokeline/70 bg-luma-coal/50 p-3 sm:p-3.5 space-y-2">
+                        <p className="text-xs text-luma-smoke">
+                          Bagikan akses <span className="text-luma-ivory font-medium">Editor</span> pada spreadsheet-mu ke:
+                        </p>
+                        <div className="flex items-center justify-between gap-2 rounded-lg bg-black/40 border border-luma-smokeline px-3 py-1.5">
+                          <code className="text-xs font-mono text-luma-sage select-all break-all">
+                            ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com
+                          </code>
+                          <button
+                            type="button"
+                            onClick={handleCopySettingsEmail}
+                            className="luma-touch px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-xs text-luma-ivory border border-luma-smokeline flex items-center gap-1.5 shrink-0 cursor-pointer"
+                            title="Salin email Service Account"
+                          >
+                            {copiedSettingsEmail ? (
+                              <>
+                                <Check className="h-3 w-3 text-mintRise" />
+                                <span className="text-mintRise font-medium text-[11px]">Tersalin!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 text-luma-smoke" />
+                                <span className="text-[11px]">Salin</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-luma-smoke">
+                          Di Google Sheets: Klik <span className="text-luma-ivory font-medium">Bagikan (Share)</span>, tambahkan email bot di atas sebagai <span className="text-luma-ivory font-medium">Editor</span>, lalu simpan tautan sheet Anda di pengaturan.
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -2942,6 +3134,7 @@ export default function FinanceDashboard() {
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
           user={currentUser}
+          initialTab={profileModalTab}
           onUserUpdated={(updated) => {
             setCurrentUser(updated);
             fetchData();

@@ -15,6 +15,7 @@ from google.auth.transport import requests as google_requests
 
 from app.db.session import get_db
 from app.models.user import User, TelegramLink, TelegramProcessedMessage
+from app.core.helpers import extract_spreadsheet_id
 from app.services.telegram_link import create_link
 from app.models.account import Account
 from app.models.transaction import Transaction
@@ -135,6 +136,12 @@ def update_profile(
         user.email = payload.email.strip()
     if payload.password:
         user.hashed_password = hash_password(payload.password)
+    if payload.google_spreadsheet_id is not None or payload.google_sheet_url is not None:
+        raw_sheet = payload.google_spreadsheet_id if payload.google_spreadsheet_id is not None else payload.google_sheet_url
+        if raw_sheet and raw_sheet.strip():
+            user.google_spreadsheet_id = extract_spreadsheet_id(raw_sheet)
+        else:
+            user.google_spreadsheet_id = None
 
     db.commit()
     db.refresh(user)

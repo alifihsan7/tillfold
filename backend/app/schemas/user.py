@@ -21,6 +21,8 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
+    google_spreadsheet_id: Optional[str] = None
+    google_sheet_url: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: int
@@ -30,6 +32,7 @@ class UserResponse(BaseModel):
     telegram_chat_id: Optional[int] = None
     telegram_bot_username: Optional[str] = None
     telegram_mode: Optional[str] = "shared"
+    google_spreadsheet_id: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: bool
     is_onboarded: bool

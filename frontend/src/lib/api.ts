@@ -6,6 +6,7 @@ export interface UserProfile {
   telegram_chat_id: number | null;
   telegram_bot_username?: string | null;
   telegram_mode?: "shared" | "custom" | null;
+  google_spreadsheet_id?: string | null;
   avatar_url?: string | null;
   is_active: boolean;
   is_onboarded: boolean;
@@ -186,3 +187,63 @@ export async function createAccountPocket(payload: { account_id: number; name: s
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Google Sheets Multi-Tenant Sync — /api/v1/analytics/sync-sheets
+// ---------------------------------------------------------------------------
+
+export interface SheetsSyncResponse {
+  success: boolean;
+  sheet_title: string;
+  spreadsheet_id: string;
+  spreadsheet_url: string;
+  synced_at: string;
+  cycle_range: string;
+  transaction_count: number;
+  envelopes_count: number;
+  pocket_spent: number;
+  pocket_remaining: number;
+  total_balance: number;
+}
+
+export async function syncGoogleSheets(cycleStart?: string): Promise<SheetsSyncResponse> {
+  const query = cycleStart ? `?cycle_start=${encodeURIComponent(cycleStart)}` : "";
+  const res = await authFetch(`/api/v1/analytics/sync-sheets${query}`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    let detail = "Gagal menyinkronkan data ke Google Sheets.";
+    try {
+      const data = await res.json();
+      if (data && typeof data.detail === "string" && data.detail.trim()) {
+        detail = data.detail;
+      }
+    } catch {
+      // Fall through to default message
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+export async function updateGoogleSpreadsheet(urlOrId: string | null): Promise<UserProfile> {
+  const res = await authFetch("/api/v1/auth/me", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ google_sheet_url: urlOrId }),
+  });
+  if (!res.ok) {
+    let detail = "Gagal memperbarui link Google Sheets.";
+    try {
+      const data = await res.json();
+      if (data && typeof data.detail === "string" && data.detail.trim()) {
+        detail = data.detail;
+      }
+    } catch {
+      // Fall through to default message
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+

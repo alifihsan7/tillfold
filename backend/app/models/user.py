@@ -17,6 +17,7 @@ class User(Base):
     telegram_webhook_secret = Column(String(64), unique=True, nullable=True, index=True)
     telegram_mode = Column(String(20), default="shared", nullable=False)
     google_id = Column(String(100), unique=True, nullable=True, index=True)
+    google_spreadsheet_id = Column(String(255), nullable=True)
     avatar_url = Column(String(255), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     is_onboarded = Column(Boolean, nullable=False, default=False)

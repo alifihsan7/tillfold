@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Google Sheets Integration
     GOOGLE_SERVICE_ACCOUNT_FILE: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "credentials_google.json")
-    GOOGLE_SHEETS_SPREADSHEET_ID: str = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
+    GOOGLE_SHEETS_SPREADSHEET_ID: Optional[str] = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID") or None
 
     # AI Media Extraction (OCR & Voice Notes via 9router)
     AI_ROUTER_URL: str = os.getenv("AI_ROUTER_URL", "http://127.0.0.1:20128/v1")

@@ -477,8 +477,6 @@ def sync_sheets_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.id != 1:
-        raise HTTPException(status_code=403, detail="Google Sheets sync hanya tersedia untuk akun pemilik")
     from app.services.sheets_sync import sync_cycle_snapshot
     start_d = None
     if cycle_start:
@@ -489,6 +487,8 @@ def sync_sheets_endpoint(
     try:
         res = sync_cycle_snapshot(db, user_id=current_user.id, cycle_start_date=start_d)
         return res
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Google Sheets sync failed: {str(e)}")
 

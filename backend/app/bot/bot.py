@@ -202,6 +202,7 @@ def setup_bot_commands():
         {"command": "transaksi", "description": "📜 5 transaksi terakhir"},
         {"command": "gajian", "description": "💰 Catat gajian & siapkan alokasi pos"},
         {"command": "sheets", "description": "📑 Sinkronisasi snapshot ke Google Sheets"},
+        {"command": "set_sheet", "description": "🔗 Tautkan link Google Sheet pribadi"},
         {"command": "batal", "description": "↩️ Hapus/batalkan transaksi terakhir"},
         {"command": "help", "description": "ℹ️ Panduan cara input bot"},
     ]
@@ -1082,9 +1083,9 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
     db.add(cfg)
     db.commit()
 
-    # 5. Sheets auto-sync for admin account
+    # 5. Sheets auto-sync if user has configured google_spreadsheet_id
     sheet_info = ""
-    if user_id == 1:
+    if user and getattr(user, "google_spreadsheet_id", None):
         try:
             from app.services.sheets_sync import sync_cycle_snapshot
             res = sync_cycle_snapshot(db, user_id=user_id, cycle_start_date=cycle_start)
@@ -1117,13 +1118,52 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
 
     send_message(chat_id, msg, bot_token=bot_token)
 
+def handle_set_sheet(chat_id: int, text: str, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
+    if not user:
+        send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
+        return
+
+    parts = text.strip().split(maxsplit=1)
+    if len(parts) < 2 or not parts[1].strip():
+        msg = (
+            "Kirim `/set_sheet <link_spreadsheet>` untuk menautkan Google Sheet kamu.\n\n"
+            "Pastikan kamu sudah membagikan akses Editor pada spreadsheet-mu ke email bot:\n"
+            "`ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com`"
+        )
+        send_message(chat_id, msg, bot_token=bot_token)
+        return
+
+    from app.core.helpers import extract_spreadsheet_id
+    raw_arg = parts[1].strip()
+    sheet_id = extract_spreadsheet_id(raw_arg)
+    if not sheet_id:
+        send_message(chat_id, "⚠️ Link atau Spreadsheet ID tidak valid. Silakan periksa kembali.", bot_token=bot_token)
+        return
+
+    user.google_spreadsheet_id = sheet_id
+    db.commit()
+    db.refresh(user)
+
+    msg = (
+        f"✅ **Google Spreadsheet Berhasil Ditautkan!**\n"
+        f"ID: `{sheet_id}`\n\n"
+        f"Sekarang kamu bisa mengetik `/sheets` kapan saja untuk menyinkronkan laporan keuanganmu!"
+    )
+    send_message(chat_id, msg, bot_token=bot_token)
+
 def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
         return
     user_id = user.id
-    if user_id != 1:
-        send_message(chat_id, "ℹ️ Integrasi Google Sheets dikonfigurasi khusus untuk akun admin utama.", bot_token=bot_token)
+    if not user.google_spreadsheet_id:
+        msg = (
+            "⚠️ Google Spreadsheet belum ditautkan.\n\n"
+            "Kirim `/set_sheet <link_spreadsheet>` untuk menautkan Google Sheet kamu.\n\n"
+            "Pastikan kamu sudah membagikan akses Editor pada spreadsheet-mu ke email bot:\n"
+            "`ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com`"
+        )
+        send_message(chat_id, msg, bot_token=bot_token)
         return
 
     send_message(chat_id, "⏳ _Sedang menyinkronkan data snapshot siklus ke Google Sheets..._", bot_token=bot_token)
@@ -1731,6 +1771,8 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
         handle_gajian(chat_id, text, db, user=user, bot_token=bot_token)
     elif lower_text in ["🔄 transfer", "transfer", "tf"] or cmd in ["/transfer", "/tf"] or lower_text.startswith("transfer ") or lower_text.startswith("tf "):
         handle_transfer(chat_id, text, db, user=user, bot_token=bot_token)
+    elif cmd in ["/set_sheet", "/setsheet", "/set-sheet"] or lower_text.startswith(("/set_sheet", "/setsheet", "/set-sheet", "set_sheet", "setsheet")):
+        handle_set_sheet(chat_id, text, db, user=user, bot_token=bot_token)
     elif lower_text in ["📑 google sheets", "google sheets", "sheets"] or cmd in ["/sheets", "/sheet", "/sync_sheets"]:
         handle_sheets(chat_id, db, user=user, bot_token=bot_token)
     elif lower_text in ["🌐 web dashboard", "dashboard", "web"] or cmd in ["/web", "/dashboard"]:
@@ -1750,8 +1792,9 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 def main():
     print("Connecting to PostgreSQL and creating tables if not exist...")
     Base.metadata.create_all(bind=engine)
-    from app.db.account_schema import ensure_account_archive_schema
+    from app.db.account_schema import ensure_account_archive_schema, ensure_user_spreadsheet_schema
     ensure_account_archive_schema(engine)
+    ensure_user_spreadsheet_schema(engine)
     print("Setting up Telegram bot commands menu...")
     setup_bot_commands()
     print("Tillfold shared bot started listening...")

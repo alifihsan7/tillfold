@@ -761,3 +761,23 @@ textarea:focus-visible,
     animation: none;
   }
 }
+
+/* Calendar cells share row height; ordinary button sizing must not shrink empty dates. */
+.luma-app .transaction-calendar-grid { grid-auto-rows: 100px; }
+.luma-app .transaction-calendar-grid > button,
+.luma-app .transaction-calendar-grid > div { min-height: 0; height: 100%; border-radius: 0; }
+@media (min-width: 640px) {
+  .luma-app .transaction-calendar-grid { grid-auto-rows: 120px; }
+}
+
+.transaction-finance-calendar { container-type: inline-size; }
+.transaction-finance-calendar .calendar-value-compact { display: block; }
+.transaction-finance-calendar .calendar-value-full { display: none; }
+.transaction-finance-calendar .calendar-day-amount { font-size: 10.5px; }
+@container (min-width: 420px) {
+  .transaction-finance-calendar .calendar-day-amount { font-size: 12px; }
+}
+@container (min-width: 700px) {
+  .transaction-finance-calendar .calendar-value-compact { display: none; }
+  .transaction-finance-calendar .calendar-value-full { display: block; }
+}

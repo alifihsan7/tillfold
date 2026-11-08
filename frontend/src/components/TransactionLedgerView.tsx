@@ -1,3 +1,4 @@
+import { TransactionCalendar } from "./TransactionCalendar";
 import { authFetch } from "@/lib/api";
 import { DateField } from "@/components/ui/DateField";
 import React, { useState, useMemo, useEffect } from "react";
@@ -52,6 +53,7 @@ export function TransactionLedgerView({
   onOpenAddModal,
 }: TransactionLedgerViewProps) {
   // Filter States
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeAccount, setActiveAccount] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -131,6 +133,7 @@ export function TransactionLedgerView({
   const cycleEnd = currentCycle?.end_date;
 
   useEffect(() => {
+    if (viewMode !== "list") return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setLoading(true);
@@ -168,7 +171,7 @@ export function TransactionLedgerView({
       }
     }, searchQuery.trim() ? 250 : 0);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [transactions, retry, currentPage, sortBy, activeAccount, typeFilter, categoryFilter, searchQuery,
+  }, [viewMode, transactions, retry, currentPage, sortBy, activeAccount, typeFilter, categoryFilter, searchQuery,
       dateFilter, customStartDate, customEndDate, cycleStart, cycleEnd,
       currentYearMonth, todayStr, sevenDaysAgoStr, thirtyDaysAgoStr]);
 
@@ -203,6 +206,12 @@ export function TransactionLedgerView({
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Tampilan transaksi">
+        <button type="button" aria-pressed={viewMode === "list"} className={viewMode === "list" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("list")}><Receipt className="h-4 w-4" aria-hidden="true" /> Daftar</button>
+        <button type="button" aria-pressed={viewMode === "calendar"} className={viewMode === "calendar" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("calendar")}><Calendar className="h-4 w-4" aria-hidden="true" /> Kalender</button>
+      </div>
+      {viewMode === "calendar" ? <TransactionCalendar accounts={accounts} account={activeAccount} onAccountChange={(value) => { setActiveAccount(value); setCurrentPage(1); }}
+        refreshSignal={transactions} formatRupiah={formatRupiah} onEdit={onEdit} onDelete={onDelete} /> : <>
       <p className="text-sm text-luma-smoke">“Semua waktu” mencakup seluruh riwayat, di luar periode dashboard.</p>
       {historyError && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-luma-coral">
         <span>{historyError}</span><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button>
@@ -540,6 +549,7 @@ export function TransactionLedgerView({
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }

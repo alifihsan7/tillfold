@@ -2,6 +2,7 @@ import io
 import csv
 import json
 import re
+from calendar import monthrange
 from typing import Optional, List
 from datetime import datetime, date, timedelta
 import zoneinfo
@@ -9,7 +10,7 @@ import zoneinfo
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, case
+from sqlalchemy import desc, func, case, extract
 
 from app.db.session import get_db
 from app.models.transaction import Transaction
@@ -120,6 +121,38 @@ def transaction_history(
     items = query.order_by(order, Transaction.id.desc()).offset(skip).limit(limit).all()
     return {"items": [TransactionOut.model_validate(item) for item in items], "total": count,
             "income": int(income), "expense": int(expense), "net": int(income - expense)}
+
+
+@router.get("/calendar")
+def transaction_calendar(
+    year: int = Query(..., ge=1, le=9999), month: int = Query(..., ge=1, le=12),
+    account: Optional[str] = None,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
+):
+    start = date(year, month, 1)
+    end = date(year, month, monthrange(year, month)[1])
+    query = filtered_transactions(db, current_user.id, start_date=str(start), end_date=str(end), account=account)
+    kinds = ("income", "expense", "transfer_in", "transfer_out", "adjustment_in", "adjustment_out")
+    rows = query.with_entities(
+        Transaction.date, func.count(Transaction.id),
+        *(func.coalesce(func.sum(case((Transaction.type == kind, Transaction.amount), else_=0)), 0) for kind in kinds),
+        func.coalesce(func.sum(case((Transaction.type.in_(("transfer_in", "transfer_out")), 1), else_=0)), 0),
+        func.coalesce(func.sum(case((Transaction.type.in_(("adjustment_in", "adjustment_out")), 1), else_=0)), 0),
+    ).group_by(Transaction.date).order_by(Transaction.date).all()
+    by_date = {row[0]: {"count": int(row[1]), **{kind: int(row[index + 2]) for index, kind in enumerate(kinds)},
+                        "transfer_count": int(row[-2]), "adjustment_count": int(row[-1])} for row in rows}
+    keys = ("count", *kinds, "transfer_count", "adjustment_count")
+    days = []
+    for day in range(1, end.day + 1):
+        day_date = date(year, month, day)
+        item = {key: by_date.get(day_date, {}).get(key, 0) for key in keys}
+        days.append({"date": day_date, **item, "net": item["income"] - item["expense"]})
+    totals = {key: sum(day[key] for day in days) for key in (*keys, "net")}
+    years_query = db.query(extract("year", Transaction.date)).filter(Transaction.user_id == current_user.id)
+    if account and account != "all":
+        years_query = years_query.filter(Transaction.account == account)
+    years = sorted({int(row[0]) for row in years_query.distinct()})
+    return {"year": year, "month": month, "days": days, "totals": totals, "available_years": years}
 
 
 def require_owned_accounts(db: Session, user_id: int, *names: str):

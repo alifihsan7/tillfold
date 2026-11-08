@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { BillPaymentModal } from "./BillPaymentModal";
 import { Trash2, Calendar, Edit2, Clock, Pause, Play } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
+import { todayWib } from "@/lib/transactionCalendar";
 
 export interface SubscriptionItem {
   id: number;
@@ -52,8 +53,7 @@ export function SubscriptionsView({
   onPaymentChanged,
 }: SubscriptionsViewProps) {
   const [payId, setPayId] = useState<number | null>(null);
-  const currentDate = new Date();
-  const today = currentDate.getFullYear() + "-" + String(currentDate.getMonth() + 1).padStart(2, "0") + "-" + String(currentDate.getDate()).padStart(2, "0");
+  const today = todayWib();
   return (
     <div className="ai7-subscriptions space-y-8">
       <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-luma-smokeline py-5 sm:grid-cols-3" aria-label="Ringkasan tagihan" aria-busy={loading}>

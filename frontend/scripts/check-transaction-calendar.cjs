@@ -42,4 +42,15 @@ for (const [instant, expected] of [
   ['2026-12-31T17:00:00Z', '2027-01-01'],
   ['2024-02-28T17:00:00Z', '2024-02-29'],
 ]) assert.equal(todayWib(new Date(instant)), expected);
+const originalTimezone = process.env.TZ;
+try {
+  for (const timezone of ['UTC', 'America/New_York', 'Asia/Jakarta']) {
+    process.env.TZ = timezone;
+    assert.equal(todayWib(new Date('2026-11-07T17:00:00Z')), '2026-11-08');
+    assert.equal(todayWib(new Date('2026-12-31T17:00:00Z')), '2027-01-01');
+  }
+} finally {
+  if (originalTimezone === undefined) delete process.env.TZ;
+  else process.env.TZ = originalTimezone;
+}
 console.log('PASS: calendar grids, heatmap and WIB midnight/month/year/leap-day boundaries.');

@@ -5,6 +5,7 @@ import { authFetch } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
 import { DateField } from "./ui/DateField";
+import { todayWib } from "@/lib/transactionCalendar";
 
 interface PaymentPreview {
   name: string; amount: number; account: string; is_active: boolean;
@@ -17,8 +18,7 @@ interface PaymentPreview {
 export function BillPaymentModal({ subscriptionId, onClose, onChanged }: {
   subscriptionId: number; onClose: () => void; onChanged: () => void;
 }) {
-  const now = new Date();
-  const today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const today = todayWib();
   const [data, setData] = useState<PaymentPreview | null>(null);
   const [source, setSource] = useState("new");
   const [paidDate, setPaidDate] = useState(today);

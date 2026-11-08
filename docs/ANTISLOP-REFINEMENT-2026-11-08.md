@@ -239,3 +239,14 @@ Perbaikan: helper bersama `todayWib` dipakai untuk inisialisasi, reset dan fallb
 - Purpose-Gate PASS: menyamakan default dengan zona waktu aplikasi; tidak menambah fitur atau dekorasi.
 - Liveliness PASS: tidak mengubah visual atau motion.
 - Craftsmanship PASS: tanggal manual dan transaksi lama tidak ditulis ulang; backend/API tidak berubah, pengujian form dibatalkan tanpa menyimpan. Peringatan lint hook/img lama tetap ada.
+
+## Konsistensi tanggal tagihan WIB
+
+Bug lanjutan: tanggal default pembayaran dan pembanding status tagihan memakai zona waktu perangkat; default tanggal spesifik +30 hari memakai instan UTC, dan billing_day dari tanggal ISO dibaca dengan getDate lokal. Perangkat dengan zona waktu berbeda dari WIB dapat menghasilkan hari yang berbeda.
+
+Perbaikan: pembayaran/status memakai todayWib, +30 hari berangkat dari tanggal WIB dengan aritmetika UTC, dan hari dari tanggal ISO dibaca dengan getUTCDate. Tanggal eksplisit tetap dipertahankan.
+
+- Hard Gate PASS: build lulus; checker menjalankan helper dengan TZ proses UTC, America/New_York dan Asia/Jakarta, hasil batas hari/tahun WIB sama. Browser memverifikasi tanggal pembayaran 8 November, default +30 hari 8 Desember, dan tanggal manual 1 Januari tetap ada setelah mengganti jenis tanggal. Tidak menyimpan tagihan atau pembayaran.
+- Purpose-Gate PASS: hanya memperbaiki konsistensi tanggal; tidak menambah fitur atau dekorasi.
+- Liveliness PASS: tampilan dan motion tetap.
+- Craftsmanship PASS: backend dan tanggal tersimpan tidak diubah; uji zona waktu proses dipisahkan dari browser yang memakai jam perangkat sebenarnya. Peringatan lint hook/img lama tetap ada.

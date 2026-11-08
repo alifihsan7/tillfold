@@ -2,6 +2,7 @@
 
 import { DateField } from "@/components/ui/DateField";
 import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
+import { todayWib } from "@/lib/transactionCalendar";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Plus,
@@ -996,8 +997,8 @@ export default function FinanceDashboard() {
       if (subBillingType !== "fixed_day") {
         payload.exact_due_date = subExactDueDate;
         const parsed = new Date(subExactDueDate);
-        if (!isNaN(parsed.getDate())) {
-          payload.billing_day = parsed.getDate();
+        if (!isNaN(parsed.getUTCDate())) {
+          payload.billing_day = parsed.getUTCDate();
         }
       } else {
         payload.billing_day = day;
@@ -2649,8 +2650,8 @@ export default function FinanceDashboard() {
                 onClick={() => {
                   setSubBillingType("exact_date");
                   if (!subExactDueDate) {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 30);
+                    const d = new Date(`${todayWib()}T12:00:00Z`);
+                    d.setUTCDate(d.getUTCDate() + 30);
                     setSubExactDueDate(d.toISOString().split("T")[0]);
                   }
                 }}

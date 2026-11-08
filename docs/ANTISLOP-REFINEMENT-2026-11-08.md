@@ -159,3 +159,14 @@ Anotasi pengguna berikutnya meminta toolbar kembali ke ukuran sebelum perapihan,
 - Purpose-Gate PASS: mengembalikan ukuran yang dipilih pengguna; tidak menambah dekorasi atau motion.
 - Liveliness PASS: dials tetap 1/2/1.
 - Craftsmanship PASS: aturan dialog/mobile serta token posisi sidebar tetap; tidak mengubah data, API, atau interaksi.
+
+## Dropdown rekening tanpa pengulangan
+
+Anotasi pengguna menyorot nama yang ditambah catatan dalam kurung, lalu catatan yang sama diulang di baris kedua. Pilihan rekening sekarang memakai nama asli saja, tanpa titik warna dekoratif. Catatan rekening tetap tersimpan di Pengaturan. Nilai yang dikirim ke API tetap nama rekening seperti sebelumnya; penanda arsip di editor transaksi tetap dipertahankan.
+
+Status terpilih memakai latar tipis dan centang; garis bawah seperti tab dihapus dari opsi dropdown. Focus ring keyboard tetap ada.
+
+- Hard Gate PASS: production build lulus; delapan opsi dummy diperiksa satu baris, tinggi 40px, tanpa dot atau deskripsi berulang. Memilih Cash Uji memperbarui pemicu; Escape menutup opsi dan mengembalikan fokus tanpa menutup form. Tidak menyimpan transaksi.
+- Purpose-Gate PASS: menghapus informasi berulang dan dekorasi yang tidak membantu memilih rekening; tidak mengubah palet atau menambah aset.
+- Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1; pilihan lebih mudah dipindai tanpa animasi baru.
+- Craftsmanship PASS: dark/light diperiksa pada viewport anotasi 1095x884, nama akun dan nilai pemilihan tetap sama; catatan tidak dihapus dari data. Aturan tinggi mobile tetap 44px.

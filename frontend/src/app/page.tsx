@@ -873,12 +873,10 @@ export default function FinanceDashboard() {
     if (activeAccounts.length > 0) {
       return activeAccounts.map((ca) => ({
         value: ca.name,
-        label: `${ca.name} (${ca.tag || "Akun"})`,
-        color: ca.color === "cyanHub" ? "bg-cyan-500" : ca.color === "teal" ? "bg-teal-500" : ca.color === "purpleLock" ? "bg-purple-500" : ca.color === "blue" ? "bg-blue-600" : ca.color === "coralFall" ? "bg-rose-500" : "bg-amber-500",
-        description: ca.tag || "Rekening aktif",
+        label: ca.name,
       }));
     }
-    return TX_ACCOUNT_OPTIONS;
+    return TX_ACCOUNT_OPTIONS.map(({ value }) => ({ value, label: value }));
   }, [activeAccounts]);
 
   // Dynamic tab list for transaction filtering

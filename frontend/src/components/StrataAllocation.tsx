@@ -16,10 +16,7 @@ interface StrataAllocationBarProps {
   loading?: boolean;
 }
 
-/* Luma Dark Glass v2.0 allocation palette — warm solids, no gradients.
-   Bar labels always Charcoal (#222) for contrast:
-   Charcoal@Sage 12.28, @Gold 11.04, @Coral 9.36, @Ember 6.40 (AA, bold micro-label). */
-const LUMA_SEGMENTS = ["#D6E9B8", "#F08A4B", "#EDD774", "#FFB59D", "#F4F1EC"];
+const ALLOCATION_COLORS = Array.from({ length: 8 }, (_, index) => `var(--allocation-${index + 1})`);
 
 const DEFAULT_BUCKETS: BucketAllocationItem[] = [
   { account: "Rekening Utama", percentage: 50.0, purpose: "Belanja & Operasional" },
@@ -77,11 +74,11 @@ export function StrataAllocationBar({
   const activeBuckets = buckets && buckets.length > 0 ? buckets : DEFAULT_BUCKETS;
 
   return (
-    <section aria-label="Distribusi alokasi anggaran" className="luma-glass p-6 sm:p-7 space-y-5">
+    <section aria-label="Distribusi alokasi anggaran" className="allocation-panel luma-glass p-6 sm:p-7 space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
           <h2 className="ai7-type-section text-luma-ivory tracking-tight">
-            Distribusi Alokasi Anggaran
+            Distribusi alokasi anggaran
           </h2>
           <p className="text-xs sm:text-sm text-luma-smoke mt-0.5 tabular-nums">
             {effectiveSalary > 0
@@ -94,14 +91,13 @@ export function StrataAllocationBar({
         </span>
       </div>
 
-      {/* Horizontal Stacked Bar — Luma warm solids */}
       <div
-        className="flex gap-1 min-h-[44px] rounded-full overflow-hidden p-1.5 bg-black/25 border border-luma-smokeline"
+        className="flex gap-0.5 min-h-[44px] rounded-xl overflow-hidden p-1 bg-luma-charcoal border border-luma-smokeline"
         role="img"
         aria-label={`Proporsi alokasi: ${activeBuckets.map((b) => `${b.account} ${b.percentage.toFixed(1)} persen`).join(", ")}`}
       >
         {activeBuckets.map((b, idx) => {
-          const seg = LUMA_SEGMENTS[idx % LUMA_SEGMENTS.length];
+          const seg = ALLOCATION_COLORS[idx % ALLOCATION_COLORS.length];
           const isFirst = idx === 0;
           const isLast = idx === activeBuckets.length - 1;
           const showText = b.percentage >= 4;
@@ -110,12 +106,12 @@ export function StrataAllocationBar({
             <div
               key={b.account}
               style={{ flex: b.percentage, backgroundColor: seg }}
-              className={`${isFirst ? "rounded-l-full" : ""} ${isLast ? "rounded-r-full" : ""} transition-all hover:brightness-110 flex items-center justify-center`}
+              className={`${isFirst ? "rounded-l-md" : ""} ${isLast ? "rounded-r-md" : ""} min-w-0 overflow-hidden flex items-center justify-center`}
               title={`${b.account}: ${b.percentage.toFixed(1)}%`}
             >
               {showText ? (
-                <span className="text-xs leading-none select-none font-semibold font-sans text-luma-charcoal px-1 whitespace-nowrap">
-                  {b.percentage < 10 ? b.percentage.toFixed(1) : Math.round(b.percentage)}%
+                <span className="allocation-bar-label text-xs leading-none select-none font-semibold font-sans px-1 whitespace-nowrap">
+                  {Number(b.percentage.toFixed(1))}%
                 </span>
               ) : null}
             </div>
@@ -123,10 +119,9 @@ export function StrataAllocationBar({
         })}
       </div>
 
-      {/* Pos Breakdown — smoked mini-wells */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3 pt-1">
         {activeBuckets.map((b, idx) => {
-          const seg = LUMA_SEGMENTS[idx % LUMA_SEGMENTS.length];
+          const seg = ALLOCATION_COLORS[idx % ALLOCATION_COLORS.length];
           const allocatedAmt = Math.round((b.percentage / 100) * effectiveSalary);
           const shortPurpose = b.purpose
             ? b.purpose.split("(")[0].trim()
@@ -135,12 +130,13 @@ export function StrataAllocationBar({
           return (
             <div
               key={b.account}
-              className="rounded-2xl bg-white/[0.04] border border-luma-smokeline p-3.5 min-w-0"
+              style={{ "--allocation-color": seg } as React.CSSProperties}
+              className="allocation-legend-item rounded-2xl border p-3.5 min-w-0"
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <span
                   aria-hidden="true"
-                  className="w-2 h-2 rounded-full shrink-0"
+                  className="w-3 h-3 rounded-[3px] shrink-0"
                   style={{ backgroundColor: seg }}
                 />
                 <span className="text-luma-ivory font-semibold text-xs sm:text-sm break-words leading-snug">
@@ -151,7 +147,7 @@ export function StrataAllocationBar({
                 {b.percentage.toFixed(1)}%
                 {effectiveSalary > 0 ? ` · ${formatRupiah(allocatedAmt)}` : ""}
               </div>
-              <div className="text-luma-smoke/80 text-xs mt-0.5 break-words leading-snug">
+              <div className="text-luma-smoke text-xs mt-0.5 break-words leading-snug">
                 {shortPurpose}
               </div>
             </div>

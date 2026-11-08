@@ -479,7 +479,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-overview-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; min-height: 48px; list-style: none; font-size: 12px; color: var(--luma-smoke); }
 .luma-overview-details > summary::-webkit-details-marker { display: none; }
 .luma-overview-details[open] > summary svg { transform: rotate(180deg); }
-.luma-accounts { padding: 20px 24px; border-radius: var(--ai7-radius-panel); background: rgba(255,255,255,.035); }
+.luma-accounts { padding: 20px 24px; border-radius: var(--ai7-radius-panel); background: var(--luma-panel-surface); border: 1px solid var(--luma-smokeline); }
 .luma-accounts-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: 20px; }
 .luma-account-item { padding: 0; }
 .luma-recent { padding: 22px 24px; border-radius: var(--ai7-radius-panel); background: var(--luma-panel-surface, #3b3835); border: 1px solid rgba(255,255,255,.08); }
@@ -832,4 +832,29 @@ textarea:focus-visible,
 .luma-app .ai7-view-selection button[aria-pressed="true"]:hover,
 .luma-app .ai7-tab-group [role="tab"][aria-selected="true"]:hover {
   background: rgb(var(--luma-transfer-rgb) / .16);
+}
+
+/* Categorical colors identify allocations; they do not indicate financial status. */
+.allocation-panel {
+  container-type: inline-size;
+  --allocation-1: #7fac96; --allocation-2: #6baca9;
+  --allocation-3: #82a4ce; --allocation-4: #a79fc5;
+  --allocation-5: #d49b98; --allocation-6: #c9aa70;
+  --allocation-7: #a9b579; --allocation-8: #9aa9bb;
+  --allocation-label: #17191d;
+}
+.light .allocation-panel {
+  --allocation-1: #37745a; --allocation-2: #3b7380;
+  --allocation-3: #486f9e; --allocation-4: #756490;
+  --allocation-5: #9b5f65; --allocation-6: #846522;
+  --allocation-7: #677238; --allocation-8: #5e6b7e;
+  --allocation-label: #ffffff;
+}
+.allocation-bar-label { display: none; color: var(--allocation-label); }
+.allocation-legend-item {
+  background: color-mix(in srgb, var(--allocation-color) 8%, var(--luma-panel-surface));
+  border-color: color-mix(in srgb, var(--allocation-color) 35%, var(--luma-smokeline));
+}
+@container (min-width: 700px) {
+  .allocation-bar-label { display: inline; }
 }

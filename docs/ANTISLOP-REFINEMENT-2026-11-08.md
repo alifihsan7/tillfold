@@ -109,3 +109,19 @@ Delivery Gate untuk revisi interaksi:
 - Craftsmanship PASS: satu aturan tombol berlaku juga untuk portal dialog/dropdown; focus ring dan disabled tetap ada. Pemeriksaan browser dilakukan pada light mode, dengan aturan yang sama untuk dark mode; palet tidak berubah. Aturan reduced-motion diperiksa pada sumber CSS, bukan melalui emulasi OS.
 
 Peringatan lint hook/img lama masih muncul saat build. Tidak ada klaim pengujian ulang seluruh alur aplikasi untuk perubahan visual ini.
+
+## Revisi dari anotasi: latar rekening dan warna alokasi
+
+- Rekening kas memakai surface panel dan border yang sama dengan panel lain; alasan: batas kelompok rekening terbaca di light mode, tidak menyatu dengan halaman.
+- Grafik memakai delapan warna kategorikal dan legenda yang cocok satu per satu. Warna hanya membedakan rekening dalam grafik ini, bukan status finansial atau pengganti aksen fungsi aplikasi.
+- Versi light memakai warna lebih gelap dengan label putih; dark memakai warna lebih terang dengan label gelap. Kontras minimum label: light 4.98:1, dark 6.79:1. Kontras minimum warna seri terhadap panel: light 4.90:1, dark 6.04:1.
+- Legenda mendapat tint 8% dan swatch lebih besar supaya pemetaan warna terlihat. Deskripsi memakai text-smoke penuh agar tidak terlalu pucat.
+- Label 12.5% tidak dibulatkan menjadi 13%; untuk delapan alokasi sama besar, tampilan tidak lagi menyiratkan total 104%. Proporsi data tidak berubah.
+- Di konten di bawah 700px, angka tetap ada di legenda dan label segmen disembunyikan agar tidak menumpuk.
+
+Delivery Gate revisi anotasi:
+
+- Hard Gate PASS: production build lulus; browser menunjukkan panel rekening #fdfdfe di light dan #232326 di dark; delapan warna bar sama dengan swatch legenda; viewport mobile 390px tidak overflow. Tidak menambah interaksi, data, aset, atau klaim.
+- Purpose-Gate PASS: latar mengelompokkan rekening; warna kategorikal memisahkan seri aktual; tidak menambah gradient, glow, motion, atau shadow. Batas antarsegmen memakai gap netral.
+- Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1 tetap; fokus pada grafik alokasi, warna di luar grafik tidak ditambah.
+- Craftsmanship PASS: kedua tema diperiksa pada ukuran anotasi 1915x884; legenda tetap memuat delapan nama dan persentase di mobile. Empty/loading dan perhitungan lama dipertahankan; tidak mengklaim pengujian ulang seluruh alur keuangan.

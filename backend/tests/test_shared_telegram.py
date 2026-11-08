@@ -30,7 +30,7 @@ def shared_bot(monkeypatch):
         app.include_router(bot_webhook.router, prefix="/bot")
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[get_strict_current_user] = lambda: users[0]
-        monkeypatch.setattr(bot, "SessionLocal", lambda: Session(engine))
+        monkeypatch.setattr(bot, "SessionLocal", lambda: Session(engine, expire_on_commit=False))
         monkeypatch.setattr(auth.settings, "TELEGRAM_BOT_TOKEN", "test-token")
         response = Mock()
         response.json.return_value = {"ok": True, "result": {"username": "TillfoldTestBot"}}
@@ -43,7 +43,7 @@ def shared_bot(monkeypatch):
 
 
 def message(chat_id, text, kind="private", sender=None):
-    return {"message": {"chat": {"id": chat_id, "type": kind},
+    return {"message": {"message_id": 1, "chat": {"id": chat_id, "type": kind},
                         "from": {"id": sender or chat_id}, "text": text}}
 
 

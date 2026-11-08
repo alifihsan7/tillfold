@@ -414,7 +414,7 @@ def test_bot_rekap_monthly_cashflow(db_session, bot_user, capture_messages):
 
 
 def test_bot_process_update_command_routing(db_session, bot_user, capture_messages, monkeypatch):
-    monkeypatch.setattr("app.bot.bot.SessionLocal", lambda: db_session)
+    monkeypatch.setattr("app.bot.bot.SessionLocal", lambda: TestingSessionLocal(expire_on_commit=False))
 
     payload_pacing = {
         "update_id": 1,

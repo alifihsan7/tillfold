@@ -14,21 +14,21 @@ logger = logging.getLogger("ai7-finance-bot")
 
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, case
+from sqlalchemy import desc, func, case, event
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.core.parser import parse_transaction, parse_multi_transactions, parse_amount
 from app.core.transfer import find_paired_transfer
 from app.db.session import SessionLocal, Base, engine
 from app.models.transaction import Transaction
-from app.models.subscription import SubscriptionPayment
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.account import Account
 from app.models.jago_pocket import JagoPocket
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt, PaycheckCycle
 from app.models.subscription import Subscription
 from app.models.goal import Goal
-from app.models.user import User
+from app.models.user import User, TelegramProcessedMessage
 
 from app.services.analytics import compute_safe_to_spend_metrics, resolve_pocket_account
 from app.services.paycheck_cycles import recorded_cycle_ends, receipt_allocations
@@ -745,13 +745,16 @@ def get_acc_balance(acc_name: str, db: Session, user_id: int) -> int:
     return int(row or 0)
 
 def normalize_account(raw: str, db: Optional[Session] = None, user_id: Optional[int] = None):
-    if not raw:
+    if not isinstance(raw, str) or not raw.strip():
         return None
     r = raw.strip().lower()
-    if db and user_id is not None:
-        for acc in db.query(Account).filter(Account.user_id == user_id).all():
-            if acc.name.lower() in r or r in acc.name.lower():
-                return acc.name
+    if db is not None and user_id is not None:
+        names = [acc.name for acc in db.query(Account).filter(Account.user_id == user_id).all()]
+        exact = [name for name in names if name.casefold() == r.casefold()]
+        if len(exact) == 1:
+            return exact[0]
+        matches = [name for name in names if re.search(r"(?<!\w)" + re.escape(r) + r"(?!\w)", name.casefold())]
+        return matches[0] if len(matches) == 1 else None
     if "mandiri" in r:
         return "Mandiri"
     elif "bibit" in r:
@@ -780,9 +783,9 @@ def handle_transfer(chat_id: int, text: str, db: Session, user: Optional[User] =
     clean = text.strip()
 
     user_accs = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id.asc()).all()
-    acc_options_str = ", ".join(f"`{a.name}`" for a in user_accs) if user_accs else "`Rekening Utama`, `Rekening Tagihan`, `Tabungan`"
+    acc_options_str = ", ".join(f"`{a.name}`" for a in user_accs) if user_accs else "Belum ada rekening. Tambahkan melalui web."
 
-    if clean.lower() in ["/transfer", "transfer", "tf", "🔄 transfer"]:
+    if clean.lower() in ["/transfer", "/tf", "transfer", "tf", "🔄 transfer"]:
         guide = f"""🔄 **Panduan Transfer Antar Rekening**
 
 Gunakan format:
@@ -802,47 +805,56 @@ atau singkat:
         send_message(chat_id, guide, bot_token=bot_token)
         return
 
-    pattern = re.compile(r"^(?:/transfer|transfer|tf)\s+([\d\.\,kKrbRB]+)\s+(?:dari\s+)?([a-zA-Z0-9\s]+?)\s+ke\s+([a-zA-Z0-9\s]+?)(?:\s*[:\-]\s*(.*)|\s+(.*))?$", re.IGNORECASE)
+    pattern = re.compile(r"^(?:/transfer|/tf|transfer|tf)\s+([\d.,kKrbRB]+)\s+(?:dari\s+)?(.+?)\s+ke\s+(.+)$", re.IGNORECASE)
     match = pattern.match(clean)
     if not match:
-        send_message(chat_id, "⚠️ Format transfer tidak dikenali.\n\nContoh:\n`tf 100k utama ke tabungan`\natau ketik `/transfer` untuk panduan lengkap.", bot_token=bot_token)
+        send_message(chat_id, "Format transfer tidak dikenali. Contoh: `tf 100k rekening asal ke rekening tujuan`.", bot_token=bot_token)
         return
 
-    amt_str, from_raw, to_raw, desc1, desc2 = match.groups()
+    amt_str, from_raw, destination = match.groups()
+    to_raw, transfer_note = destination, ""
+    for account in sorted(user_accs, key=lambda row: len(row.name), reverse=True):
+        named = re.match(re.escape(account.name) + r"(?=$|[\s:\-])(.*)$", destination, re.IGNORECASE)
+        if named:
+            to_raw, transfer_note = account.name, named.group(1).strip(" :-")
+            break
+    else:
+        for cut in range(len(destination.split()), 0, -1):
+            words = destination.split()
+            candidate = " ".join(words[:cut]).rstrip(":-")
+            if normalize_account(candidate, db, user_id=user_id):
+                to_raw, transfer_note = candidate, " ".join(words[cut:]).lstrip(":-").strip()
+                break
     from app.core.parser import parse_amount
-    amt, _ = parse_amount(amt_str)
-    if not amt or amt <= 0:
+    try:
+        amt, _ = parse_amount(amt_str)
+    except (ValueError, OverflowError):
+        amt = None
+    if not amt or not 0 < amt <= 9_000_000_000_000_000:
         send_message(chat_id, "⚠️ Nominal transfer tidak valid.", bot_token=bot_token)
         return
 
+    if not user_accs:
+        send_message(chat_id, "Tambahkan rekening di web sebelum mencatat transfer.", bot_token=bot_token)
+        return
     from_acc = normalize_account(from_raw, db, user_id=user_id)
     to_acc = normalize_account(to_raw, db, user_id=user_id)
 
-    valid_acc_names = {a.name.lower(): a.name for a in user_accs}
-    if user_accs:
-        from_matched = valid_acc_names.get(from_acc.lower()) if from_acc else None
-        to_matched = valid_acc_names.get(to_acc.lower()) if to_acc else None
-        if not from_matched:
-            send_message(chat_id, f"⚠️ Rekening asal `{from_raw}` tidak dikenali.\nPilihan rekening Anda:\n{acc_options_str}", bot_token=bot_token)
-            return
-        if not to_matched:
-            send_message(chat_id, f"⚠️ Rekening tujuan `{to_raw}` tidak dikenali.\nPilihan rekening Anda:\n{acc_options_str}", bot_token=bot_token)
-            return
-        from_acc = from_matched
-        to_acc = to_matched
-    else:
-        if not from_acc:
-            send_message(chat_id, f"⚠️ Rekening asal `{from_raw}` tidak dikenali.\nPilihan rekening Anda:\n{acc_options_str}", bot_token=bot_token)
-            return
-        if not to_acc:
-            send_message(chat_id, f"⚠️ Rekening tujuan `{to_raw}` tidak dikenali.\nPilihan rekening Anda:\n{acc_options_str}", bot_token=bot_token)
-            return
+    if not from_acc:
+        send_message(chat_id, f"Rekening asal tidak dikenali. Gunakan nama lengkap dari daftar:\n{acc_options_str}", bot_token=bot_token)
+        return
+    if not to_acc:
+        send_message(chat_id, f"Rekening tujuan tidak dikenali. Gunakan nama lengkap dari daftar:\n{acc_options_str}", bot_token=bot_token)
+        return
 
     if from_acc.lower() == to_acc.lower():
         send_message(chat_id, "⚠️ Rekening asal dan rekening tujuan tidak boleh sama.", bot_token=bot_token)
         return
 
-    desc = (desc1 or desc2 or "Transfer Antar Rekening").strip()
+    desc = transfer_note or "Transfer Antar Rekening"
+    if len(desc) + max(len(from_acc), len(to_acc)) + 20 > 255:
+        send_message(chat_id, "Catatan transfer terlalu panjang. Persingkat lalu kirim ulang.", bot_token=bot_token)
+        return
     now_wib = datetime.now(WIB)
     tx_date = now_wib.date()
 
@@ -885,29 +897,17 @@ def handle_batal(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
         send_message(chat_id, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru di dashboard untuk koreksi.", bot_token=bot_token)
         return
 
-    db.query(SubscriptionPayment).filter(
-        SubscriptionPayment.user_id == user_id, SubscriptionPayment.transaction_id == last.id,
-    ).delete(synchronize_session=False)
-    deleted_info = {
-        "description": last.description,
-        "amount": last.amount,
-        "account": last.account,
-        "category": last.category,
-        "type": last.type,
-    }
-
-    is_paired_transfer = False
-    pair_account = None
-
-    if last.type in ("transfer_out", "transfer_in"):
-        pair = find_paired_transfer(db, last)
-        if pair:
-            is_paired_transfer = True
-            pair_account = pair.account
-            db.delete(pair)
-
-    db.delete(last)
-    db.commit()
+    from fastapi import HTTPException
+    from app.api.v1.endpoints.transactions import delete_transaction
+    deleted_info = {field: getattr(last, field) for field in ("description", "amount", "account", "category", "type")}
+    pair = find_paired_transfer(db, last) if last.type in ("transfer_out", "transfer_in") else None
+    pair_account = pair.account if pair else None
+    try:
+        result = delete_transaction(last.id, current_user=user, db=db)
+    except HTTPException as exc:
+        send_message(chat_id, str(exc.detail), bot_token=bot_token)
+        return
+    is_paired_transfer = len(result["deleted_ids"]) == 2
 
     if is_paired_transfer:
         msg = f"""🗑️ **Transfer Berpasangan Berhasil Dibatalkan!**
@@ -941,6 +941,9 @@ def handle_gajian(chat_id: int, text: str, db: Session, user: Optional[User] = N
     from app.services.paycheck_cycles import receipt_allocations
     import uuid
 
+    if not db.query(Account.id).filter(Account.user_id == user_id).first():
+        send_message(chat_id, "Tambahkan rekening di web sebelum mencatat gaji.", bot_token=bot_token)
+        return
     cfg = get_or_seed_config(db, user_id)
     buckets = get_or_seed_buckets(db, cfg.id)
     user_accs = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id.asc()).all()
@@ -971,7 +974,11 @@ def handle_gajian(chat_id: int, text: str, db: Session, user: Optional[User] = N
     parsed_amt = None
     if len(parts) > 1:
         from app.core.parser import parse_amount
-        parsed_amt, _ = parse_amount(parts[1])
+        try:
+            parsed_amt, _ = parse_amount(parts[1])
+        except (ValueError, OverflowError):
+            send_message(chat_id, "Nominal gaji tidak valid.", bot_token=bot_token)
+            return
 
     if not parsed_amt or parsed_amt <= 0:
         latest_receipt = db.query(PaycheckReceipt).join(
@@ -1026,6 +1033,9 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
             return
 
     total = int(parsed_amt)
+    if not 0 < total <= 9_000_000_000_000_000:
+        send_message(chat_id, "Nominal gaji tidak valid.", bot_token=bot_token)
+        return
 
     # 1. Record single income transaction in receiver account (source_account)
     tx = Transaction(
@@ -1134,17 +1144,92 @@ def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_to
     except Exception as e:
         send_message(chat_id, f"❌ Gagal sinkronisasi ke Google Sheets: {str(e)}", bot_token=bot_token)
 
+def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
+    from app.schemas.transaction import TransactionCreate
+    accounts = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id).all()
+    if not accounts:
+        raise ValueError("Tambahkan rekening di web sebelum mencatat transaksi.")
+    cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
+    names = {account.name for account in accounts}
+    normalized = []
+    if not isinstance(items, list) or not items:
+        raise ValueError("Tidak ada transaksi yang dapat dicatat.")
+    for original in items:
+        if not isinstance(original, dict):
+            raise ValueError("Rincian transaksi tidak valid. Belum ada transaksi yang dicatat.")
+        item = dict(original)
+        if text_items:
+            raw = item.get("raw_text", "")
+            matched = [account.name for account in accounts if re.search(
+                r"(?<!\w)" + re.escape(account.name) + r"(?!\w)", raw, re.IGNORECASE)]
+            # Prefer the complete account name over another name contained inside it.
+            matched = [name for name in matched if not any(name.casefold() in other.casefold() and name != other for other in matched)]
+            if len(matched) > 1:
+                raise ValueError("Sebutkan satu rekening untuk setiap transaksi. Untuk pindah saldo, gunakan /transfer.")
+            if matched:
+                remainder = re.sub(re.escape(matched[0]), " ", raw, flags=re.IGNORECASE)
+                item = parse_transaction(remainder)
+                if not item.get("success"):
+                    raise ValueError("Nominal transaksi tidak ditemukan setelah nama rekening dibaca.")
+                item.update(account=matched[0], account_explicit=True, raw_text=raw)
+            if not item.get("account_explicit"):
+                item["account"] = None
+        kind = item.get("type", "expense")
+        amount = item.get("amount")
+        if type(amount) is not int or not 0 < amount <= 9_000_000_000_000_000:
+            raise ValueError("Nominal transaksi harus berupa rupiah bulat, lebih dari 0, dan tidak melebihi batas.")
+        if kind not in ("income", "expense", "transfer") or (text_items and kind == "transfer"):
+            raise ValueError("Tipe transaksi tidak valid. Gunakan /transfer untuk pindah saldo.")
+        item["type"] = kind
+        item["description"] = str(item.get("description") or "Transaksi Telegram").strip()
+        item["category"] = str(item.get("category") or "Lainnya").strip()
+        if len(item["description"]) > 255 or len(item["category"]) > 100:
+            raise ValueError("Keterangan atau kategori terlalu panjang.")
+        if kind == "transfer":
+            for field in ("from_account", "to_account"):
+                item[field] = normalize_account(item.get(field), db, user_id=user_id)
+                if item[field] not in names:
+                    raise ValueError("Rekening transfer tidak dikenali. Pilih rekening milik Anda dari web.")
+            if item["from_account"] == item["to_account"]:
+                raise ValueError("Rekening asal dan tujuan tidak boleh sama.")
+        else:
+            supplied = item.get("account")
+            if supplied:
+                account = normalize_account(supplied, db, user_id=user_id)
+            elif kind == "income":
+                account = cfg.source_account if cfg and cfg.source_account in names else accounts[0].name
+            else:
+                account = resolve_pocket_account(db, user_id, user_accs=accounts, cfg=cfg)
+            if account not in names:
+                raise ValueError("Rekening tidak dikenali atau namanya ambigu. Gunakan nama rekening lengkap milik Anda.")
+            item["account"] = account
+            TransactionCreate(type=kind, amount=amount, account=account,
+                              category=item["category"], description=item["description"])
+        normalized.append(item)
+    return normalized
+
+
 def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None, voice_prefix: str = ""):
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", reply_to_message_id=message_id, bot_token=bot_token)
         return
     user_id = user.id
-    items = parse_multi_transactions(text)
+    try:
+        items = parse_multi_transactions(text)
+    except (ValueError, OverflowError):
+        send_message(chat_id, "Nominal transaksi tidak valid.", reply_to_message_id=message_id, bot_token=bot_token)
+        return
     if not items:
         # Fall back to single parser to report specific error
         fallback = parse_transaction(text)
         err_msg = fallback.get("error", "Format tidak terdeteksi.")
         send_message(chat_id, f"{voice_prefix}❌ {err_msg}", reply_to_message_id=message_id, bot_token=bot_token)
+        return
+
+    try:
+        items = prepare_bot_items(items, db, user_id, text_items=True)
+    except (ValueError, OverflowError) as exc:
+        send_message(chat_id, "Rincian transaksi tidak valid. " + str(exc), reply_to_message_id=message_id, bot_token=bot_token)
         return
 
     now_wib = datetime.now(WIB)
@@ -1333,39 +1418,29 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
         elif file_path.lower().endswith(".webp"):
             mime_type = "image/webp"
 
+    transcribed_text = ""
     if media_type == "audio":
         try:
             import httpx
             fn = os.path.basename(file_path) if file_path else "audio.ogg"
-            resp = httpx.post(
+            response = httpx.post(
                 "http://127.0.0.1:8090/v1/audio/transcriptions",
                 files={"file": (fn, file_bytes)},
-                data={
-                    "language": "id",
-                    "prompt": "Mandiri, Bank Jago, Bibit, pengeluaran, pemasukan, transfer, warteg, nasi padang, kopi, indomaret, alfamart"
-                },
-                timeout=60.0
+                data={"language": "id", "prompt": "pengeluaran, pemasukan, transfer, nominal, rekening"},
+                timeout=60.0,
             )
-            if resp.status_code == 200:
-                stt_res = resp.json()
-                transcribed_text = (stt_res.get("text") or "").strip()
-                if transcribed_text:
-                    full_text = f"{transcribed_text} ({caption})" if caption else transcribed_text
-                    handle_text_message(
-                        chat_id=chat_id,
-                        text=full_text,
-                        message_id=message_id,
-                        db=db,
-                        user=user,
-                        bot_token=bot_token,
-                        voice_prefix=f"🎙️ *Suara Terdeteksi:* \"_{transcribed_text}_\"\n\n"
-                    )
-                    return
-        except Exception as e:
-            logger.error(f"Whisper STT in finance bot failed: {e}")
+            if response.status_code == 200:
+                transcribed_text = (response.json().get("text") or "").strip()
+        except Exception as exc:
+            logger.warning("Transkripsi lokal tidak tersedia: %s", exc)
+    if transcribed_text:
+        full_text = f"{transcribed_text} ({caption})" if caption else transcribed_text
+        handle_text_message(chat_id, full_text, message_id, db, user=user, bot_token=bot_token,
+                            voice_prefix=f"Suara: {transcribed_text}\n\n")
+        return
 
     db_accounts = [a.name for a in db.query(Account).filter(Account.user_id == user_id).all()]
-    all_accounts = list(set(["Mandiri", "Bank Jago", "Bibit", "BRI 1", "BRI 2"] + db_accounts))
+    all_accounts = db_accounts
 
     from app.services.ai_extractor import extract_from_media
     extraction = extract_from_media(
@@ -1392,204 +1467,28 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
         )
         return
 
-    now_wib = datetime.now(WIB)
-    time_str = now_wib.strftime("%Y-%m-%d %H:%M:%S")
-
-    c_info = get_user_cycle_info(db, user_id=user_id)
-    cycle_start = c_info["cycle_start"]
-    cycle_end = c_info["cycle_end"]
-    cycle_days = c_info["cycle_days"]
-    cycle_label = c_info["cycle_label"]
-    pocket_account = c_info["pocket_account"]
-    POCKET_ENVELOPES = get_pocket_envelopes(cycle_days)
-    MANDIRI_ENVELOPES = POCKET_ENVELOPES
-
-    tx_list = extraction.get("transactions", [])
-    transcription = extraction.get("transcription", "")
-    kind = extraction.get("kind", "media")
-
-    if media_type == "image":
-        media_header = "🤖📸 **Struk / QRIS Berhasil Dicatat Otomatis!**"
-        quote_line = f"🧾 _{transcription}_\n" if transcription else ""
-    else:
-        media_header = "🤖🎙️ **Voice Note Berhasil Dicatat Otomatis!**"
-        quote_line = f"🗣️ _\"{transcription}\"_\n" if transcription else ""
-
-    if len(tx_list) == 1:
-        item = tx_list[0]
-        tx_type = item.get("type", "expense")
-
-        if tx_type == "transfer":
-            from_acc = normalize_account(item.get("from_account", "Mandiri"), db, user_id=user_id) or "Mandiri"
-            to_acc = normalize_account(item.get("to_account", "Bibit"), db, user_id=user_id) or "Bibit"
-            amt = int(item.get("amount", 0))
-            desc = item.get("description", "Transfer Media")
-
-            tx_out = Transaction(
-                user_id=user_id,
-                type="transfer_out",
-                amount=amt,
-                account=from_acc,
-                category="Transfer",
-                description=f"Transfer ke {to_acc}: {desc}",
-                raw_text=f"ai media transfer: {kind} {desc}",
-                date=now_wib.date()
-            )
-            tx_in = Transaction(
-                user_id=user_id,
-                type="transfer_in",
-                amount=amt,
-                account=to_acc,
-                category="Transfer",
-                description=f"Transfer dari {from_acc}: {desc}",
-                raw_text=f"ai media transfer: {kind} {desc}",
-                date=now_wib.date()
-            )
-            db.add(tx_out)
-            db.add(tx_in)
-            db.flush()
-            tx_out.raw_text = f"{tx_out.raw_text} [pair_id:{tx_in.id}]"
-            tx_in.raw_text = f"{tx_in.raw_text} [pair_id:{tx_out.id}]"
-            db.commit()
-
-            bal_from = get_acc_balance(from_acc, db, user_id=user_id)
-            bal_to = get_acc_balance(to_acc, db, user_id=user_id)
-
-            reply = f"""{media_header}
-{quote_line}
-🔄 **Transfer Antar Rekening**
-
-💸 **Nominal:** `{format_rp(amt)}`
-📤 **Dari:** {from_acc} (Sisa Saldo: `{format_rp(bal_from)}`)
-📥 **Ke:** {to_acc} (Saldo Baru: `{format_rp(bal_to)}`)
-📝 **Keterangan:** {desc}
-🕒 _{time_str} WIB_
-
-ℹ️ _Saldo berhasil dipindahkan. Transaksi ini tidak memotong kuota Safe-to-Spend._"""
-            send_message(chat_id, reply, reply_to_message_id=message_id, bot_token=bot_token)
-            return
-
-        amt = int(item.get("amount", 0))
-        acc = normalize_account(item.get("account", "Mandiri"), db, user_id=user_id) or "Mandiri"
-        cat = item.get("category", "Lain-lain")
-        desc = item.get("description", "Pengeluaran Media")
-
-        tx = Transaction(
-            user_id=user_id,
-            type=tx_type,
-            amount=amt,
-            account=acc,
-            category=cat,
-            description=desc,
-            raw_text=f"ai media {kind}: {desc} {amt}",
-            date=now_wib.date()
-        )
-        db.add(tx)
-        db.commit()
-        db.refresh(tx)
-
-        type_label = "Pemasukan" if tx.type == "income" else "Pengeluaran"
-        icon = "💰" if tx.type == "income" else "💸"
-
-        reply = f"""{media_header}
-{quote_line}
-{icon} **{type_label}:** {format_rp(tx.amount)}
-📂 **Kategori:** {tx.category}
-💳 **Rekening:** {tx.account}
-📝 **Keterangan:** {tx.description}
-🕒 _{time_str} WIB_"""
-
-        if tx.type == "expense" and is_matching_pocket_account(tx.account, pocket_account) and tx.category in POCKET_ENVELOPES:
-            limit = POCKET_ENVELOPES[tx.category]
-            pocket_variants = get_pocket_account_variants(pocket_account)
-            spent = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-                Transaction.user_id == user_id,
-                func.lower(Transaction.account).in_(pocket_variants),
-                Transaction.type == "expense",
-                Transaction.category == tx.category,
-                Transaction.date >= cycle_start,
-                Transaction.date <= cycle_end
-            ).scalar()
-            spent_int = int(spent or 0)
-            rem = limit - spent_int
-            pct = round(spent_int / limit * 100, 1) if limit > 0 else 0
-            status_icon = "⚠️" if pct > 85 else "📊"
-            reply += f"\n\n{status_icon} **Status Amplop Belanja Harian ({cycle_label}):**\n• Kuota Terpakai: {format_rp(spent_int)} / {format_rp(limit)} ({pct}%)\n• Sisa Kuota: **{format_rp(rem)}**"
-
-        if tx.type == "expense":
-            reply += f"\n\n{get_safe_to_spend_snippet(db, user_id=user_id)}"
-
-        send_message(chat_id, reply, reply_to_message_id=message_id, bot_token=bot_token)
+    try:
+        items = prepare_bot_items(extraction.get("transactions", []), db, user_id)
+    except (ValueError, OverflowError) as exc:
+        send_message(chat_id, "Rincian transaksi tidak valid. " + str(exc), reply_to_message_id=message_id, bot_token=bot_token)
         return
-
-    # Multiple transactions
-    created_txs = []
-    total_amount = 0
-    categories_touched = set()
-
-    for item in tx_list:
-        tx_type = item.get("type", "expense")
-        amt = int(item.get("amount", 0))
-        acc = normalize_account(item.get("account", "Mandiri"), db, user_id=user_id) or "Mandiri"
-        cat = item.get("category", "Lain-lain")
-        desc = item.get("description", "Pengeluaran Media")
-
-        tx = Transaction(
-            user_id=user_id,
-            type=tx_type,
-            amount=amt,
-            account=acc,
-            category=cat,
-            description=desc,
-            raw_text=f"ai media multi {kind}: {desc} {amt}",
-            date=now_wib.date()
-        )
-        db.add(tx)
-        created_txs.append(tx)
-        total_amount += amt
-        if is_matching_pocket_account(acc, pocket_account) and tx_type == "expense":
-            categories_touched.add(cat)
-
+    from app.api.v1.endpoints.transactions import add_transfer_pair
+    today = datetime.now(WIB).date()
+    lines = [f"Tercatat: {len(items)} transaksi."]
+    for item in items:
+        if item["type"] == "transfer":
+            add_transfer_pair(db, user_id, item["from_account"], item["to_account"], item["amount"], today, item["description"])
+            lines.append(f"Transfer {format_rp(item['amount'])}: {item['from_account']} → {item['to_account']}")
+        else:
+            db.add(Transaction(user_id=user_id, type=item["type"], amount=item["amount"], account=item["account"],
+                               category=item["category"], description=item["description"],
+                               raw_text=f"ai media: {item['description']}", date=today))
+            label = "Masuk" if item["type"] == "income" else "Keluar"
+            lines.append(f"{label} {format_rp(item['amount'])} • {item['account']} • {item['description']}")
     db.commit()
-    for tx in created_txs:
-        db.refresh(tx)
+    lines.append(get_safe_to_spend_snippet(db, user_id=user_id))
+    send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token)
 
-    lines = [
-        media_header,
-        quote_line,
-        f"✅ **{len(created_txs)} Transaksi Berhasil Dicatat Sekaligus!**\n"
-    ]
-    for idx, tx in enumerate(created_txs, 1):
-        icon = "💰" if tx.type == "income" else "💸"
-        lines.append(f"{idx}. {icon} **{format_rp(tx.amount)}** • {tx.description}\n   📂 `{tx.category}` • 💳 `{tx.account}`")
-
-    lines.append(f"\n💵 **Total:** {format_rp(total_amount)}")
-    lines.append(f"🕒 _{time_str} WIB_")
-
-    pocket_status_lines = []
-    pocket_variants = get_pocket_account_variants(pocket_account)
-    for cat in categories_touched:
-        if cat in POCKET_ENVELOPES:
-            limit = POCKET_ENVELOPES[cat]
-            spent = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-                Transaction.user_id == user_id,
-                func.lower(Transaction.account).in_(pocket_variants),
-                Transaction.type == "expense",
-                Transaction.category == cat,
-                Transaction.date >= cycle_start,
-                Transaction.date <= cycle_end
-            ).scalar()
-            spent_int = int(spent or 0)
-            rem = limit - spent_int
-            pct = round(spent_int / limit * 100, 1) if limit > 0 else 0
-            pocket_status_lines.append(f"• **{cat}:** {format_rp(spent_int)} / {format_rp(limit)} ({pct}%) ➔ Sisa: {format_rp(rem)}")
-
-    if pocket_status_lines:
-        lines.append(f"\n📊 **Status Amplop Belanja Harian ({cycle_label}):**\n" + "\n".join(pocket_status_lines))
-
-    lines.append(f"\n{get_safe_to_spend_snippet(db, user_id=user_id)}")
-
-    send_message(chat_id, "\n".join([line for line in lines if line]), reply_to_message_id=message_id, bot_token=bot_token)
 
 def process_update(update: dict, bot_token: Optional[str] = None, user_override: Optional[User] = None):
     message = update.get("message")
@@ -1634,49 +1533,74 @@ Tekan Start di bot dari tautan tersebut untuk menyelesaikan koneksi."""
             send_message(chat_id, unlinked_msg, bot_token=bot_token)
             return
 
-        has_media = bool(message.get("photo") or message.get("voice") or message.get("audio") or message.get("document"))
-
-        if has_media:
-            handle_media_message(chat_id, message, message_id, db, user=user, bot_token=bot_token)
+        if type(message_id) is not int or message_id <= 0:
             return
-
-        if not text:
+        key = (chat_id, message_id)
+        if db.get(TelegramProcessedMessage, key):
             return
+        marker = TelegramProcessedMessage(chat_id=chat_id, message_id=message_id, user_id=user.id)
 
-        lower_text = text.lower()
-        cmd = text.split()[0].lower()
-        if lower_text in ["📊 rekap", "rekap"] or cmd in ["/rekap", "/bulan"]:
-            handle_rekap(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["💳 saldo", "saldo"] or cmd in ["/saldo"]:
-            handle_saldo(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["🎯 pacing", "pacing", "pace", "burn rate"] or cmd in ["/pacing", "/pace", "/status"]:
-            handle_pacing(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["🎯 target & goals", "🎯 target", "target", "goals", "milestone"] or cmd in ["/goals", "/target", "/milestone"]:
-            handle_goals(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["🔔 tagihan / subs", "tagihan", "subs", "langganan"] or cmd in ["/subs", "/langganan", "/tagihan"]:
-            handle_subs(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["📜 transaksi", "transaksi", "history"] or cmd in ["/transaksi", "/history"]:
-            handle_transaksi(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["💰 info gajian"] or cmd == "/gajian" or lower_text.startswith("gajian ") or cmd == "gajian":
-            handle_gajian(chat_id, text, db, user=user, bot_token=bot_token)
-        elif lower_text in ["🔄 transfer", "transfer", "tf"] or cmd in ["/transfer", "/tf"] or lower_text.startswith("transfer ") or lower_text.startswith("tf "):
-            handle_transfer(chat_id, text, db, user=user, bot_token=bot_token)
-        elif lower_text in ["📑 google sheets", "google sheets", "sheets"] or cmd in ["/sheets", "/sheet", "/sync_sheets"]:
-            handle_sheets(chat_id, db, user=user, bot_token=bot_token)
-        elif lower_text in ["🌐 web dashboard", "dashboard", "web"] or cmd in ["/web", "/dashboard"]:
-            send_dashboard_link(chat_id, bot_token=bot_token)
-        elif lower_text in ["📱 menu", "menu"] or cmd in ["/menu"]:
-            handle_menu(chat_id, bot_token=bot_token)
-        elif cmd in ["/start", "/help"]:
-            handle_start(chat_id, user=user, bot_token=bot_token)
-        elif lower_text in ["📓 obsidian", "obsidian"] or cmd in ["/obsidian", "/export"]:
-            handle_obsidian(chat_id, db, user=user, bot_token=bot_token)
-        elif cmd in ["/batal", "/undo", "/hapus"]:
-            handle_batal(chat_id, db, user=user, bot_token=bot_token)
-        else:
-            handle_text_message(chat_id, text, message_id, db, user=user, bot_token=bot_token)
+        def mark_financial_message(session, flush_context, instances):
+            if any(isinstance(obj, Transaction) for obj in [*session.new, *session.dirty, *session.deleted]):
+                session.add(marker)
+
+        event.listen(db, "before_flush", mark_financial_message)
+        try:
+            dispatch_message(chat_id, message, message_id, text, db, user, bot_token)
+            db.add(marker)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if not db.get(TelegramProcessedMessage, key):
+                raise
+        finally:
+            event.remove(db, "before_flush", mark_financial_message)
     finally:
         db.close()
+
+def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
+    has_media = bool(message.get("photo") or message.get("voice") or message.get("audio") or message.get("document"))
+
+    if has_media:
+        handle_media_message(chat_id, message, message_id, db, user=user, bot_token=bot_token)
+        return
+
+    if not text:
+        return
+
+    lower_text = text.lower()
+    cmd = text.split()[0].lower()
+    if lower_text in ["📊 rekap", "rekap"] or cmd in ["/rekap", "/bulan"]:
+        handle_rekap(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["💳 saldo", "saldo"] or cmd in ["/saldo"]:
+        handle_saldo(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["🎯 pacing", "pacing", "pace", "burn rate"] or cmd in ["/pacing", "/pace", "/status"]:
+        handle_pacing(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["🎯 target & goals", "🎯 target", "target", "goals", "milestone"] or cmd in ["/goals", "/target", "/milestone"]:
+        handle_goals(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["🔔 tagihan / subs", "tagihan", "subs", "langganan"] or cmd in ["/subs", "/langganan", "/tagihan"]:
+        handle_subs(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["📜 transaksi", "transaksi", "history"] or cmd in ["/transaksi", "/history"]:
+        handle_transaksi(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["💰 info gajian"] or cmd == "/gajian" or lower_text.startswith("gajian ") or cmd == "gajian":
+        handle_gajian(chat_id, text, db, user=user, bot_token=bot_token)
+    elif lower_text in ["🔄 transfer", "transfer", "tf"] or cmd in ["/transfer", "/tf"] or lower_text.startswith("transfer ") or lower_text.startswith("tf "):
+        handle_transfer(chat_id, text, db, user=user, bot_token=bot_token)
+    elif lower_text in ["📑 google sheets", "google sheets", "sheets"] or cmd in ["/sheets", "/sheet", "/sync_sheets"]:
+        handle_sheets(chat_id, db, user=user, bot_token=bot_token)
+    elif lower_text in ["🌐 web dashboard", "dashboard", "web"] or cmd in ["/web", "/dashboard"]:
+        send_dashboard_link(chat_id, bot_token=bot_token)
+    elif lower_text in ["📱 menu", "menu"] or cmd in ["/menu"]:
+        handle_menu(chat_id, bot_token=bot_token)
+    elif cmd in ["/start", "/help"]:
+        handle_start(chat_id, user=user, bot_token=bot_token)
+    elif lower_text in ["📓 obsidian", "obsidian"] or cmd in ["/obsidian", "/export"]:
+        handle_obsidian(chat_id, db, user=user, bot_token=bot_token)
+    elif cmd in ["/batal", "/undo", "/hapus"]:
+        handle_batal(chat_id, db, user=user, bot_token=bot_token)
+    else:
+        handle_text_message(chat_id, text, message_id, db, user=user, bot_token=bot_token)
+
 
 def main():
     print("Connecting to PostgreSQL and creating tables if not exist...")
@@ -1694,8 +1618,8 @@ def main():
                 data = resp.json()
                 if data.get("ok"):
                     for update in data.get("result", []):
-                        offset = update["update_id"] + 1
                         process_update(update)
+                        offset = update["update_id"] + 1
             else:
                 time.sleep(2)
         except requests.exceptions.Timeout:

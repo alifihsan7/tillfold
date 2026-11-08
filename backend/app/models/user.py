@@ -35,3 +35,12 @@ class TelegramLink(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     token_hash = Column(String(64), unique=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
+
+
+class TelegramProcessedMessage(Base):
+    __tablename__ = "telegram_processed_messages"
+
+    chat_id = Column(BigInteger, primary_key=True)
+    message_id = Column(BigInteger, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    processed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

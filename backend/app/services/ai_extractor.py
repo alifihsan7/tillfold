@@ -48,14 +48,16 @@ def extract_from_media(
             "error": "API Key AI Router tidak ditemukan di sistem."
         }
 
-    valid_accounts = accounts or ["Mandiri", "Bank Jago", "Bibit", "BRI 1", "BRI 2"]
+    valid_accounts = accounts or []
+    if not valid_accounts:
+        return {"success": False, "error": "Tambahkan rekening di web sebelum memproses media."}
     acc_list_str = ", ".join(valid_accounts)
 
-    system_prompt = f"""Kamu adalah mesin ekstraksi AI7 Finance cerdas untuk membaca struk belanja, screenshot mutasi/QRIS (Livin Mandiri, GoPay, BCA, dll.), dan rekaman suara (voice note).
+    system_prompt = f"""Kamu adalah mesin ekstraksi Tillfold untuk membaca struk belanja, screenshot mutasi/QRIS (Livin Mandiri, GoPay, BCA, dll.), dan rekaman suara (voice note).
 
 Rekening yang terdaftar di sistem:
 {acc_list_str}
-Default rekening pengeluaran harian adalah rekening operasional utama.
+Gunakan hanya nama rekening terdaftar. Jika rekening tidak disebut, isi account dengan null agar sistem memakai rekening default pengguna. Untuk transfer, asal dan tujuan wajib disebut dan berbeda.
 
 Kategori pengeluaran yang didukung:
 - Makanan & Minuman (makan nasi, warteg, resto, grabfood, gofood)
@@ -86,11 +88,11 @@ Aturan Ekstraksi:
     {{
       "type": "expense" | "income" | "transfer",
       "amount": 25000,
-      "account": "Mandiri",
+      "account": null,
       "category": "Makanan & Minuman",
       "description": "Warteg Makan Siang",
-      "from_account": "Mandiri", // jika transfer
-      "to_account": "Bibit"      // jika transfer
+      "from_account": "nama rekening asal terdaftar", // jika transfer
+      "to_account": "nama rekening tujuan terdaftar"      // jika transfer
     }}
   ]
 }}

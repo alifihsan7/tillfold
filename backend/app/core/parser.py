@@ -259,6 +259,8 @@ def parse_transaction(text: str):
             if matched:
                 break
 
+    account_explicit = selected_account is not None
+
     # 5. Smart-infer fallback account if no explicit account was given
     if not selected_account:
         if selected_category in CATEGORY_DEFAULT_ACCOUNT:
@@ -282,6 +284,7 @@ def parse_transaction(text: str):
         "type": tx_type,
         "amount": amount,
         "account": selected_account,
+        "account_explicit": account_explicit,
         "category": selected_category,
         "description": desc_clean,
         "raw_text": raw

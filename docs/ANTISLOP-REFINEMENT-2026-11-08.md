@@ -125,3 +125,19 @@ Delivery Gate revisi anotasi:
 - Purpose-Gate PASS: latar mengelompokkan rekening; warna kategorikal memisahkan seri aktual; tidak menambah gradient, glow, motion, atau shadow. Batas antarsegmen memakai gap netral.
 - Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1 tetap; fokus pada grafik alokasi, warna di luar grafik tidak ditambah.
 - Craftsmanship PASS: kedua tema diperiksa pada ukuran anotasi 1915x884; legenda tetap memuat delapan nama dan persentase di mobile. Empty/loading dan perhitungan lama dipertahankan; tidak mengklaim pengujian ulang seluruh alur keuangan.
+
+## Ukuran kontrol desktop
+
+Pengguna menyetujui toolbar desktop 36px, input/tombol dialog 40px, mobile 44px. Ini menggantikan batas 44px universal dari skill hanya untuk layar minimal 768px dengan pointer fine. Perangkat sentuh dan layar sempit tetap memakai ukuran lama. Kontrol desktop tetap di atas minimum WCAG 2.2 sebesar 24px dan mempertahankan focus ring serta jarak antar tombol.
+
+- Toolbar: periode, tema, Cari, Utilitas, dan Catat transaksi sama-sama 36px, teks 13px, padding 7px vertikal. Ikon tema 36x36px.
+- Dialog: input pencarian dan tombol 40px, teks input 14px; bingkai nominal/tanggal 40px termasuk border. Tombol kalender di dalam bingkai tanggal 38px agar total tetap 40px.
+- Dropdown: minimum 40px; opsi dengan deskripsi dua baris boleh lebih tinggi agar teks tidak terpotong.
+- Mobile: tombol terlihat tetap 44px; nominal input tetap 16px untuk menghindari zoom saat fokus.
+
+Delivery Gate revisi ukuran:
+
+- Hard Gate PASS: production build lulus; browser mengukur kelima tombol toolbar 36px pada dark/light, input Cari 40px, bingkai nominal/tanggal 40px. Lebar 390px mengembalikan tombol ke 44px dan input nominal 16px. Pencarian, Utilitas, dialog, dropdown, Escape dan Batal diuji tanpa menyimpan transaksi. Pengecualian 44px mengikuti persetujuan pengguna di atas.
+- Purpose-Gate PASS: ukuran membedakan kebutuhan mouse dan sentuhan; warna, radius, motion, aset, dan data tidak ditambah.
+- Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1 tetap; CTA utama menonjol lewat warna dengan tinggi sama seperti toolbar.
+- Craftsmanship PASS: tidak mengubah sidebar, grid kalender, atau perhitungan; fokus keyboard tetap terlihat, transisi warna saja tetap berlaku, dan dua tema memakai ukuran sama. Peringatan lint hook/img lama tetap ada.

@@ -860,3 +860,63 @@ textarea:focus-visible,
   background: color-mix(in srgb, var(--allocation-color) 8%, var(--luma-panel-surface));
   border-color: color-mix(in srgb, var(--allocation-color) 35%, var(--luma-smokeline));
 }
+
+/* Compact desktop controls; touch and narrow layouts keep 44px targets. */
+@media (min-width: 768px) and (pointer: fine) {
+  .luma-topbar .luma-toolbar > button,
+  .luma-topbar .luma-toolbar > div > button,
+  .luma-topbar .luma-period-selector > button,
+  .luma-topbar .luma-period-controls > div:last-child > button {
+    height: 36px;
+    min-height: 36px;
+    min-width: 36px;
+    padding: 7px 12px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .luma-topbar .luma-period-controls > div:last-child > button {
+    width: 36px;
+    padding: 8px;
+  }
+  .luma-topbar [role="menuitem"] {
+    min-height: 40px;
+    font-size: 13px;
+  }
+  .luma-dialog-panel button,
+  .luma-dialog-panel .ai7-select-trigger,
+  .ai7-select-menu button {
+    min-height: 40px;
+    padding-block: 9px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .luma-dialog-panel :is(input:not([type="checkbox"]):not([type="radio"]), select),
+  .luma-dialog-panel .payroll-form :is(input:not([type="checkbox"]):not([type="radio"]), select) {
+    min-height: 40px;
+    padding-block: 9px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .luma-dialog-panel .ai7-currency-field { min-height: 40px; }
+  .luma-dialog-panel .luma-form-scope .ai7-currency-field input,
+  .luma-dialog-panel .luma-form-scope .tillfold-date-field input {
+    min-height: 38px;
+    height: 38px;
+    padding-block: 8px;
+    font-size: 14px;
+  }
+  .luma-dialog-panel .ai7-currency-prefix { padding-block: 8px; font-size: 13px; }
+  .luma-dialog-panel button[aria-label="Tutup dialog"] {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 8px;
+  }
+  .luma-dialog-panel .tillfold-date-field button {
+    width: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    height: 38px;
+    padding: 8px;
+  }
+}

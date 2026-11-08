@@ -1,5 +1,6 @@
 import { TransactionCalendar } from "./TransactionCalendar";
 import { authFetch } from "@/lib/api";
+import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
 import { DateField } from "@/components/ui/DateField";
 import React, { useState, useMemo, useEffect } from "react";
 import {
@@ -70,6 +71,7 @@ export function TransactionLedgerView({
   const [loading, setLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
   const [retry, setRetry] = useState(0);
+  const { newIds: newTransactionIds, observe: observeTransactions } = useTransactionHighlights();
 
   // Dynamic Categories from API categories + available transactions
   const categoryOptions: SelectOption[] = useMemo(() => {
@@ -163,6 +165,7 @@ export function TransactionLedgerView({
         if (controller.signal.aborted) return;
         const lastPage = Math.max(1, Math.ceil(data.total / pageSize));
         if (currentPage > lastPage) { setCurrentPage(lastPage); return; }
+        observeTransactions(data.items, JSON.stringify([viewMode, params.toString()]));
         setHistory(data);
       } catch (error) {
         if (!controller.signal.aborted) setHistoryError(error instanceof Error ? error.message : "Riwayat gagal dimuat.");
@@ -173,7 +176,7 @@ export function TransactionLedgerView({
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [viewMode, transactions, retry, currentPage, sortBy, activeAccount, typeFilter, categoryFilter, searchQuery,
       dateFilter, customStartDate, customEndDate, cycleStart, cycleEnd,
-      currentYearMonth, todayStr, sevenDaysAgoStr, thirtyDaysAgoStr]);
+      currentYearMonth, todayStr, sevenDaysAgoStr, thirtyDaysAgoStr, observeTransactions]);
 
   const totalPages = Math.max(1, Math.ceil(history.total / pageSize));
   const paginatedTransactions = history.items;
@@ -497,6 +500,7 @@ export function TransactionLedgerView({
       <div className="space-y-3">
         <TransactionTable
           transactions={paginatedTransactions}
+          newTransactionIds={newTransactionIds}
           formatRupiah={formatRupiah}
           onEdit={onEdit}
           onDelete={onDelete}

@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Plus,
@@ -599,6 +600,7 @@ export default function FinanceDashboard() {
   }, [activeNav]);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { newIds: newTransactionIds, observe: observeTransactions } = useTransactionHighlights();
   const [overviewError, setOverviewError] = useState<string | null>(null);
 
   const [summary, setSummary] = useState<MonthlySummary>({
@@ -775,7 +777,10 @@ export default function FinanceDashboard() {
       const data = await loadDashboardData(authFetch, selectedPeriod);
       if (requestId !== dashboardRequestRef.current) return;
       setOverviewError(null);
-      if (Array.isArray(data.transactions)) setTransactions(data.transactions);
+      if (Array.isArray(data.transactions)) {
+        observeTransactions(data.transactions, JSON.stringify([currentUser?.id, selectedPeriod.id, selectedPeriod.start, selectedPeriod.end]));
+        setTransactions(data.transactions);
+      }
       if (data.summary) {
         setSummary(data.summary);
         if (!selectedPeriod.start && data.summary.start_date) {
@@ -1802,6 +1807,7 @@ export default function FinanceDashboard() {
 
             <LumaRecentTransactions
               transactions={transactions.slice(0, 5)}
+              newTransactionIds={newTransactionIds}
               totalCount={transactions.length}
               formatRupiah={formatRupiah}
               loading={loading}
@@ -1966,6 +1972,7 @@ export default function FinanceDashboard() {
         {activeNav === "Transaksi" && (
           <div className="animate-fadeIn">
             <TransactionLedgerView
+              key={currentUser?.id ?? "guest"}
               transactions={transactions}
               accounts={allAccountTabs}
               categories={categories}

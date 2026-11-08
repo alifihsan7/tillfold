@@ -15,6 +15,7 @@ export interface Transaction {
 }
 
 interface TransactionTableProps {
+  newTransactionIds?: ReadonlySet<number>;
   transactions: Transaction[];
   formatRupiah: (val: number) => string;
   onEdit?: (tx: Transaction) => void;
@@ -23,6 +24,7 @@ interface TransactionTableProps {
 }
 
 export function TransactionTable({
+  newTransactionIds,
   transactions,
   formatRupiah,
   onEdit,
@@ -33,6 +35,7 @@ export function TransactionTable({
 
   return (
     <div className="ai7-ledger-table luma-glass overflow-hidden">
+      <p className="sr-only" role="status">{transactions.some((tx) => newTransactionIds?.has(tx.id)) ? "Transaksi baru ditampilkan." : ""}</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[700px] text-left text-sm border-collapse tabular-nums">
           <thead>
@@ -87,7 +90,7 @@ export function TransactionTable({
                 const isTransfer = isTransferIn || isTransferOut;
 
                 return (
-                  <tr key={tx.id} className="hover:bg-white/[0.04] transition group">
+                  <tr key={tx.id} data-new-transaction={newTransactionIds?.has(tx.id) || undefined} className="hover:bg-white/[0.04] transition group">
                     <td className="py-4 px-4 sm:px-6 text-luma-smoke font-sans whitespace-nowrap text-xs sm:text-sm">
                       {tx.date}
                     </td>

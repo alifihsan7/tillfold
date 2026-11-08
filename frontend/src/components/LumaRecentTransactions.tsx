@@ -15,6 +15,7 @@ export interface LumaTransaction {
 }
 
 interface LumaRecentTransactionsProps {
+  newTransactionIds?: ReadonlySet<number>;
   transactions: LumaTransaction[];
   totalCount: number;
   formatRupiah: (val: number) => string;
@@ -44,6 +45,7 @@ function TxIcon({ type }: { type: LumaTransaction["type"] }) {
  * affordances are always visible (thumb-friendly, no hover-only traps).
  */
 export function LumaRecentTransactions({
+  newTransactionIds,
   transactions,
   totalCount,
   formatRupiah,
@@ -55,6 +57,7 @@ export function LumaRecentTransactions({
 }: LumaRecentTransactionsProps) {
   return (
     <section aria-label="Transaksi terbaru" className="luma-recent space-y-4">
+      <p className="sr-only" role="status">{transactions.some((tx) => newTransactionIds?.has(tx.id)) ? "Transaksi baru ditampilkan." : ""}</p>
       <div className="flex items-center justify-between gap-2">
         <h2 className="ai7-type-card text-luma-ivory tracking-tight">
           Transaksi terbaru
@@ -103,6 +106,7 @@ export function LumaRecentTransactions({
               return (
                 <li
                   key={tx.id}
+                  data-new-transaction={newTransactionIds?.has(tx.id) || undefined}
                   className="flex items-center gap-3.5 px-5 py-4 hover:bg-white/[0.03] transition-colors"
                 >
                   <div

@@ -483,12 +483,19 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-accounts-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: 20px; }
 .luma-account-item { padding: 0; }
 .luma-recent { padding: 22px 24px; border-radius: var(--ai7-radius-panel); background: var(--luma-panel-surface, #3b3835); border: 1px solid rgba(255,255,255,.08); }
-.luma-recent > div:first-child { flex-wrap: wrap; }
+.luma-recent > div:first-of-type { flex-wrap: wrap; }
 .luma-recent .luma-glass { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; }
 .luma-recent ul { display: grid; gap: 8px; }
 .luma-recent li { border: 0; background: rgba(255,255,255,.055); border-radius: var(--ai7-radius-control); padding: 14px 16px; }
 .luma-recent li > div:first-child { border: 0; border-radius: var(--ai7-radius-control); background: rgba(0,0,0,.14); width: 38px; height: 38px; }
 .luma-recent .font-semibold { font-weight: 500; }
+.luma-app .luma-recent li[data-new-transaction="true"],
+.luma-app .ai7-ledger-table tbody tr[data-new-transaction="true"] {
+  background: rgb(var(--luma-transfer-rgb) / .14);
+}
+@media (prefers-reduced-motion: reduce) {
+  .luma-recent li, .ai7-ledger-table tbody tr { transition: none; }
+}
 .light {
   --luma-charcoal-rgb: 233 238 243; --luma-coal-rgb: 224 231 239;
   --luma-ivory-rgb: 32 42 55; --luma-smoke-rgb: 68 83 104;

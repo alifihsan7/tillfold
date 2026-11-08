@@ -4,6 +4,7 @@ import { DateField } from "@/components/ui/DateField";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Plus,
+  Search,
   Download,
   RefreshCw,
   ChevronDown,
@@ -67,6 +68,7 @@ import { AuthModal } from "@/components/AuthModal";
 import { OnboardingWizardModal } from "@/components/OnboardingWizardModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserProfileModal } from "@/components/UserProfileModal";
+import { GlobalSearchModal, SearchResult } from "@/components/GlobalSearchModal";
 import { BackupModal } from "@/components/BackupModal";
 import {
   authFetch,
@@ -359,6 +361,7 @@ export default function FinanceDashboard() {
   const dashboardRequestRef = useRef(0);
   const dashboardBusyRef = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isPaycheckModalOpen, setIsPaycheckModalOpen] = useState(false);
   const [isPayrollSettingsOpen, setIsPayrollSettingsOpen] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
@@ -829,6 +832,33 @@ export default function FinanceDashboard() {
       window.clearInterval(interval);
     };
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const openSearch = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k" || event.repeat ||
+        target?.closest("input, textarea, select, [contenteditable=true]") || document.querySelector('[role="dialog"]')) return;
+      event.preventDefault();
+      setIsExportMenuOpen(false);
+      setIsGlobalSearchOpen(true);
+    };
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
+  }, [currentUser]);
+
+  const chooseSearchResult = (result: SearchResult) => {
+    setIsGlobalSearchOpen(false);
+    if (result.kind === "transaction") {
+      setActiveNav("Transaksi"); window.location.hash = "#/transactions"; setTxToEdit(result.data);
+    } else if (result.kind === "account") {
+      setActiveNav("Pengaturan"); setSettingsSubTab("rekening"); window.location.hash = "#/accounts"; setAccountToEdit(result.data);
+    } else if (result.kind === "bill") {
+      setActiveNav("Rencana"); setPlanSubTab("tagihan"); window.location.hash = "#/tagihan"; setSubToEdit(result.data);
+    } else {
+      setActiveNav("Rencana"); setPlanSubTab("target"); window.location.hash = "#/plan"; setGoalToEdit(result.data);
+    }
+  };
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -1511,6 +1541,10 @@ export default function FinanceDashboard() {
             {/* Slim utility toolbar: guest badge + consolidated utilities menu */}
             <div className="luma-toolbar flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
+              {currentUser && <button type="button" className="luma-action-secondary inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-3"
+                aria-label="Cari di Tillfold" title="Cari (Ctrl+K atau ⌘K)" onClick={() => { setIsExportMenuOpen(false); setIsGlobalSearchOpen(true); }}>
+                <Search className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Cari</span>
+              </button>}
               {/* Consolidated utilities menu (refresh, export, paycheck checklist) */}
               <div className="relative" ref={exportMenuRef}>
                 <button
@@ -2737,6 +2771,7 @@ export default function FinanceDashboard() {
         </form>
       </CustomModal>
 
+      <GlobalSearchModal isOpen={isGlobalSearchOpen && !!currentUser} onClose={() => setIsGlobalSearchOpen(false)} onChoose={chooseSearchResult} />
       <RecordPaycheckModal
         isOpen={isPaycheckModalOpen && !activePaycheckSession && !isPayrollSettingsOpen}
         accounts={activeAccounts.map(({ name }) => name)}

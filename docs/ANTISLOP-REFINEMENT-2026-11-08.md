@@ -117,7 +117,7 @@ Peringatan lint hook/img lama masih muncul saat build. Tidak ada klaim pengujian
 - Versi light memakai warna lebih gelap dengan label putih; dark memakai warna lebih terang dengan label gelap. Kontras minimum label: light 4.98:1, dark 6.79:1. Kontras minimum warna seri terhadap panel: light 4.90:1, dark 6.04:1.
 - Legenda mendapat tint 8% dan swatch lebih besar supaya pemetaan warna terlihat. Deskripsi memakai text-smoke penuh agar tidak terlalu pucat.
 - Label 12.5% tidak dibulatkan menjadi 13%; untuk delapan alokasi sama besar, tampilan tidak lagi menyiratkan total 104%. Proporsi data tidak berubah.
-- Di konten di bawah 700px, angka tetap ada di legenda dan label segmen disembunyikan agar tidak menumpuk.
+- Label segmen mengikuti lebar konten dengan ukuran 9-12px dan padding 2px, sehingga tidak menghilang saat panel menyempit. Segmen di bawah 4% tetap dirinci lewat legenda dan label aksesibel grafik.
 
 Delivery Gate revisi anotasi:
 

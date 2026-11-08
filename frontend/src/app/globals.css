@@ -850,11 +850,13 @@ textarea:focus-visible,
   --allocation-7: #677238; --allocation-8: #5e6b7e;
   --allocation-label: #ffffff;
 }
-.allocation-bar-label { display: none; color: var(--allocation-label); }
+.allocation-bar-label {
+  display: inline;
+  color: var(--allocation-label);
+  font-size: clamp(9px, 1.6cqi, 12px);
+  padding-inline: 2px;
+}
 .allocation-legend-item {
   background: color-mix(in srgb, var(--allocation-color) 8%, var(--luma-panel-surface));
   border-color: color-mix(in srgb, var(--allocation-color) 35%, var(--luma-smokeline));
-}
-@container (min-width: 700px) {
-  .allocation-bar-label { display: inline; }
 }

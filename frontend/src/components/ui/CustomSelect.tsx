@@ -54,6 +54,12 @@ export function CustomSelect({
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const selected = dropdownRef.current?.querySelector<HTMLButtonElement>('button[data-selected="true"]');
+    (selected || dropdownRef.current?.querySelector<HTMLButtonElement>("button"))?.focus();
+  }, [isOpen]);
+
   const updatePosition = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
@@ -115,6 +121,7 @@ export function CustomSelect({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && isOpen) {
         setIsOpen(false);
+        triggerRef.current?.focus();
       }
     }
 
@@ -131,6 +138,7 @@ export function CustomSelect({
   const handleSelect = (optValue: string) => {
     onChange(optValue);
     setIsOpen(false);
+    triggerRef.current?.focus();
   };
 
   const handleToggle = () => {
@@ -178,6 +186,22 @@ export function CustomSelect({
         createPortal(
           <div
             ref={dropdownRef}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsOpen(false);
+                triggerRef.current?.focus();
+                return;
+              }
+              if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+              event.preventDefault();
+              const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button"));
+              const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+              const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
+                : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
+              buttons[next]?.focus();
+            }}
             style={{
               position: "fixed",
               top: coords.openUpward ? undefined : coords.top,
@@ -195,6 +219,7 @@ export function CustomSelect({
                 <button
                   key={opt.value}
                   type="button"
+                  data-selected={isSelected}
                   onClick={() => handleSelect(opt.value)}
                   className={`w-full min-h-[44px] px-3.5 py-2.5 text-left text-xs sm:text-sm flex items-center justify-between gap-2 transition-colors select-none cursor-pointer ${
                     isSelected

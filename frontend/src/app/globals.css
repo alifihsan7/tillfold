@@ -658,7 +658,6 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .ai7-ledger-table thead { background: var(--obsidian-card); }
 .ai7-ledger-table th { color: var(--luma-smoke); letter-spacing: normal; font-weight: 500; }
 .ai7-ledger-table tbody tr:hover { background: var(--obsidian-hover); }
-.ai7-subscriptions > div:first-child > div { box-shadow: none; border-color: var(--luma-smokeline); background: var(--luma-panel-surface); }
 @media(max-width: 600px) {
   .ai7-section > div:first-child > div:last-child { flex-wrap: wrap; justify-content: flex-start; }
   .luma-form-scope input, .luma-form-scope textarea, .ai7-select-trigger { font-size: 16px; }
@@ -774,6 +773,16 @@ textarea:focus-visible,
 }
 
 .transaction-finance-calendar { container-type: inline-size; }
+.calendar-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: end; }
+.calendar-period-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.calendar-month-actions { justify-self: end; }
+.calendar-month-summary { border-block: 1px solid var(--luma-smokeline); }
+.calendar-month-summary > div + div { border-left: 1px solid var(--luma-smokeline); padding-left: 12px; }
+.calendar-toolbar .ai7-select-trigger { min-width: 0; }
+@container (min-width: 700px) {
+  .calendar-toolbar { grid-template-columns: minmax(240px, 280px) minmax(180px, 1fr) auto; gap: 16px; }
+  .calendar-month-summary > div + div { padding-left: 24px; }
+}
 .transaction-finance-calendar .calendar-value-compact { display: block; }
 .transaction-finance-calendar .calendar-value-full { display: none; }
 .transaction-finance-calendar .calendar-day-amount { font-size: 10.5px; }
@@ -808,13 +817,15 @@ textarea:focus-visible,
 .luma-app .luma-daily-panel[data-pace="warning"] .luma-quota-track > div { background: var(--luma-gold); }
 
 .luma-app .ai7-account-selection[aria-pressed="true"],
-.luma-app .ai7-view-selection button[aria-pressed="true"] {
+.luma-app .ai7-view-selection button[aria-pressed="true"],
+.luma-app .ai7-tab-group [role="tab"][aria-selected="true"] {
   color: var(--luma-transfer);
   background: rgb(var(--luma-transfer-rgb) / .10);
   border: 1px solid rgb(var(--luma-transfer-rgb) / .4);
   box-shadow: none;
 }
 .luma-app .ai7-account-selection[aria-pressed="true"]:hover,
-.luma-app .ai7-view-selection button[aria-pressed="true"]:hover {
+.luma-app .ai7-view-selection button[aria-pressed="true"]:hover,
+.luma-app .ai7-tab-group [role="tab"][aria-selected="true"]:hover {
   background: rgb(var(--luma-transfer-rgb) / .16);
 }

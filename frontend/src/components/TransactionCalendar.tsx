@@ -79,29 +79,29 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
   const openDate = (date: string) => { setDayPage(1); setDetail(null); setDetailLoading(true); setDetailError(""); setSelected(date); };
 
   return <div className="transaction-finance-calendar space-y-4">
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end">
-        <div className="min-w-0 space-y-1 sm:w-40"><span className="text-sm">Bulan</span>
+    <div className="calendar-toolbar">
+      <div className="calendar-period-fields">
+        <div className="min-w-0 space-y-1"><span className="text-xs text-luma-smoke">Bulan</span>
           <CustomSelect label="Bulan kalender" value={String(month)} onChange={(value) => changePeriod({ year, month: Number(value) })} options={months.map((name, index) => ({ value: String(index + 1), label: name }))} /></div>
-        <div className="min-w-0 space-y-1 sm:w-28"><span className="text-sm">Tahun</span>
+        <div className="min-w-0 space-y-1"><span className="text-xs text-luma-smoke">Tahun</span>
           <CustomSelect label="Tahun kalender" value={String(year)} onChange={(value) => changePeriod({ year: Number(value), month })} options={years.map((value) => ({ value: String(value), label: String(value) }))} /></div>
-        <div className="col-span-2 min-w-0 space-y-1 sm:w-52"><span className="text-sm">Rekening</span>
-          <CustomSelect label="Rekening kalender" value={account} onChange={(value) => { onAccountChange(value); setSelected(null); }} options={accounts.map((item) => ({ value: item.id, label: item.id === "all" ? "Semua rekening" : item.label }))} /></div>
       </div>
-      <div className="flex items-center gap-2">
+        <div className="calendar-account-field min-w-0 space-y-1"><span className="text-xs text-luma-smoke">Rekening</span>
+          <CustomSelect label="Rekening kalender" value={account} onChange={(value) => { onAccountChange(value); setSelected(null); }} options={accounts.map((item) => ({ value: item.id, label: item.id === "all" ? "Semua rekening" : item.label }))} /></div>
+      <div className="calendar-month-actions flex items-center gap-2">
         <button type="button" className="luma-action-secondary min-h-11 min-w-11" aria-label="Bulan sebelumnya" disabled={year === 1 && month === 1} onClick={() => changeMonth(-1)}><ChevronLeft className="h-4 w-4" aria-hidden="true" /></button>
         <button type="button" className="luma-action-secondary" onClick={() => { changePeriod({ year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) }); openDate(today); }}>Hari ini</button>
         <button type="button" className="luma-action-secondary min-h-11 min-w-11" aria-label="Bulan berikutnya" disabled={year === 9999 && month === 12} onClick={() => changeMonth(1)}><ChevronRight className="h-4 w-4" aria-hidden="true" /></button>
       </div>
     </div>
-    <div className="grid grid-cols-3 gap-2 sm:gap-3">
-      {[{ label: "Pemasukan", value: data?.totals.income, color: "text-luma-sage" }, { label: "Pengeluaran", value: data?.totals.expense, color: "text-luma-coral" }, { label: "Selisih", value: data?.totals.net, color: (data?.totals.net ?? 0) < 0 ? "text-luma-coral" : "text-luma-ivory" }].map((item) => <div key={item.label} className="luma-matte min-w-0 p-2 sm:p-4">
+    <div className="calendar-month-summary grid grid-cols-3 gap-2 sm:gap-6">
+      {[{ label: "Pemasukan", value: data?.totals.income, color: "text-luma-sage" }, { label: "Pengeluaran", value: data?.totals.expense, color: "text-luma-coral" }, { label: "Selisih", value: data?.totals.net, color: (data?.totals.net ?? 0) < 0 ? "text-luma-coral" : "text-luma-ivory" }].map((item) => <div key={item.label} className="min-w-0 py-3 sm:py-4">
         <p className="text-[11px] text-luma-smoke sm:text-sm">{item.label}</p>{loading ? <Skeleton className="mt-2 h-7 w-full max-w-28" /> : <p className={`mt-1 text-sm font-semibold tabular-nums sm:text-xl ${item.color}`} title={item.value === undefined ? "Belum tersedia" : formatRupiah(item.value)}>
           {item.value === undefined ? <span className="text-xs">Belum tersedia</span> : <><span className="calendar-value-compact">{item.value < 0 ? "−" : ""}Rp{compactRupiah(Math.abs(item.value))}</span><span className="calendar-value-full truncate">{formatRupiah(item.value)}</span></>}
         </p>}
       </div>)}
     </div>
-    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="ai7-type-section">{months[month - 1]} {year}</h2><p className="text-sm text-luma-smoke">Transfer dan penyesuaian dipisahkan.</p></div>
+    <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="ai7-type-section">{months[month - 1]} {year}</h2><p className="text-xs text-luma-smoke">Transfer di luar arus kas.</p></div>
     {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-luma-coral"><p>{error}</p><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button></div>}
     <p role="status" aria-live="polite" className="text-sm text-luma-smoke">{loading ? "Memuat kalender…" : error ? "" : data?.totals.count === 0 ? "Belum ada transaksi bulan ini. Klik tanggal untuk melihat rincian." : "Klik tanggal untuk melihat transaksi harian."}</p>
     <div className="overflow-hidden rounded-2xl border border-luma-smokeline" role="group" aria-label={`Kalender transaksi ${months[month - 1]} ${year}`} aria-busy={loading}>

@@ -1667,16 +1667,16 @@ export default function FinanceDashboard() {
               {activeNav === "Ringkasan" && "Ringkasan"}
               {activeNav === "Transaksi" && "Transaksi"}
               {activeNav === "Anggaran" && "Anggaran"}
-              {activeNav === "Rencana" && (planSubTab === "target" ? "Rencana — Target tabungan" : "Rencana — Tagihan")}
+              {activeNav === "Rencana" && (planSubTab === "target" ? "Target tabungan" : "Tagihan")}
               {activeNav === "Laporan" && "Laporan"}
               {activeNav === "Pengaturan" && (
                 settingsSubTab === "rekening"
-                  ? "Pengaturan — Rekening"
+                  ? "Rekening"
                   : settingsSubTab === "kantong"
-                  ? "Pengaturan — Kantong"
+                  ? "Kantong"
                   : settingsSubTab === "kategori"
-                  ? "Pengaturan — Kategori"
-                  : "Pengaturan — Profil & Preferensi"
+                  ? "Kategori"
+                  : "Profil dan preferensi"
               )}
             </h1>
             <p className="text-sm text-luma-smoke mt-1 tabular-nums">
@@ -2229,7 +2229,6 @@ export default function FinanceDashboard() {
               <SubscriptionsView
                 subsData={subsData}
                 formatRupiah={formatRupiah}
-                onOpenModal={() => setIsSubModalOpen(true)}
                 onToggleActive={handleToggleSubscription}
                 onDelete={handleDeleteSubscription}
                 onEdit={(sub) => setSubToEdit(sub)}

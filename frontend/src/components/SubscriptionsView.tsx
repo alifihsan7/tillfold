@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BillPaymentModal } from "./BillPaymentModal";
-import { Plus, Trash2, Calendar, Edit2, Clock, Pause, Play } from "lucide-react";
+import { Trash2, Calendar, Edit2, Clock, Pause, Play } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 
 export interface SubscriptionItem {
@@ -35,7 +35,6 @@ export interface SubscriptionsData {
 interface SubscriptionsViewProps {
   subsData: SubscriptionsData;
   formatRupiah: (val: number) => string;
-  onOpenModal: () => void;
   onToggleActive: (sub: SubscriptionItem) => void;
   onDelete: (id: number) => void;
   onEdit?: (sub: SubscriptionItem) => void;
@@ -46,7 +45,6 @@ interface SubscriptionsViewProps {
 export function SubscriptionsView({
   subsData,
   formatRupiah,
-  onOpenModal,
   onToggleActive,
   onDelete,
   onEdit,
@@ -58,94 +56,28 @@ export function SubscriptionsView({
   const today = currentDate.getFullYear() + "-" + String(currentDate.getMonth() + 1).padStart(2, "0") + "-" + String(currentDate.getDate()).padStart(2, "0");
   return (
     <div className="ai7-subscriptions space-y-8">
-      {/* Top Metrics Cards */}
-      <div className="ai7-metric-grid grid gap-4">
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 sm:p-6 space-y-2 shadow-sm">
-          <div className="text-xs font-semibold text-zinc-400 truncate">
-            Total komitmen bulanan
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-36 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-amberGold tracking-tight truncate">
-              {formatRupiah(subsData.total_monthly_commitment)}
-            </div>
-          )}
-          <div className="text-xs text-zinc-400 font-sans">
-            Alokasi pos tagihan & autodebet
-          </div>
-        </div>
-
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 sm:p-6 space-y-2 shadow-sm">
-          <div className="text-xs font-semibold text-zinc-400 truncate">
-            Tagihan aktif
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-24 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-mintRise tracking-tight truncate">
-              {subsData.active_count} Layanan
-            </div>
-          )}
-          <div className="text-xs text-zinc-400 font-sans">
-            Autodebet aktif bulanan
-          </div>
-        </div>
-
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 sm:p-6 space-y-2 shadow-sm">
-          <div className="text-xs font-semibold text-zinc-400 truncate">
-            Jatuh tempo pekan ini
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-24 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-coralFall tracking-tight truncate">
-              {subsData.upcoming_this_week} Tagihan
-            </div>
-          )}
-          <div className="text-xs text-zinc-400 font-sans">
-            Siapkan saldo sebelum autodebet
-          </div>
-        </div>
-
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-sm">
-          <div>
-            <div className="text-xs font-semibold text-zinc-400 truncate">
-              Perintah bot Telegram
-            </div>
-            <div className="text-sm font-sans text-white mt-1 font-semibold truncate">
-              /subs atau /tagihan
-            </div>
-          </div>
-          <button
-            onClick={onOpenModal}
-            className="mt-3 px-4 py-2 text-xs font-semibold bg-amberGold text-slate-950 hover:bg-yellow-300 rounded-xl transition flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Tambah tagihan</span>
-          </button>
-        </div>
-      </div>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-luma-smokeline py-5 sm:grid-cols-3" aria-label="Ringkasan tagihan" aria-busy={loading}>
+        {[
+          { label: "Komitmen bulanan", value: formatRupiah(subsData.total_monthly_commitment), color: "text-luma-ivory", className: "col-span-2 sm:col-span-1" },
+          { label: "Tagihan aktif", value: String(subsData.active_count), color: "text-luma-ivory", className: "" },
+          { label: "Jatuh tempo pekan ini", value: String(subsData.upcoming_this_week), color: subsData.upcoming_this_week > 0 ? "text-luma-gold" : "text-luma-ivory", className: "" },
+        ].map((item) => <div key={item.label} className={`min-w-0 space-y-2 ${item.className}`}>
+          <dt className="text-xs text-luma-smoke">{item.label}</dt>
+          <dd className={`ai7-type-metric ${item.color}`}>{loading ? <Skeleton className="h-8 w-24" /> : item.value}</dd>
+        </div>)}
+      </dl>
 
       {/* Subscriptions Grid Cards */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h3 className="ai7-type-card text-white">
-              Daftar tagihan & layanan terjadwal
+              Daftar tagihan
             </h3>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Total {subsData.items.length} tagihan dan layanan rutin terdaftar
+              {subsData.items.length} tagihan terdaftar
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onOpenModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-amberGold text-slate-950 font-semibold rounded-xl hover:bg-yellow-300 transition shadow-sm text-xs shrink-0 whitespace-nowrap cursor-pointer active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Tambah tagihan</span>
-          </button>
         </div>
 
         {loading ? (
@@ -185,25 +117,14 @@ export function SubscriptionsView({
             return (
               <div
                 key={sub.id}
-                className={`bg-obsidian-card border rounded-2xl p-5 space-y-4 transition-all shadow-sm ${
-                  isExpired
-                    ? "border-coralFall/50 bg-coralFall/5"
-                    : isUpcoming || isToday
-                    ? "border-amberGold/40 bg-amberGold/5"
-                    : "border-luma-smokeline hover:border-white/[0.16]"
-                }`}
+                className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 space-y-4"
               >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap justify-between items-start gap-3">
+                  <div className="min-w-[min(100%,180px)] flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-base font-semibold text-white truncate">
+                      <span className="text-base font-semibold text-white break-words">
                         {sub.name}
                       </span>
-                      {isExact && (
-                        <span className="text-xs font-sans px-2 py-0.5 rounded-full bg-amberGold/15 border border-amberGold/30 text-amberGold font-semibold shrink-0">
-                          Berakhir spesifik
-                        </span>
-                      )}
                     </div>
                     <span className="text-xs text-zinc-400 font-sans truncate block mt-0.5">{sub.category}</span>
                   </div>
@@ -225,9 +146,9 @@ export function SubscriptionsView({
                       : missingDate
                       ? "Tanggal belum diatur"
                       : isExpired
-                      ? `❌ Expired (${Math.abs(days)} hr lalu)`
+                      ? `Lewat ${Math.abs(days)} hari`
                       : isToday
-                      ? "🚨 Hari Ini!"
+                      ? "Jatuh tempo hari ini"
                       : `${days} hari lagi`}
                   </span>
                 </div>
@@ -244,7 +165,7 @@ export function SubscriptionsView({
                       <>
                         <Clock className="w-3.5 h-3.5 text-amberGold shrink-0" />
                         <span className="truncate">
-                          Berakhir pada tgl <strong>{sub.exact_due_date || sub.next_billing_date}</strong>
+                          Jatuh tempo <strong>{sub.exact_due_date || sub.next_billing_date}</strong>
                         </span>
                       </>
                     ) : (

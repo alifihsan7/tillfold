@@ -206,3 +206,14 @@ Delivery Gate lingkup visual ini:
 - Purpose-Gate PASS: grain dan kilau diminta pengguna untuk menandai satu panel glass; tidak menyebar efek ke seluruh kartu atau menambah glow.
 - Liveliness PASS: ENERGY 1 / RHYTHM 2 / MOTION 1 tetap; karakter datang dari tekstur statis yang tipis.
 - Craftsmanship PASS: dark/light diperiksa dengan opacity berbeda; tidak ada library, unduhan aset, atau motion baru. Peringatan lint hook/img lama tetap ada; tidak melaporkan angka performa yang tidak diukur.
+
+## Bug fokus Tab dari dropdown portal
+
+Reproduksi lokal: buka form Catat transaksi, buka rekening, End ke opsi terakhir, tekan Tab. Sebelumnya fokus menjadi BODY di luar dialog sementara menu tetap terbuka. Dropdown memakai portal ke body sehingga tidak termasuk urutan fokus dialog.
+
+Perbaikan: Tab/Shift+Tab menutup opsi dan memindahkan fokus relatif terhadap tombol pemicu, mengikuti kontrol terlihat dan aktif di dialog induk. Kontrol menu portal dan tabindex negatif dikecualikan. Di luar dialog, urutan mengikuti kontrol halaman. Pilihan rekening dan isi form tidak diubah.
+
+- Hard Gate PASS: build dan checker kalender/highlight lulus. Browser membuktikan Tab dari opsi terakhir fokus ke Kategori di dalam dialog; Shift+Tab fokus ke Keterangan; menu tertutup dan draft tetap ada. Dropdown bulan di kalender meneruskan Tab ke tahun. Tidak menyimpan transaksi saat pengujian.
+- Purpose-Gate PASS: tidak menambah fitur atau dekorasi; memperbaiki urutan fokus yang terputus oleh portal.
+- Liveliness PASS: tidak mengubah dials, warna, layout atau motion.
+- Craftsmanship PASS: perilaku diuji di dalam dan luar dialog dengan form asli; API/data tidak berubah. Ini satu bug yang direproduksi dan diperbaiki, bukan klaim seluruh aplikasi bebas bug. Peringatan lint hook/img lama tetap ada.

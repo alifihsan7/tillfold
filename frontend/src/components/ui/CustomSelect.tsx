@@ -187,6 +187,20 @@ export function CustomSelect({
           <div
             ref={dropdownRef}
             onKeyDown={(event) => {
+              if (event.key === "Tab") {
+                event.preventDefault();
+                event.stopPropagation();
+                const trigger = triggerRef.current;
+                const scope = trigger?.closest('[role="dialog"]') || document.body;
+                const controls = Array.from(scope.querySelectorAll<HTMLElement>(
+                  'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
+                )).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0 && !dropdownRef.current?.contains(element));
+                const index = trigger ? controls.indexOf(trigger) : -1;
+                const next = index + (event.shiftKey ? -1 : 1);
+                setIsOpen(false);
+                (controls[(next + controls.length) % controls.length] || trigger)?.focus();
+                return;
+              }
               if (event.key === "Escape") {
                 event.preventDefault();
                 event.stopPropagation();

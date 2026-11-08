@@ -54,6 +54,9 @@ def test_user(db_session):
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+    db_session.add_all([Account(user_id=user.id, name=name, type="operasional", initial_balance=0)
+                        for name in ("Mandiri", "BRI 1", "Bank Jago", "Bibit")])
+    db_session.commit()
     return user
 
 @pytest.fixture
@@ -90,7 +93,7 @@ def test_transaction_type_whitelist_rejection(client):
         assert res.status_code == 422, f"Type '{illegal_type}' should be rejected with 422, got {res.status_code}"
 
     # Valid transaction types must be accepted
-    for valid_type in ["expense", "income", "transfer_out", "transfer_in"]:
+    for valid_type in ["expense", "income"]:
         payload = {
             "type": valid_type,
             "amount": 25000,

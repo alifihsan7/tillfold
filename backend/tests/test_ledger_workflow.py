@@ -413,3 +413,89 @@ def test_paycheck_does_not_create_zero_allocation_transactions(ledger):
     assert db.query(Transaction).filter(Transaction.amount == 0).count() == 0
     assert client.get("/transactions").status_code == 200
     assert balances(client) == {"Bank": 0, "Cash": 1000000}
+
+
+@pytest.mark.parametrize("kind", ["transfer_in", "transfer_out"])
+def test_manual_transaction_cannot_create_one_sided_transfer(ledger, kind):
+    client, db = ledger
+    response = client.post("/transactions", json={
+        "type": kind, "amount": 100, "account": "Bank", "category": "Transfer", "description": "Test",
+    })
+    assert response.status_code == 400
+    assert db.query(Transaction).count() == 0
+    assert balances(client) == {"Bank": 0, "Cash": 0}
+
+
+@pytest.mark.parametrize("account", ["Missing", "Peer", "", " Bank "])
+def test_unknown_accounts_cannot_change_ledger(ledger, account):
+    client, db = ledger
+    db.add(User(id=2, username="peer", full_name="Peer", hashed_password="unused", is_active=True))
+    db.flush()
+    db.add(Account(user_id=2, name="Peer", type="operasional", initial_balance=0))
+    db.commit()
+    tx = create(client, "income", 1000)
+    assert client.post("/transactions", json={
+        "type": "expense", "amount": 100, "account": account, "category": "Test", "description": "Test",
+    }).status_code == 400
+    assert client.put(f"/transactions/{tx['id']}", json={"account": account}).status_code == 400
+    for source, target in [("Bank", account), (account, "Cash")]:
+        assert client.post("/transactions/transfer", json={
+            "from_account": source, "to_account": target, "amount": 100,
+        }).status_code == 400
+    assert db.query(Transaction).count() == 1
+    assert balances(client) == {"Bank": 1000, "Cash": 0}
+    assert summary(client)["total_balance"] == 1000
+
+
+@pytest.mark.parametrize("bad_link", ["missing", "wrong_reverse", "wrong_date", "same_account"])
+def test_broken_transfer_link_never_deletes_an_unrelated_transfer(ledger, bad_link):
+    client, db = ledger
+    first = client.post("/transactions/transfer", json={"from_account": "Bank", "to_account": "Cash", "amount": 100}).json()
+    second = client.post("/transactions/transfer", json={"from_account": "Bank", "to_account": "Cash", "amount": 100}).json()
+    out = db.get(Transaction, first["out_transaction_id"])
+    incoming = db.get(Transaction, first["in_transaction_id"])
+    if bad_link == "missing":
+        db.delete(incoming)
+    elif bad_link == "wrong_reverse":
+        incoming.raw_text = f"[pair_id:{second['out_transaction_id']}]"
+    elif bad_link == "wrong_date":
+        incoming.date = out.date - timedelta(days=1)
+    else:
+        incoming.account = out.account
+    db.commit()
+    assert client.put(f"/transactions/{out.id}", json={"amount": 150}).status_code == 400
+    deleted = client.delete(f"/transactions/{out.id}").json()
+    assert deleted["deleted_ids"] == [out.id]
+    assert db.get(Transaction, second["out_transaction_id"]) is not None
+    assert db.get(Transaction, second["in_transaction_id"]) is not None
+
+
+def test_ambiguous_legacy_transfers_are_not_guessed(ledger):
+    client, db = ledger
+    from app.core.transfer import find_paired_transfer
+    rows = [Transaction(user_id=1, type=kind, amount=100, account=account, category="Transfer",
+                        description=description, raw_text="legacy", date=date(2026, 11, 2))
+            for kind, account, description in [
+                ("transfer_out", "Bank", "Transfer ke Cash: Test"),
+                ("transfer_in", "Cash", "Transfer dari Bank: Test"),
+                ("transfer_in", "Cash", "Transfer dari Bank: Test"),
+            ]]
+    db.add_all(rows)
+    db.commit()
+    assert all(find_paired_transfer(db, row) is None for row in rows)
+    assert client.put(f"/transactions/{rows[0].id}", json={"amount": 200}).status_code == 400
+    assert db.query(Transaction).count() == 3
+
+
+@pytest.mark.parametrize("account_name", ["Bank", "Cash"])
+def test_account_deletion_cannot_leave_half_a_transfer(ledger, account_name):
+    client, db = ledger
+    create(client, "income", 1000)
+    pair = client.post("/transactions/transfer", json={"from_account": "Bank", "to_account": "Cash", "amount": 200}).json()
+    account = db.query(Account).filter_by(user_id=1, name=account_name).one()
+    assert client.delete(f"/accounts/{account.id}").status_code == 409
+    assert balances(client) == {"Bank": 800, "Cash": 200}
+    assert summary(client)["total_balance"] == 1000
+    assert db.query(Transaction).count() == 3
+    assert client.delete(f"/transactions/{pair['out_transaction_id']}").status_code == 200
+    assert client.delete(f"/accounts/{account.id}").status_code == 200

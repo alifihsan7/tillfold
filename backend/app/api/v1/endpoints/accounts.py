@@ -361,6 +361,11 @@ def delete_account(
         raise HTTPException(status_code=400, detail="Minimal harus ada 1 rekening aktif")
 
     acc_name = acc.name
+    if db.query(Transaction.id).filter(
+        Transaction.user_id == current_user.id, Transaction.account == acc_name,
+        Transaction.type.in_(["transfer_in", "transfer_out"]),
+    ).first():
+        raise HTTPException(409, "Rekening masih memiliki riwayat transfer. Hapus transfer terkait terlebih dahulu agar saldo rekening lain tetap konsisten.")
     db.query(SubscriptionPayment).filter(
         SubscriptionPayment.user_id == current_user.id,
         SubscriptionPayment.transaction_id.in_(db.query(Transaction.id).filter(

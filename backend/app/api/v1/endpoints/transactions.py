@@ -85,6 +85,14 @@ def get_transactions(
 
     return query.order_by(Transaction.date.desc(), Transaction.id.desc()).offset(skip).limit(limit).all()
 
+def require_owned_accounts(db: Session, user_id: int, *names: str):
+    owned = {row.name for row in db.query(Account).filter(
+        Account.user_id == user_id, Account.name.in_(names),
+    ).all()}
+    if any(name not in owned for name in names):
+        raise HTTPException(400, "Pilih rekening yang terdaftar di akun Anda.")
+
+
 @router.post("", response_model=TransactionOut)
 def create_transaction(
     payload: TransactionCreate,
@@ -93,6 +101,9 @@ def create_transaction(
 ):
     now_wib = datetime.now(WIB)
     tx_date = payload.date or now_wib.date()
+    if payload.type in ("transfer_in", "transfer_out"):
+        raise HTTPException(400, "Gunakan fitur transfer agar saldo asal dan tujuan tercatat berpasangan.")
+    require_owned_accounts(db, current_user.id, payload.account)
 
     tx = Transaction(
         user_id=current_user.id,
@@ -120,6 +131,7 @@ def execute_transfer(
     if payload.from_account == payload.to_account:
         raise HTTPException(status_code=400, detail="Rekening asal dan tujuan tidak boleh sama")
 
+    require_owned_accounts(db, current_user.id, payload.from_account, payload.to_account)
     now_wib = datetime.now(WIB)
     tx_date = payload.date or now_wib.date()
     desc = payload.description or f"Transfer {payload.from_account} -> {payload.to_account}"
@@ -295,6 +307,8 @@ def update_transaction(
     if tx.type in ("adjustment_in", "adjustment_out"):
         raise HTTPException(409, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru untuk koreksi.")
     update_data = payload.model_dump(exclude_unset=True)
+    if update_data.get("account") is not None:
+        require_owned_accounts(db, current_user.id, update_data["account"])
     payment = db.query(SubscriptionPayment).filter(
         SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.transaction_id == tx.id,
     ).with_for_update().first()

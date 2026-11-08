@@ -2,7 +2,8 @@
 
 > **Production-ready, multi-tenant personal finance ecosystem** engineered for friction-free daily expense capture via Telegram and deep analytical budgeting via a modern dark-themed web dashboard.
 >
-> 🌐 **Live Production:** [tillfold.alifihsan.my.id](https://tillfold.alifihsan.my.id)
+> 🌐 **Live Production:** [tillfold.alifihsan.my.id](https://tillfold.alifihsan.my.id)  
+> 🤖 **Official Telegram Companion:** [@tillfold_bot](https://t.me/tillfold_bot)
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_14-black?logo=next.js&logoColor=white)](https://nextjs.org)
@@ -12,32 +13,20 @@
 
 ---
 
-## 🌟 Highlights
+## 🌟 Highlights & Capabilities
 
-- **⚡ Zero-Friction Telegram Capture:** Log expenses in under a second using regex natural language parsing (`kopi 25k bca`, `bensin 50rb cash`, `gaji 5jt`).
+- **⚡ Zero-Friction Telegram Capture:** Log expenses in under a second using regex natural language parsing (`kopi 25k mandiri`, `bensin 50rb cash`, `gaji 5jt`).
+- **🤖 Official Companion Bot ([@tillfold_bot](https://t.me/tillfold_bot)):** Direct shared bot architecture. Connect your account securely via one-time 10-minute linking codes from **Profil → Integrasi Telegram** with zero multi-tenant leakage.
 - **📱 Telegram Mini App (TMA):** Access the entire Next.js financial dashboard natively within Telegram via the persistent "📊 Dashboard" menu button, featuring zero-click cryptographic auto-login (HMAC-SHA256 Single Sign-On).
-- **🔐 Multi-Tenant Architecture:** Built from the ground up with secure user isolation, Argon2/Bcrypt password hashing, JWT bearer tokens, and Google OAuth 2.0 Sign-In.
-- **🤖 Shared Telegram Bot:** All users connect to the server-managed bot from Profile → Integrasi Telegram. A one-time link expires after 10 minutes and links the private Telegram sender to their Tillfold account. Run one polling worker with `run_bot.sh` using `BOT_TOKEN` (or `TELEGRAM_BOT_TOKEN`). Restart both the API and polling worker after upgrading. Existing custom-bot users reconnect through their profile.
+- **📅 Transaction Calendar View:** Visual Monday-first monthly calendar grid mapping daily income, expense totals, transfers, and balance reconciliation adjustments with responsive compact currency formatting.
+- **🔍 Global Search (Ctrl+K / ⌘K):** Instant modal search across transactions, bank accounts, recurring bills, and savings goals across all periods—including archived records and formatted currency figures.
+- **📦 Account Archive & Historical Ledger:** Safely archive dormant bank accounts without corrupting past double-entry balance transfers. Seamlessly falls back to remaining active default accounts.
+- **⚖️ Balance Reconciliation:** Reconcile real-world bank balances directly via **Pengaturan → Rekening → Cocokkan saldo**. Automatically records balance correction adjustments without falsifying operational P&L.
+- **🔔 Bill & Subscription Tracker:** Manage fixed commitments, active recurring subscriptions, and manual payments with single-click payment records and automatic pocket ledger sync.
+- **💾 Snapshot Backup & Atomic Restore:** Export full encrypted or versioned JSON snapshots (accounts, transactions, categories, pockets, bills, goals, paycheck settings). Full atomic import with schema migration guards.
 - **🔄 Dynamic Budget Cycles:** Flexible budget periods tailored to your actual paycheck cycle—**Weekly (7 Days)**, **Bi-Weekly (14 Days)**, or **Monthly (30 Days)**—with automated cycle rollover and historical tracking.
 - **📉 Burn-Rate Trajectory & Pacing:** Real-time safe-to-spend velocity meter (`Rp/hari`), pacing status indicators (🟢 Pace Aman vs 🔴 Agak Boros), and ideal cumulative pace lines.
-- **📦 Envelope Budgeting (Strata Allocation):** Dynamic percentage-based distribution across customizable buckets (Operational Saku, Fixed Bills, Investments, Emergency Reserve) connected directly to live account balances.
-- **🧾 AI Receipt & Voice Extractor:** Optional multimodal integration with OpenAI-compatible vision/audio models to ingest physical paper receipts and Telegram voice notes.
-- **📅 Tillfold Calendar & Controls:** Custom month-and-year picker popover, accessible form controls (`CustomSelect`, `CurrencyInput`), high-contrast dark/light mode, and unassigned salary preservation.
-- **Backup & restore:** Open **Utilitas → Backup & restore** to download a versioned JSON file containing accounts, transactions, categories, pockets, bills, goals, and paycheck settings/history. Restore previews the counts and total balance, then imports atomically into an account with empty financial data. Existing financial data blocks restore. Maximum file size is 25 MB. Login credentials, Telegram links, and server settings are excluded.
-- **Balance reconciliation:** Open **Pengaturan → Rekening → Cocokkan saldo**, enter the actual balance and a note, then review the difference. Adjustments change balances without counting as income or expenses. The history is retained, so subsequent corrections use another reconciliation. Backup format 2 includes adjustments and the current importer also accepts format 1.
-- **Bill payments:** Use **Tagihan → Catat pembayaran** to record one full payment for the current monthly/yearly period or a one-time bill. Select an existing matching expense when the payment was already entered. Repeated submissions reuse the payment record. Deleting its expense reopens the bill, while linked pockets and Telegram show the payment status. Backup format 4 preserves payment links and archived accounts; the importer still accepts formats 1, 2, and 3.
-- **Transaction calendar:** Open **Transaksi → Kalender** for a Monday-first month grid with daily income/expense totals. Choose month/year, filter an account (including archived history), or jump to **Hari ini**. Click a date for paginated daily transactions. Transfers and balance adjustments are shown separately. Calendar sums include every matching transaction, independently of the dashboard period and the list page limit. Compact amounts adapt to the calendar's available width.
-- **Global search:** Use **Cari** in the top bar or **Ctrl+K / ⌘K** outside another form/dialog. Search transactions, accounts, bills, and savings goals across all periods, including archived accounts and inactive records. Amounts such as `25.000` and ISO transaction dates are supported. Results open the existing record form on its related page; nothing changes until saved. Each group shows up to five results and asks you to refine the query when more match. Restart the API and refresh the frontend after upgrading.
-- **Account archive:** Open **Pengaturan → Rekening**, choose **Arsipkan rekening**, and confirm. The **Arsip** view keeps balances and history visible and offers **Aktifkan kembali**. Archived accounts are excluded from new transactions, transfers, payroll and bill payments, including Telegram. At least one account must stay active. When archiving a default salary/spending account, another active account replaces that default; no money is moved. Restart both the API and bot after upgrading so the startup migration adds `accounts.is_archived` to existing databases.
-- **Telegram ledger safety:** Repeated delivery of the same private-chat message is ignored using a persistent `(chat_id, message_id)` key committed with the ledger changes. A new message with identical text is a new request. Text and media validate owned accounts and positive whole-rupiah amounts before saving; media batches include paired transfers atomically. `/batal` uses the same paycheck and bill-payment safeguards as the web. Message keys are operational metadata excluded from financial backups. Restart the API and bot after upgrading to create the message-key table through startup.
-
----
-
-## 📚 Dokumentasi & Buku Panduan
-
-- 🏛️ **[Spesifikasi Arsitektur Sistem (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)** — Penjelasan mendalam mengenai isolasi multi-tenant, ERD database PostgreSQL, formula matematika *Safe-to-Spend* dan burn-rate trajectory, spesifikasi engine parser regex, verifikasi kriptografis Telegram Mini App, serta katalog REST API lengkap.
-- 🚀 **[Panduan Production Deployment (docs/DEPLOYMENT.md)](docs/DEPLOYMENT.md)** — Panduan operasi server Linux 24/7 dengan systemd services, setup PostgreSQL, environment variables, reverse proxy, dan konfigurasi Google OAuth 2.0.
-- 📕 **[Buku Panduan Pengguna PDF (docs/Panduan_Pengguna_AI7_Finance.pdf)](docs/Panduan_Pengguna_AI7_Finance.pdf)** — Panduan lama. Bagian Shared/BYOB sudah digantikan alur satu bot melalui Profil → Integrasi Telegram.
+- **🛡️ Telegram Ledger Idempotency:** Persistent `(chat_id, message_id)` idempotency guard prevents double-entry anomalies under network retries or accidental duplicate sends.
 
 ---
 
@@ -51,8 +40,8 @@
                                               |
                                               v
                                 +---------------------------+
-                                |    Telegram Bot Engine    |
-                                |       (Shared Bot)        |
+                                |    Tillfold Bot Engine    |
+                                |      (@tillfold_bot)      |
                                 +-------------+-------------+
                                               |
                                               v
@@ -70,13 +59,23 @@
 
 ---
 
+## 📚 Technical Specifications & Documentation
+
+- 🏛️ **[Spesifikasi Arsitektur Sistem (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)** — Penjelasan mendalam mengenai isolasi multi-tenant, ERD database PostgreSQL, formula matematika *Safe-to-Spend*, spesifikasi parser regex nominal, dan verifikasi kriptografis TMA.
+- 🚀 **[Panduan Production Deployment (docs/DEPLOYMENT.md)](docs/DEPLOYMENT.md)** — Panduan operasi server Linux 24/7 dengan systemd services, setup database PostgreSQL, reverse proxy HTTPS, dan konfigurasi Google OAuth 2.0.
+- 🔍 **[Global Search Specification (docs/GLOBAL-SEARCH-2026-11-08.md)](docs/GLOBAL-SEARCH-2026-11-08.md)** — Spesifikasi modal global search (Ctrl+K) dan indexing lintas periode.
+- 📅 **[Transaction Calendar Design (docs/TRANSACTION-CALENDAR-2026-11-08.md)](docs/TRANSACTION-CALENDAR-2026-11-08.md)** — Arsitektur kalender transaksi visual dan kalkulasi agregasi harian.
+- 📦 **[Account Archive Design (docs/ACCOUNT-ARCHIVE-2026-11-08.md)](docs/ACCOUNT-ARCHIVE-2026-11-08.md)** — Kebijakan pengarsipan akun tanpa merusak integritas buku besar transfer atomik.
+
+---
+
 ## 🚀 Quickstart Guide
 
 ### Prerequisites
 - **Python 3.10+**
 - **Node.js 18+** & `npm`
 - **PostgreSQL 14+**
-- (Optional) Telegram Bot token from [@BotFather](https://t.me/BotFather)
+- Telegram Bot token from [@BotFather](https://t.me/BotFather)
 
 ---
 
@@ -106,13 +105,16 @@ Open `backend/.env` and update the required keys:
 
 ```env
 # PostgreSQL connection string
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ai7_finance
+DATABASE_URL=postgresql://alifihsan:***@localhost:5432/ai7_finance
 
 # JWT secret (generate one with: openssl rand -hex 32)
 JWT_SECRET_KEY=your_generated_32_char_secret_key
 
-# Telegram Bot Token (Optional if using web-only mode)
+# Telegram Bot Token from @BotFather
 BOT_TOKEN=your_bot_token_from_botfather
+
+# Base URL for Web Dashboard and OAuth
+APP_BASE_URL=https://tillfold.alifihsan.my.id
 
 # Local Timezone
 TIMEZONE=Asia/Jakarta
@@ -128,7 +130,7 @@ npm install
 npm run build
 cd ..
 
-# Sync static build to web server root
+# Sync static export to FastAPI static root
 rm -rf static/*
 cp -r frontend/out/* static/
 cp frontend/public/manifest.json static/
@@ -157,35 +159,38 @@ The bot parses natural language strings instantly with zero LLM token costs:
 
 | User Input | Type | Amount | Account | Category | Description |
 |---|---|---|---|---|---|
-| `kopi 25k bca` | Expense | Rp 25.000 | BCA | Jajan / Ngopi | Kopi |
+| `kopi 25k mandiri` | Expense | Rp 25.000 | Mandiri | Jajan / Ngopi | Kopi |
 | `makan siang 35rb mandiri` | Expense | Rp 35.000 | Mandiri | Makanan & Minuman | Makan siang |
 | `bensin 50000 cash` | Expense | Rp 50.000 | Cash | Transportasi | Bensin |
 | `gaji 5000000 mandiri` | Income | Rp 5.000.000 | Mandiri | Gaji & Pendapatan | Gaji |
-| `tf 100k mandiri ke jago` | Transfer | Rp 100.000 | Mandiri -> Jago | Transfer Saldo | Pindah dana |
+| `tf 100k bri 2 ke bri 1` | Transfer | Rp 100.000 | BRI 2 -> BRI 1 | Transfer Saldo | Pindah dana |
 
 ### Supported Bot Commands
-- `/start` — Check authorization or link Telegram account with a 6-digit sync code from the web.
+- `/start` — Check authorization or link Telegram account with a 10-minute sync token from web profile.
 - `/menu` — Interactive keyboard with quick access to all bot features.
-- `/saldo` — View real-time wallet balances and Bank Jago pocket mappings.
-- `/transfer` — Transfer balance between pockets or bank accounts.
+- `/saldo` — View real-time wallet balances across all bank accounts and pockets.
 - `/pacing` — View safe-to-spend pacing and days remaining in the active paycheck cycle.
-- `/gajian` — Log paycheck income and execute percentage-based envelope allocations.
-- `/subs` — View and manage fixed commitments, monthly and annual subscriptions.
 - `/rekap` — Get a summary of current period income, expenses, and savings rate.
+- `/goals` — View savings milestones and goal progression.
+- `/subs` — View and manage fixed commitments, monthly and annual subscriptions.
+- `/transaksi` — Display last 5 logged transactions with quick cancellation options.
+- `/transfer` — Transfer balance between pockets or bank accounts.
+- `/gajian` — Log paycheck income and execute percentage-based envelope allocations.
+- `/sheets` — Trigger Google Sheets sync snapshot.
+- `/batal` — Revert the most recently recorded transaction safely.
 - `/help` — Display syntax examples and usage guide.
 
 ---
 
 ## 🛠️ Production Deployment
 
-Untuk panduan deployment langkah-demi-langkah di server Linux (Ubuntu/Debian), konfigurasi database PostgreSQL, environment variables, reverse proxy, dan konfigurasi Google OAuth 2.0, silakan pelajari dokumen terpisah:
+Untuk panduan operasi 24/7 di server Linux (Ubuntu/Debian) dengan systemd:
 
-👉 **[Panduan Production Deployment (docs/DEPLOYMENT.md)](docs/DEPLOYMENT.md)**
-
-Ringkasan cepat operasi 24/7 di server Linux:
 1. **Layanan Background:** Dikelola melalui unit systemd `ai7-finance-web.service` (FastAPI backend & web dashboard di port 8080) dan `ai7-finance.service` (Telegram companion bot).
-2. **Reverse Proxy & SSL:** Menggunakan Cloudflare Tunnel atau reverse proxy standar (seperti Nginx atau Caddy) untuk meneruskan lalu lintas HTTPS ke backend lokal (`http://127.0.0.1:8080`).
+2. **Reverse Proxy & SSL:** Menggunakan Cloudflare Tunnel atau Nginx reverse proxy untuk meneruskan traffic HTTPS ke backend lokal (`http://127.0.0.1:8080`).
 3. **Autentikasi Google:** Daftarkan origin domain publik (`https://tillfold.alifihsan.my.id`) di Google Cloud Console (*Authorized JavaScript origins* & *Authorized redirect URIs*).
+
+👉 **[Detail Lengkap Panduan Deployment (docs/DEPLOYMENT.md)](docs/DEPLOYMENT.md)**
 
 ---
 
@@ -195,6 +200,7 @@ Ringkasan cepat operasi 24/7 di server Linux:
 - **Stateless Bearer Tokens:** HS256 JWT tokens with configurable TTL.
 - **Tenant Data Isolation:** Every query explicitly scopes by authenticated `user_id`.
 - **Zero Secrets in Repository:** Credentials, `.env`, tokens, and service account JSONs are strictly gitignored.
+- **Telegram Webhook / Polling Guard:** Cryptographic verification and sender ownership validation prevent impersonation.
 
 ---
 

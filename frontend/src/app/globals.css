@@ -861,22 +861,22 @@ textarea:focus-visible,
   border-color: color-mix(in srgb, var(--allocation-color) 35%, var(--luma-smokeline));
 }
 
-/* Compact desktop controls; touch and narrow layouts keep 44px targets. */
+/* Toolbar keeps 44px controls; desktop dialogs use a denser 40px rhythm. */
 @media (min-width: 768px) and (pointer: fine) {
   .luma-topbar .luma-toolbar > button,
   .luma-topbar .luma-toolbar > div > button,
   .luma-topbar .luma-period-selector > button,
   .luma-topbar .luma-period-controls > div:last-child > button {
-    height: 36px;
-    min-height: 36px;
-    min-width: 36px;
-    padding: 7px 12px;
-    font-size: 13px;
+    height: 44px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 11px 16px;
+    font-size: 14px;
     line-height: 20px;
   }
   .luma-topbar .luma-period-controls > div:last-child > button {
-    width: 36px;
-    padding: 8px;
+    width: 44px;
+    padding: 10px;
   }
   .luma-topbar [role="menuitem"] {
     min-height: 40px;

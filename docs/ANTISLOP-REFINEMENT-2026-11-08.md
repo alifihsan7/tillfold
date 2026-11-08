@@ -150,3 +150,12 @@ Jarak atas baris kontrol dan bingkai sidebar desktop memakai token `--luma-shell
 - Purpose-Gate PASS: satu token menyatakan batas tepi shell; tidak menambah panel atau dekorasi.
 - Liveliness PASS: dials tetap 1/2/1, tidak menambah motion.
 - Craftsmanship PASS: perubahan hanya menyelaraskan posisi desktop; tombol dan navigasi tetap bekerja, tidak mengubah data atau tema.
+
+## Ukuran toolbar dikembalikan
+
+Anotasi pengguna berikutnya meminta toolbar kembali ke ukuran sebelum perapihan, sambil mempertahankan posisi sejajar. Toolbar desktop sekarang 44px dengan teks 14px; dialog tetap 40px. Bagian ini menggantikan keputusan toolbar 36px di atas.
+
+- Hard Gate PASS: build lulus; browser mengukur kelima kontrol toolbar 44px/14px, tepi atas baris kontrol dan sidebar sama-sama 16px pada viewport anotasi 1915x884.
+- Purpose-Gate PASS: mengembalikan ukuran yang dipilih pengguna; tidak menambah dekorasi atau motion.
+- Liveliness PASS: dials tetap 1/2/1.
+- Craftsmanship PASS: aturan dialog/mobile serta token posisi sidebar tetap; tidak mengubah data, API, atau interaksi.

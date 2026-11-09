@@ -403,11 +403,11 @@ export default function FinanceDashboard() {
 
   const handleCopySettingsEmail = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText("ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com");
+      await navigator.clipboard.writeText("tillfold@tillfold.iam.gserviceaccount.com");
       setCopiedSettingsEmail(true);
       setTimeout(() => setCopiedSettingsEmail(false), 2000);
     } catch {
-      showToast("Salin manual: ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com");
+      showToast("Salin manual: tillfold@tillfold.iam.gserviceaccount.com");
     }
   }, [showToast]);
 
@@ -2722,7 +2722,7 @@ export default function FinanceDashboard() {
                         </p>
                         <div className="flex items-center justify-between gap-2 rounded-lg bg-black/40 border border-luma-smokeline px-3 py-1.5">
                           <code className="text-xs font-mono text-luma-sage select-all break-all">
-                            ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com
+                            tillfold@tillfold.iam.gserviceaccount.com
                           </code>
                           <button
                             type="button"

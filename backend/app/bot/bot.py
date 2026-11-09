@@ -1128,7 +1128,7 @@ def handle_set_sheet(chat_id: int, text: str, db: Session, user: Optional[User] 
         msg = (
             "Kirim `/set_sheet <link_spreadsheet>` untuk menautkan Google Sheet kamu.\n\n"
             "Pastikan kamu sudah membagikan akses Editor pada spreadsheet-mu ke email bot:\n"
-            "`ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com`"
+            "`tillfold@tillfold.iam.gserviceaccount.com`"
         )
         send_message(chat_id, msg, bot_token=bot_token)
         return
@@ -1161,7 +1161,7 @@ def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_to
             "⚠️ Google Spreadsheet belum ditautkan.\n\n"
             "Kirim `/set_sheet <link_spreadsheet>` untuk menautkan Google Sheet kamu.\n\n"
             "Pastikan kamu sudah membagikan akses Editor pada spreadsheet-mu ke email bot:\n"
-            "`ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com`"
+            "`tillfold@tillfold.iam.gserviceaccount.com`"
         )
         send_message(chat_id, msg, bot_token=bot_token)
         return

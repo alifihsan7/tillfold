@@ -5,7 +5,7 @@ import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy
 import { CustomModal } from "./ui/CustomModal";
 import { authFetch, setStoredUser, UserProfile, syncGoogleSheets } from "@/lib/api";
 
-const SERVICE_ACCOUNT_EMAIL = "ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com";
+const SERVICE_ACCOUNT_EMAIL = "tillfold@tillfold.iam.gserviceaccount.com";
 
 interface UserProfileModalProps {
   isOpen: boolean;

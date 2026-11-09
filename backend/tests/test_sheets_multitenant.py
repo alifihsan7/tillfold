@@ -145,7 +145,7 @@ def test_bot_set_sheet_no_arg_returns_instructions(db_session, test_user):
         mock_send.assert_called_once()
         sent_text = mock_send.call_args[0][1]
         assert "/set_sheet <link_spreadsheet>" in sent_text
-        assert "ai7-finance-sync@ai7-finance-sync.iam.gserviceaccount.com" in sent_text
+        assert "tillfold@tillfold.iam.gserviceaccount.com" in sent_text
 
 
 def test_bot_set_sheet_valid_url_persists_id(db_session, test_user):

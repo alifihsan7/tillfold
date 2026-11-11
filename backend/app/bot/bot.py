@@ -195,7 +195,7 @@ def setup_bot_commands():
         {"command": "menu", "description": "📱 Buka tombol menu navigasi"},
         {"command": "saldo", "description": "💳 Estimasi saldo seluruh rekening"},
         {"command": "pacing", "description": "🎯 Status burn rate & safe-to-spend"},
-        {"command": "rekap", "description": "📊 Rekap pengeluaran & pacing belanja"},
+        {"command": "rekap", "description": "📊 Rekap pengeluaran & pacing (siklus/bulan)"},
         {"command": "goals", "description": "🎯 Target tabungan & milestone finansial"},
         {"command": "transfer", "description": "🔄 Transfer antar rekening"},
         {"command": "subs", "description": "🔔 Jadwal langganan & tagihan rutin"},
@@ -296,7 +296,7 @@ Bot ini terhubung ke akun Tillfold lo.
 📌 **Perintah Tersedia:**
 • `/saldo` - Estimasi saldo per rekening & total net worth
 • `/pacing` - Status laju pengeluaran & sisa safe-to-spend
-• `/rekap` - Ringkasan pengeluaran bulan ini
+• `/rekap` - Rekap pengeluaran & pacing sesuai siklus budget (atau `/rekap bulan`, `/rekap lalu`)
 • `/transaksi` - 5 transaksi terakhir
 • `/batal` - Hapus/batalkan transaksi terakhir jika salah
 • `/subs` - Cek jadwal langganan & tagihan rutin
@@ -308,19 +308,77 @@ Bot ini terhubung ke akun Tillfold lo.
 Tinggal ketik catatan pengeluaran/pemasukan lo kapan saja!"""
     send_message(chat_id, msg, reply_markup=get_main_keyboard(), bot_token=bot_token)
 
-def handle_rekap(chat_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
+def handle_rekap(
+    chat_id: int,
+    db: Session,
+    text: Optional[str] = None,
+    user: Optional[User] = None,
+    bot_token: Optional[str] = None,
+    **kwargs
+):
+    if isinstance(text, User):
+        user = text
+        text = kwargs.get("text", None)
+
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
         return
     user_id = user.id
     now = datetime.now(WIB)
-    month_names = [
-        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ]
-    month_name = month_names[now.month]
-    start_date = date(now.year, now.month, 1)
-    end_date = date(now.year + 1, 1, 1) if now.month == 12 else date(now.year, now.month + 1, 1)
+
+    # Tentukan mode: cycle (default), month, atau prev_cycle
+    mode = "cycle"
+    if text:
+        clean_text = text.strip().lower()
+        if any(k in clean_text for k in ["bulan", "month"]):
+            mode = "month"
+        elif any(k in clean_text for k in ["lalu", "prev", "sebelum", "kemarin"]):
+            mode = "prev_cycle"
+
+    c_info = get_user_cycle_info(db, user_id=user_id)
+    cycle_days = c_info["cycle_days"]
+    cycle_type = c_info["cycle_type"]
+    cycle_label = c_info["cycle_label"]
+    cfg = c_info.get("cfg")
+    paycheck_day = cfg.paycheck_day if cfg and cfg.paycheck_day else 25
+
+    if mode == "month":
+        month_names = [
+            "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+            "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+        ]
+        month_name = month_names[now.month]
+        start_date = date(now.year, now.month, 1)
+        next_month = date(now.year + 1, 1, 1) if now.month == 12 else date(now.year, now.month + 1, 1)
+        end_date = next_month - timedelta(days=1)
+        header_title = f"📊 **Rekap Keuangan — Bulan {month_name} {now.year}**"
+        period_sub = f"📅 Periode: `{start_date.strftime('%d %b')} s/d {end_date.strftime('%d %b %Y')}` (Bulan Kalender)"
+    elif mode == "prev_cycle":
+        cur_cycle_start = c_info["cycle_start"]
+        prev_end = cur_cycle_start - timedelta(days=1)
+        cycle_ends = recorded_cycle_ends(db, user_id)
+        prev_candidates = [(s, e) for s, e in cycle_ends.items() if e < cur_cycle_start]
+        if prev_candidates:
+            start_date, end_date = max(prev_candidates, key=lambda item: item[1])
+        elif cycle_type == "monthly_date":
+            start_date, end_date = get_monthly_date_bounds(prev_end, paycheck_day)
+        else:
+            end_date = prev_end
+            start_date = end_date - timedelta(days=cycle_days - 1)
+
+        dur_days = (end_date - start_date).days + 1
+        header_title = f"📊 **Rekap Keuangan — Siklus Sebelumnya ({dur_days} Hari)**"
+        period_sub = f"📅 Periode: `{start_date.strftime('%d %b')} s/d {end_date.strftime('%d %b %Y')}` (Siklus Lalu)"
+    else:  # mode == "cycle"
+        start_date = c_info["cycle_start"]
+        end_date = c_info["cycle_end"]
+        day_of_cycle = c_info["day_of_cycle"]
+        days_remaining = c_info["days_remaining"]
+        header_title = f"📊 **Rekap Keuangan — {cycle_label}**"
+        period_sub = (
+            f"📅 Periode: `{start_date.strftime('%d %b')} s/d {end_date.strftime('%d %b %Y')}` "
+            f"(Hari ke-{day_of_cycle}/{cycle_days} • Sisa {days_remaining} hari)"
+        )
 
     totals = db.query(
         Transaction.type,
@@ -328,7 +386,7 @@ def handle_rekap(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
     ).filter(
         Transaction.user_id == user_id,
         Transaction.date >= start_date,
-        Transaction.date < end_date
+        Transaction.date <= end_date
     ).group_by(Transaction.type).all()
 
     income_total = 0
@@ -348,12 +406,12 @@ def handle_rekap(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
     ).filter(
         Transaction.user_id == user_id,
         Transaction.date >= start_date,
-        Transaction.date < end_date,
+        Transaction.date <= end_date,
         Transaction.type == "expense"
     ).group_by(Transaction.category).order_by(func.sum(Transaction.amount).desc()).all()
 
     lines = [
-        f"📊 **Rekap Keuangan - {month_name} {now.year}**\n",
+        f"{header_title}\n{period_sub}\n",
         f"💰 **Total Pemasukan:** {format_rp(income_total)}",
         f"💸 **Total Pengeluaran:** {format_rp(expense_total)}",
         f"📈 **Net Cashflow:** {format_rp(net_total)}\n",
@@ -361,13 +419,22 @@ def handle_rekap(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
     ]
 
     if not cat_rows:
-        lines.append("_Belum ada pengeluaran yang tercatat bulan ini._")
+        period_name = "siklus ini" if mode == "cycle" else ("bulan ini" if mode == "month" else "siklus tersebut")
+        lines.append(f"_Belum ada pengeluaran yang tercatat {period_name}._")
     else:
         for cat in cat_rows:
-            lines.append(f"• **{cat.category}**: {format_rp(int(cat.total))} ({cat.count}x)")
+            pct = (int(cat.total) / expense_total * 100) if expense_total > 0 else 0
+            lines.append(f"• **{cat.category or 'Lain-lain'}**: {format_rp(int(cat.total))} ({pct:.0f}%, {cat.count}x)")
 
-    lines.append(f"\n{get_safe_to_spend_snippet(db, user_id=user_id)}")
-    send_message(chat_id, "\n".join(lines), bot_token=bot_token)
+    if mode == "cycle":
+        lines.append(f"\n{get_safe_to_spend_snippet(db, user_id=user_id)}")
+        lines.append("\n💡 _Tips: Ketik `/rekap bulan` untuk kalender, atau `/rekap lalu` untuk siklus sebelumnya._")
+    elif mode == "prev_cycle":
+        lines.append("\n💡 _Tips: Ketik `/rekap` untuk kembali ke siklus aktif saat ini._")
+    else:
+        lines.append("\n💡 _Tips: Ketik `/rekap` untuk melihat rekap siklus budget aktif._")
+
+    send_message(chat_id, "\n".join(lines), reply_markup=get_main_keyboard(), bot_token=bot_token)
 
 def handle_saldo(chat_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
     if not user:
@@ -1755,8 +1822,13 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 
     lower_text = text.lower()
     cmd = text.split()[0].lower()
-    if lower_text in ["📊 rekap", "rekap"] or cmd in ["/rekap", "/bulan"]:
-        handle_rekap(chat_id, db, user=user, bot_token=bot_token)
+    if (
+        lower_text in ["📊 rekap", "rekap"]
+        or cmd in ["/rekap", "/bulan", "/siklus"]
+        or lower_text in ["rekap bulan", "rekap lalu", "rekap prev", "rekap siklus", "rekap kemarin"]
+        or cmd == "/rekap"
+    ):
+        handle_rekap(chat_id, db, text=text, user=user, bot_token=bot_token)
     elif lower_text in ["💳 saldo", "saldo"] or cmd in ["/saldo"]:
         handle_saldo(chat_id, db, user=user, bot_token=bot_token)
     elif lower_text in ["🎯 pacing", "pacing", "pace", "burn rate"] or cmd in ["/pacing", "/pace", "/status"]:

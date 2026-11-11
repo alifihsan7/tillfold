@@ -411,6 +411,43 @@ def test_bot_rekap_monthly_cashflow(db_session, bot_user, capture_messages):
     assert "Rp 400.000" in text
     assert "Net Cashflow" in text
     assert "Rp 1.600.000" in text
+    assert "Tips: Ketik `/rekap bulan`" in text
+
+
+def test_bot_rekap_cycle_modes(db_session, bot_user, capture_messages):
+    today = date.today()
+    # Pemasukan dan pengeluaran di hari ini (siklus aktif)
+    t_inc = Transaction(user_id=bot_user.id, type="income", amount=3000000, account="Cash", category="Gaji", description="Gaji Siklus", date=today)
+    t_exp = Transaction(user_id=bot_user.id, type="expense", amount=500000, account="Cash", category="Makanan", description="Makan", date=today)
+    db_session.add_all([t_inc, t_exp])
+    db_session.commit()
+
+    # 1. Mode Siklus Aktif (Default /rekap)
+    capture_messages.clear()
+    handle_rekap(chat_id=bot_user.telegram_chat_id, db=db_session, text="/rekap", user=bot_user)
+    assert len(capture_messages) == 1
+    text_cycle = capture_messages[0]["text"]
+    assert "Rekap Keuangan" in text_cycle
+    assert "Siklus" in text_cycle
+    assert "Rp 3.000.000" in text_cycle
+    assert "Rp 500.000" in text_cycle
+    assert "Safe-to-Spend" in text_cycle
+
+    # 2. Mode Bulan Kalender (/rekap bulan)
+    capture_messages.clear()
+    handle_rekap(chat_id=bot_user.telegram_chat_id, db=db_session, text="/rekap bulan", user=bot_user)
+    assert len(capture_messages) == 1
+    text_month = capture_messages[0]["text"]
+    assert "Bulan Kalender" in text_month
+    assert "Rp 3.000.000" in text_month
+    assert "Rp 500.000" in text_month
+
+    # 3. Mode Siklus Lalu (/rekap lalu)
+    capture_messages.clear()
+    handle_rekap(chat_id=bot_user.telegram_chat_id, db=db_session, text="/rekap lalu", user=bot_user)
+    assert len(capture_messages) == 1
+    text_prev = capture_messages[0]["text"]
+    assert "Siklus Sebelumnya" in text_prev
 
 
 def test_bot_process_update_command_routing(db_session, bot_user, capture_messages, monkeypatch):
@@ -441,3 +478,29 @@ def test_bot_process_update_command_routing(db_session, bot_user, capture_messag
     process_update(payload_saldo)
     assert len(capture_messages) == 2
     assert "Estimasi Saldo per Rekening" in capture_messages[1]["text"]
+
+    payload_rekap = {
+        "update_id": 3,
+        "message": {
+            "message_id": 103,
+            "chat": {"id": bot_user.telegram_chat_id, "type": "private"},
+            "from": {"id": bot_user.telegram_chat_id},
+            "text": "📊 Rekap",
+        },
+    }
+    process_update(payload_rekap)
+    assert len(capture_messages) == 3
+    assert "Rekap Keuangan" in capture_messages[2]["text"]
+
+    payload_rekap_bulan = {
+        "update_id": 4,
+        "message": {
+            "message_id": 104,
+            "chat": {"id": bot_user.telegram_chat_id, "type": "private"},
+            "from": {"id": bot_user.telegram_chat_id},
+            "text": "/rekap bulan",
+        },
+    }
+    process_update(payload_rekap_bulan)
+    assert len(capture_messages) == 4
+    assert "Bulan Kalender" in capture_messages[3]["text"]

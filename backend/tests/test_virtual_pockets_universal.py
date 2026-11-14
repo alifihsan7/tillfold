@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.api.deps import get_current_user
 from app.db.session import Base, get_db
 from app.models.account import Account
-from app.models.jago_pocket import JagoPocket, Pocket
+from app.models.pocket import Pocket, JagoPocket
 from app.models.paycheck import PaycheckConfig
 from app.models.transaction import Transaction
 from app.models.user import User

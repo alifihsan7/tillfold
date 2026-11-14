@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.api.deps import get_current_user
 from app.db.session import Base, get_db
 from app.models.account import Account
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket, JagoPocket
 from app.models.paycheck import PaycheckConfig
 from app.models.subscription import Subscription
 from app.models.transaction import Transaction
@@ -93,9 +93,9 @@ def client(test_user, db_session):
     app.dependency_overrides.clear()
 
 
-def test_jago_pockets_default_seeding(client, db_session, test_user):
+def test_pockets_default_seeding(client, db_session, test_user):
     """Verifies idempotent default seeding of the 5 canonical pockets."""
-    response = client.get("/api/v1/jago-pockets")
+    response = client.get("/api/v1/pockets")
     assert response.status_code == 200
     data = response.json()
 
@@ -120,12 +120,12 @@ def test_jago_pockets_default_seeding(client, db_session, test_user):
     assert slugs["utama"]["spent_amount"] == 0
 
     # Ensure idempotence on second GET
-    response_second = client.get("/api/v1/jago-pockets")
+    response_second = client.get("/api/v1/pockets")
     assert response_second.status_code == 200
     assert len(response_second.json()["pockets"]) == 5
 
 
-def test_jago_pockets_do_not_guess_subscription_links(db_session, test_user):
+def test_pockets_do_not_guess_subscription_links(db_session, test_user):
     """Matching names do not overwrite manual targets without an explicit link."""
     # Seed active subscriptions before first pocket access
     sub_gym = Subscription(
@@ -160,7 +160,7 @@ def test_jago_pockets_do_not_guess_subscription_links(db_session, test_user):
     app.dependency_overrides[get_current_user] = override_get_current_user
     c = TestClient(app)
 
-    response = c.get("/api/v1/jago-pockets")
+    response = c.get("/api/v1/pockets")
     assert response.status_code == 200
     data = response.json()
     slugs = {p["slug"]: p for p in data["pockets"]}
@@ -174,7 +174,7 @@ def test_jago_pockets_do_not_guess_subscription_links(db_session, test_user):
     app.dependency_overrides.clear()
 
 
-def test_jago_pockets_auto_deduction_and_balance(client, db_session, test_user):
+def test_pockets_auto_deduction_and_balance(client, db_session, test_user):
     """
     Verifies auto-deduction logic:
     - GYM deduction via keyword or category
@@ -279,11 +279,13 @@ def test_jago_pockets_auto_deduction_and_balance(client, db_session, test_user):
     db_session.add_all([tx_income, tx_gym, tx_claude, tx_kuota, tx_visa, tx_utama, tx_mandiri])
     db_session.commit()
 
-    response = client.get("/api/v1/jago-pockets")
+    response = client.get("/api/v1/pockets")
     assert response.status_code == 200
     data = response.json()
 
-    # Total Jago balance: 1,000,000 income - (225k + 75k + 45k + 30k + 50k = 425k expenses) = 575,000
+    # Total pocket balance: 1,000,000 income - (225k + 75k + 45k + 30k + 50k = 425k expenses) = 575,000
+    assert data["total_balance"] == 575_000
+    assert data["total_pocket_balance"] == 575_000
     assert data["total_jago_balance"] == 575_000
 
     slugs = {p["slug"]: p for p in data["pockets"]}
@@ -322,17 +324,17 @@ def test_jago_pockets_auto_deduction_and_balance(client, db_session, test_user):
     assert data["total_remaining_amount"] == data["total_jago_balance"]
 
 
-def test_jago_pockets_put_updates(client, db_session, test_user):
-    """Verifies updating target allocations via PUT /api/v1/jago-pockets."""
+def test_pockets_put_updates(client, db_session, test_user):
+    """Verifies updating target allocations via PUT /api/v1/pockets."""
     # Seed pockets first
-    client.get("/api/v1/jago-pockets")
+    client.get("/api/v1/pockets")
 
     # 1. Update using list payload
     payload_list = [
         {"slug": "gym", "target_amount": 250_000},
         {"slug": "claude", "target_amount": 80_000},
     ]
-    res1 = client.put("/api/v1/jago-pockets", json=payload_list)
+    res1 = client.put("/api/v1/pockets", json=payload_list)
     assert res1.status_code == 200
     slugs1 = {p["slug"]: p for p in res1.json()["pockets"]}
     assert slugs1["gym"]["target_amount"] == 250_000
@@ -345,7 +347,7 @@ def test_jago_pockets_put_updates(client, db_session, test_user):
             {"slug": "visa", "target_amount": 75_000},
         ]
     }
-    res2 = client.put("/api/v1/jago-pockets", json=payload_dict)
+    res2 = client.put("/api/v1/pockets", json=payload_dict)
     assert res2.status_code == 200
     slugs2 = {p["slug"]: p for p in res2.json()["pockets"]}
     assert slugs2["kuota"]["target_amount"] == 60_000
@@ -353,37 +355,37 @@ def test_jago_pockets_put_updates(client, db_session, test_user):
 
     # 3. Update using slug-key mapping {"gym": 260000}
     payload_kv = {"gym": 260_000}
-    res3 = client.put("/api/v1/jago-pockets", json=payload_kv)
+    res3 = client.put("/api/v1/pockets", json=payload_kv)
     assert res3.status_code == 200
     slugs3 = {p["slug"]: p for p in res3.json()["pockets"]}
     assert slugs3["gym"]["target_amount"] == 260_000
 
 
-def test_jago_pockets_single_pocket_endpoints(client, db_session, test_user):
+def test_pockets_single_pocket_endpoints(client, db_session, test_user):
     """Verifies GET /{slug} and PUT /{slug} endpoints."""
     # Ensure seeded
-    client.get("/api/v1/jago-pockets")
+    client.get("/api/v1/pockets")
 
     # Get single pocket
-    get_res = client.get("/api/v1/jago-pockets/gym")
+    get_res = client.get("/api/v1/pockets/gym")
     assert get_res.status_code == 200
     data = get_res.json()
     assert data["slug"] == "gym"
     assert data["name"] == "GYM"
 
     # Put single pocket
-    put_res = client.put("/api/v1/jago-pockets/gym", json={"target_amount": 280_000})
+    put_res = client.put("/api/v1/pockets/gym", json={"target_amount": 280_000})
     assert put_res.status_code == 200
     updated = put_res.json()
     assert updated["slug"] == "gym"
     assert updated["target_amount"] == 280_000
 
     # 404 for non-existent slug
-    notFound = client.get("/api/v1/jago-pockets/non_existent_pocket")
+    notFound = client.get("/api/v1/pockets/non_existent_pocket")
     assert notFound.status_code == 404
 
 
-def test_jago_pockets_tenant_isolation(client, db_session, test_user, other_user):
+def test_pockets_tenant_isolation(client, db_session, test_user, other_user):
     """Ensures strict multi-tenant isolation: user data never leaks across users."""
     today = date.today()
 
@@ -401,7 +403,7 @@ def test_jago_pockets_tenant_isolation(client, db_session, test_user, other_user
     db_session.commit()
 
     # Current user requests pockets
-    res = client.get("/api/v1/jago-pockets")
+    res = client.get("/api/v1/pockets")
     assert res.status_code == 200
     data = res.json()
     slugs = {p["slug"]: p for p in data["pockets"]}
@@ -411,9 +413,9 @@ def test_jago_pockets_tenant_isolation(client, db_session, test_user, other_user
     assert slugs["gym"]["user_id"] == test_user.id
 
 
-def test_jago_pockets_total_pocket_balance_alias(client, db_session, test_user):
+def test_pockets_total_pocket_balance_alias(client, db_session, test_user):
     """Verifies that total_pocket_balance is present and matches total_jago_balance."""
-    response = client.get("/api/v1/jago-pockets")
+    response = client.get("/api/v1/pockets")
     assert response.status_code == 200
     data = response.json()
     assert "total_pocket_balance" in data
@@ -421,7 +423,7 @@ def test_jago_pockets_total_pocket_balance_alias(client, db_session, test_user):
     assert data["total_pocket_balance"] == data["total_jago_balance"]
 
 
-def test_jago_pockets_dynamic_account_resolution(client, db_session, test_user):
+def test_pockets_dynamic_account_resolution(client, db_session, test_user):
     """Verifies that pocket balance & expenses resolve dynamically for accounts named 'Kantong' or non-utama."""
     today = date.today()
     # Create custom account with 'kantong' in name
@@ -458,7 +460,7 @@ def test_jago_pockets_dynamic_account_resolution(client, db_session, test_user):
     db_session.add_all([tx_inc, tx_exp])
     db_session.commit()
 
-    response = client.get("/api/v1/jago-pockets")
+    response = client.get("/api/v1/pockets")
     assert response.status_code == 200
     data = response.json()
     slugs = {p["slug"]: p for p in data["pockets"]}
@@ -499,3 +501,22 @@ def test_pocket_envelopes_bot_generalization(db_session, test_user):
     variants_mandiri = get_pocket_account_variants("Mandiri")
     assert "mandiri" in variants_mandiri
     assert "rekening utama" in variants_mandiri
+
+
+def test_pockets_deprecated_jago_pockets_alias_backward_compatibility(client, test_user):
+    """
+    Verifies that legacy /api/v1/jago-pockets route remains operational as a
+    deprecated alias during transitional migration while returning universal data.
+    """
+    res_universal = client.get("/api/v1/pockets")
+    assert res_universal.status_code == 200
+
+    res_deprecated = client.get("/api/v1/jago-pockets")
+    assert res_deprecated.status_code == 200
+
+    data_u = res_universal.json()
+    data_d = res_deprecated.json()
+
+    assert data_u["total_balance"] == data_d["total_balance"]
+    assert data_u["total_pocket_balance"] == data_d["total_pocket_balance"]
+    assert len(data_u["pockets"]) == len(data_d["pockets"])

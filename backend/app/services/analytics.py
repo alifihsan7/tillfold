@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import case, func
 
 from app.models.account import Account
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt
 from app.schemas.transaction import CycleBurnDay, SafeToSpendInfo
@@ -140,30 +140,39 @@ def compute_safe_to_spend_metrics(
     ).one()
 
     base_pocket_budget = max(0, int(pocket_income))
-    if pocket_entries == 0 and cfg:
+    if int(pocket_entries or 0) == 0 and cfg:
         p_bucket = db.query(PaycheckBucket).filter(
             PaycheckBucket.config_id == cfg.id,
             PaycheckBucket.account == pocket_account
         ).first()
-        pct = (p_bucket.percentage / 100.0) if p_bucket else 0.5
-        salary = getattr(cfg, "total_salary", None)
-        salary = salary if (salary and salary > 0) else 0
-        if salary > 0:
-            base_pocket_budget = int(round(salary * pct))
-        elif accounts_list:
-            all_inc = db.query(
-                func.coalesce(func.sum(Transaction.amount), 0)
-            ).filter(
-                Transaction.user_id == user_id,
-                Transaction.type == "income",
-                ~db.query(PaycheckReceipt.transaction_id).filter(
-                    PaycheckReceipt.transaction_id == Transaction.id,
-                ).exists(),
-                Transaction.date >= cycle_start,
-                Transaction.date <= cycle_end
-            ).scalar() or 0
-            if all_inc > 0:
-                base_pocket_budget = int(round(all_inc * pct))
+        if not p_bucket:
+            p_bucket = db.query(PaycheckBucket).filter(
+                PaycheckBucket.config_id == cfg.id,
+                func.lower(PaycheckBucket.account) == pocket_account.lower()
+            ).first()
+
+        if p_bucket and p_bucket.fixed_amount and p_bucket.fixed_amount > 0:
+            base_pocket_budget = int(p_bucket.fixed_amount)
+        else:
+            pct = (float(p_bucket.percentage) / 100.0) if (p_bucket and p_bucket.percentage is not None) else 0.5
+            salary = getattr(cfg, "total_salary", None)
+            salary = salary if (salary and salary > 0) else 0
+            if salary > 0:
+                base_pocket_budget = int(round(float(salary) * float(pct)))
+            elif accounts_list:
+                all_inc = db.query(
+                    func.coalesce(func.sum(Transaction.amount), 0)
+                ).filter(
+                    Transaction.user_id == user_id,
+                    Transaction.type == "income",
+                    ~db.query(PaycheckReceipt.transaction_id).filter(
+                        PaycheckReceipt.transaction_id == Transaction.id,
+                    ).exists(),
+                    Transaction.date >= cycle_start,
+                    Transaction.date <= cycle_end
+                ).scalar() or 0
+                if all_inc > 0:
+                    base_pocket_budget = int(round(float(all_inc) * float(pct)))
 
     pocket_budget = base_pocket_budget if period_type == "cycle" else int(base_pocket_budget / cycle_days * total_days)
 
@@ -172,16 +181,16 @@ def compute_safe_to_spend_metrics(
     pocket_acc_obj = next((a for a in accounts_list if a.name.lower() == pocket_account.lower()), None)
     account_pockets = []
     if pocket_acc_obj:
-        account_pockets = db.query(JagoPocket).filter(
-            JagoPocket.user_id == user_id,
-            JagoPocket.account_id == pocket_acc_obj.id,
-            JagoPocket.is_active == True,
+        account_pockets = db.query(Pocket).filter(
+            Pocket.user_id == user_id,
+            Pocket.account_id == pocket_acc_obj.id,
+            Pocket.is_active == True,
         ).all()
-    if not account_pockets and any(k in pocket_account.lower() for k in ["jago", "pocket"]):
-        account_pockets = db.query(JagoPocket).filter(
-            JagoPocket.user_id == user_id,
-            JagoPocket.account_id == None,
-            JagoPocket.is_active == True,
+    if not account_pockets and any(k in pocket_account.lower() for k in ["kantong", "pocket", "jago"]):
+        account_pockets = db.query(Pocket).filter(
+            Pocket.user_id == user_id,
+            Pocket.account_id == None,
+            Pocket.is_active == True,
         ).all()
 
     expenses_on_pocket_acc = db.query(Transaction).filter(
@@ -194,7 +203,7 @@ def compute_safe_to_spend_metrics(
 
     has_non_operasional_pockets = any(p.role != "operasional" for p in account_pockets)
     if has_non_operasional_pockets and account_pockets:
-        from app.api.v1.endpoints.jago_pockets import classify_pocket_transaction_for_account
+        from app.api.v1.endpoints.pockets import classify_pocket_transaction_for_account
         from app.services.subscription_payments import payment_pocket_slugs
         pocket_by_slug = {p.slug: p for p in account_pockets}
         payment_pockets = payment_pocket_slugs(db, user_id, account_pockets)

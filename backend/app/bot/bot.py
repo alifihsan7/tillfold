@@ -13,6 +13,7 @@ import uuid
 logger = logging.getLogger("ai7-finance-bot")
 
 from typing import Optional, List, Dict
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, case, event
 from sqlalchemy.exc import IntegrityError
@@ -24,7 +25,16 @@ from app.db.session import SessionLocal, Base, engine
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.account import Account
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
+from app.models.internal_loan import InternalLoan
+from app.schemas.internal_loan import InternalLoanCreate, InternalLoanSettleRequest
+from app.services.internal_loans import (
+    create_internal_loan,
+    settle_internal_loan,
+    get_active_internal_loans,
+    get_total_active_loan_amount,
+    get_internal_loan_by_id,
+)
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt, PaycheckCycle
 from app.models.subscription import Subscription
 from app.models.goal import Goal
@@ -198,6 +208,8 @@ def setup_bot_commands():
         {"command": "rekap", "description": "📊 Rekap pengeluaran & pacing (siklus/bulan)"},
         {"command": "goals", "description": "🎯 Target tabungan & milestone finansial"},
         {"command": "transfer", "description": "🔄 Transfer antar rekening"},
+        {"command": "pinjam", "description": "💸 Catat & cek status dana talangan internal"},
+        {"command": "lunasi", "description": "💳 Pelunasan dana talangan internal"},
         {"command": "subs", "description": "🔔 Jadwal langganan & tagihan rutin"},
         {"command": "transaksi", "description": "📜 5 transaksi terakhir"},
         {"command": "gajian", "description": "💰 Catat gajian & siapkan alokasi pos"},
@@ -303,6 +315,8 @@ Bot ini terhubung ke akun Tillfold lo.
 • `/goals` - Pantau target finansial & milestone
 • `/gajian [nominal]` - Catat gajian & siapkan rencana alokasi rekening
 • `/transfer` - Pindahkan saldo antar rekening
+• `/pinjam` - Catat atau cek status dana talangan internal
+• `/lunasi` - Pelunasan dana talangan internal
 • `/menu` - Tampilkan tombol menu cepat
 
 Tinggal ketik catatan pengeluaran/pemasukan lo kapan saja!"""
@@ -462,12 +476,12 @@ def handle_saldo(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
         send_message(chat_id, "ℹ️ Belum ada data rekening terdaftar.", bot_token=bot_token)
         return
 
-    all_user_pockets = db.query(JagoPocket).filter(
-        JagoPocket.user_id == user_id,
-        JagoPocket.is_active == True,
+    all_user_pockets = db.query(Pocket).filter(
+        Pocket.user_id == user_id,
+        Pocket.is_active == True,
     ).all()
 
-    pocket_by_account: dict[int, list[JagoPocket]] = {}
+    pocket_by_account: dict[int, list[Pocket]] = {}
     for p in all_user_pockets:
         if p.account_id:
             pocket_by_account.setdefault(p.account_id, []).append(p)
@@ -482,19 +496,26 @@ def handle_saldo(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
         lines.append(f"• **{acc.name}**: {format_rp(bal)}{tag_str}")
 
         acc_pockets = pocket_by_account.get(acc.id, [])
-        if not acc_pockets and any(k in acc.name.lower() for k in ["jago", "pocket"]):
+        if not acc_pockets and any(k in acc.name.lower() for k in ["kantong", "pocket", "jago"]):
             acc_pockets = [p for p in all_user_pockets if p.account_id is None]
 
         if acc_pockets:
-            sum_other_targets = sum(int(p.target_amount) for p in acc_pockets if not p.slug.startswith("utama"))
+            sub_pockets = [p for p in acc_pockets if not p.slug.startswith("utama")]
+            sum_sub_bal = sum(int(p.balance or 0) for p in sub_pockets)
             for p in acc_pockets:
-                p_amt = int(p.target_amount)
-                if p.slug.startswith("utama") and p_amt == 0:
-                    p_amt = max(0, bal - sum_other_targets)
+                if p.slug.startswith("utama"):
+                    p_amt = max(0, bal - sum_sub_bal)
+                else:
+                    p_amt = int(p.balance or 0)
                 role_icon = "🛍️" if p.role == "operasional" else "🔒"
                 lines.append(f"  └ {role_icon} {p.name}: {format_rp(p_amt)}")
 
     lines.append(f"\n💵 **Total Keseluruhan:** {format_rp(total)}")
+
+    total_active_loan_amount = get_total_active_loan_amount(db, user_id)
+    if total_active_loan_amount > 0:
+        lines.append(f"\n⚠️ **Dana Talangan Aktif:** {format_rp(total_active_loan_amount)}\n(Ketik /pinjam untuk melihat rincian kewajiban)")
+
     lines.append(f"\n{get_safe_to_spend_snippet(db, user_id=user_id)}")
     send_message(chat_id, "\n".join(lines), bot_token=bot_token)
 
@@ -843,6 +864,57 @@ def normalize_account(raw: str, db: Optional[Session] = None, user_id: Optional[
         return "Tabungan"
     return raw.strip().title()
 
+def resolve_account_from_list(raw: str, accounts: List[Account]) -> Optional[Account]:
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    cleaned = raw.strip()
+    c_lower = cleaned.lower()
+    c_compact = re.sub(r"\s+", "", c_lower)
+
+    # 1. Exact case-insensitive match
+    for acc in accounts:
+        if acc.name.casefold() == c_lower:
+            return acc
+
+    # 2. Compact match (ignoring whitespace differences, e.g. "bri 2" == "bri2")
+    for acc in accounts:
+        if re.sub(r"\s+", "", acc.name.lower()) == c_compact:
+            return acc
+
+    # 3. Word boundary regex match
+    for acc in accounts:
+        if re.search(r"(?<!\w)" + re.escape(c_lower) + r"(?!\w)", acc.name.lower()):
+            return acc
+
+    # 4. Known common aliases
+    alias_map = {
+        "jago": ["bank jago", "jago"],
+        "mandiri": ["mandiri", "bank mandiri"],
+        "bca": ["bca", "bank bca"],
+        "bri": ["bri"],
+        "bri1": ["bri 1", "bri1"],
+        "bri 1": ["bri 1", "bri1"],
+        "bri2": ["bri 2", "bri2"],
+        "bri 2": ["bri 2", "bri2"],
+        "bibit": ["bibit"],
+        "cash": ["cash", "tunai"],
+        "tunai": ["cash", "tunai"],
+        "utama": ["rekening utama", "utama"],
+    }
+    for alias_key, targets in alias_map.items():
+        if c_compact == re.sub(r"\s+", "", alias_key):
+            for acc in accounts:
+                acc_compact = re.sub(r"\s+", "", acc.name.lower())
+                if any(re.sub(r"\s+", "", t) in acc_compact for t in targets):
+                    return acc
+
+    # 5. Unambiguous substring containment
+    substr_matches = [acc for acc in accounts if c_lower in acc.name.lower()]
+    if len(substr_matches) == 1:
+        return substr_matches[0]
+
+    return None
+
 def handle_transfer(chat_id: int, text: str, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
@@ -951,6 +1023,310 @@ atau singkat:
 ℹ️ _Saldo berhasil dipindahkan via ledger berpasangan. Transaksi ini tidak memotong kuota Safe-to-Spend._"""
     send_message(chat_id, res_msg, bot_token=bot_token)
 
+def handle_pinjam(chat_id: int, text: str, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
+    if not user:
+        send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
+        return
+    user_id = user.id
+
+    user_accs = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).order_by(Account.id.asc()).with_for_update().all()
+    acc_options_str = ", ".join(f"`{a.name}`" for a in user_accs) if user_accs else "Belum ada rekening. Tambahkan melalui web."
+
+    clean = text.strip()
+    clean_args = re.sub(r"^(?:/pinjam|/talangan|pinjam|talangan)\s*", "", clean, flags=re.IGNORECASE).strip()
+
+    # Case A: Tanpa argumen -> Tampilkan daftar pinjaman aktif atau panduan
+    if not clean_args:
+        active_loans = get_active_internal_loans(db, user_id)
+        if not active_loans:
+            guide = f"""ℹ️ **Tidak Ada Dana Talangan Aktif**
+
+Semua kas darurat & dana talangan internal telah lunas.
+
+📌 **Format Pencatatan Talangan:**
+`/pinjam <nominal> dari <asal> ke <tujuan> [alasan]`
+atau singkat:
+`/pinjam 300k BRI 2 ke Mandiri ganti ban bocor`
+
+💡 **Contoh Praktis:**
+• `/pinjam 300k dari BRI 2 ke Mandiri ganti ban bocor`
+• `/talangan 500rb dari Tabungan ke Mandiri bayar kosan`
+
+🏦 **Pilihan Rekening Anda:**
+{acc_options_str}"""
+            send_message(chat_id, guide, bot_token=bot_token)
+            return
+
+        acc_map = {a.id: a.name for a in user_accs}
+        lines = ["📋 **Daftar Dana Talangan Internal Aktif:**\n"]
+        total_active = 0
+        for loan in active_loans:
+            total_active += loan.remaining_amount
+            src_name = acc_map.get(loan.source_account_id, "Rekening Kreditor")
+            dst_name = acc_map.get(loan.target_account_id, "Rekening Debitur")
+            dt_str = loan.created_at.strftime("%d %b %Y") if loan.created_at else "-"
+            note_str = f"  • Alasan: {loan.note}\n" if loan.note else ""
+            lines.append(
+                f"• **Pinjaman #{loan.id}:** `{src_name}` ➔ `{dst_name}`\n"
+                f"  • Nominal Awal: {format_rp(loan.amount)}\n"
+                f"  • Sisa Kewajiban: **{format_rp(loan.remaining_amount)}**\n"
+                f"{note_str}"
+                f"  • Tanggal: {dt_str}\n"
+            )
+
+        lines.append(f"💵 **Total Dana Talangan Belum Dilunasi:** {format_rp(total_active)}")
+        first_id = active_loans[0].id
+        lines.append(
+            f"\n💡 **Cara Pelunasan:**\n"
+            f"Ketik `/lunasi <ID> [nominal]` untuk mengembalikan dana.\n"
+            f"Contoh: `/lunasi {first_id}` (lunas penuh) atau `/lunasi {first_id} 100k` (cicil)"
+        )
+        send_message(chat_id, "\n".join(lines), bot_token=bot_token)
+        return
+
+    # Case B: Dengan argumen
+    if not user_accs:
+        send_message(chat_id, "Tambahkan rekening di web sebelum mencatat dana talangan.", bot_token=bot_token)
+        return
+
+    pattern = re.compile(r"^([\d.,kKrbRBjtJTmM]+)\s+(?:dari\s+)?(.+?)\s+ke\s+(.+)$", re.IGNORECASE)
+    match = pattern.match(clean_args)
+
+    amt_str = None
+    from_raw = None
+    to_raw = None
+    loan_note = ""
+
+    if match:
+        amt_str, from_raw, destination = match.groups()
+        to_raw, loan_note = destination, ""
+        for account in sorted(user_accs, key=lambda row: len(row.name), reverse=True):
+            named = re.match(re.escape(account.name) + r"(?=$|[\s:\-])(.*)$", destination, re.IGNORECASE)
+            if named:
+                to_raw, loan_note = account.name, named.group(1).strip(" :-")
+                break
+        else:
+            words = destination.split()
+            for cut in range(len(words), 0, -1):
+                candidate = " ".join(words[:cut]).rstrip(":-")
+                matched_acc = resolve_account_from_list(candidate, user_accs)
+                if matched_acc:
+                    to_raw = matched_acc.name
+                    loan_note = " ".join(words[cut:]).lstrip(":-").strip()
+                    break
+    else:
+        m2 = re.match(r"^([\d.,kKrbRBjtJTmM]+)\s+(?:dari\s+)?(.+)$", clean_args, re.IGNORECASE)
+        if m2:
+            amt_str, rest = m2.groups()
+            for acc1 in sorted(user_accs, key=lambda r: len(r.name), reverse=True):
+                m_from = re.match(re.escape(acc1.name) + r"(?=$|[\s:\-])(.*)$", rest, re.IGNORECASE)
+                if m_from:
+                    from_raw = acc1.name
+                    rem2 = m_from.group(1).strip(" :-")
+                    rem2 = re.sub(r"^(?:ke|menuju)\s+", "", rem2, flags=re.IGNORECASE).strip()
+                    for acc2 in sorted(user_accs, key=lambda r: len(r.name), reverse=True):
+                        m_to = re.match(re.escape(acc2.name) + r"(?=$|[\s:\-])(.*)$", rem2, re.IGNORECASE)
+                        if m_to:
+                            to_raw = acc2.name
+                            loan_note = m_to.group(1).strip(" :-")
+                            break
+                    if to_raw:
+                        break
+
+    if not amt_str or not from_raw or not to_raw:
+        send_message(
+            chat_id,
+            "⚠️ Format perintah talangan tidak dikenali.\n"
+            "Gunakan format: `/pinjam <nominal> dari <asal> ke <tujuan> [alasan]`\n"
+            "Contoh: `/pinjam 300k dari BRI 2 ke Mandiri ganti ban bocor`",
+            bot_token=bot_token,
+        )
+        return
+
+    if loan_note:
+        loan_note = re.sub(r"^(?:untuk|karena|alasan|sebab)\s*", "", loan_note, flags=re.IGNORECASE).strip()
+
+    from app.core.parser import parse_amount
+    try:
+        amt, _ = parse_amount(amt_str)
+    except (ValueError, OverflowError):
+        amt = None
+
+    if not amt or not (0 < amt <= 9_000_000_000_000_000):
+        send_message(chat_id, "⚠️ Nominal pinjaman tidak valid.", bot_token=bot_token)
+        return
+
+    source_acc = resolve_account_from_list(from_raw, user_accs)
+    target_acc = resolve_account_from_list(to_raw, user_accs)
+
+    if not source_acc:
+        send_message(chat_id, f"⚠️ Rekening sumber '{from_raw}' tidak dikenali. Pilihan rekening:\n{acc_options_str}", bot_token=bot_token)
+        return
+    if not target_acc:
+        send_message(chat_id, f"⚠️ Rekening tujuan '{to_raw}' tidak dikenali. Pilihan rekening:\n{acc_options_str}", bot_token=bot_token)
+        return
+
+    if source_acc.id == target_acc.id:
+        send_message(chat_id, "⚠️ Rekening asal dan tujuan tidak boleh sama.", bot_token=bot_token)
+        return
+
+    try:
+        payload = InternalLoanCreate(
+            source_account_id=source_acc.id,
+            source_pocket_id=None,
+            target_account_id=target_acc.id,
+            target_pocket_id=None,
+            amount=int(amt),
+            note=loan_note or None,
+        )
+        loan = create_internal_loan(db, current_user=user, payload=payload)
+    except HTTPException as e:
+        send_message(chat_id, f"⚠️ {e.detail}", bot_token=bot_token)
+        return
+
+    bal_source = get_acc_balance(source_acc.name, db, user_id=user_id)
+    bal_target = get_acc_balance(target_acc.name, db, user_id=user_id)
+
+    catatan_line = f"• Catatan: {loan.note}\n" if loan.note else ""
+    msg = (
+        f"✅ **Dana Talangan Berhasil Dicatat!**\n"
+        f"• ID Pinjaman: #{loan.id}\n"
+        f"• Nominal: {format_rp(loan.amount)}\n"
+        f"• Dari: {source_acc.name} (Kreditor)\n"
+        f"• Ke: {target_acc.name} (Debitur)\n"
+        f"{catatan_line}\n"
+        f"Saldo terkini:\n"
+        f"• {source_acc.name}: {format_rp(bal_source)}\n"
+        f"• {target_acc.name}: {format_rp(bal_target)}\n\n"
+        f"Gunakan /lunasi {loan.id} saat ingin mengembalikan dana."
+    )
+    send_message(chat_id, msg, bot_token=bot_token)
+
+def handle_lunasi(chat_id: int, text: str, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
+    if not user:
+        send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
+        return
+    user_id = user.id
+
+    clean = text.strip()
+    clean_args = re.sub(r"^(?:/lunasi|/bayar_pinjam|/bayar-pinjam|lunasi|bayar pinjam|bayar_pinjam)\s*", "", clean, flags=re.IGNORECASE).strip()
+
+    user_accs = db.query(Account).filter(Account.user_id == user_id).all()
+    acc_map = {a.id: a.name for a in user_accs}
+
+    # Case A: Tanpa argumen
+    if not clean_args:
+        active_loans = get_active_internal_loans(db, user_id)
+        if not active_loans:
+            send_message(chat_id, "ℹ️ **Tidak Ada Pinjaman Aktif**\n\nSemua dana talangan internal sudah lunas.", bot_token=bot_token)
+            return
+
+        lines = ["💳 **Daftar Dana Talangan yang Perlu Dilunasi:**\n"]
+        total_active = 0
+        for loan in active_loans:
+            total_active += loan.remaining_amount
+            src_name = acc_map.get(loan.source_account_id, "Rekening Kreditor")
+            dst_name = acc_map.get(loan.target_account_id, "Rekening Debitur")
+            note_str = f" • _{loan.note}_" if loan.note else ""
+            lines.append(
+                f"• **#{loan.id}:** `{dst_name}` berhutang ke `{src_name}`\n"
+                f"  Sisa Kewajiban: **{format_rp(loan.remaining_amount)}**{note_str}"
+            )
+
+        lines.append(f"\n💵 **Total Kewajiban Belum Dilunasi:** {format_rp(total_active)}")
+        first_id = active_loans[0].id
+        lines.append(
+            f"\n💡 **Cara Pelunasan:**\n"
+            f"Ketik `/lunasi <ID> [nominal]`\n"
+            f"Contoh:\n"
+            f"• `/lunasi {first_id}` (lunas penuh)\n"
+            f"• `/lunasi {first_id} 100k` (cicil sebagian)"
+        )
+        send_message(chat_id, "\n".join(lines), bot_token=bot_token)
+        return
+
+    # Case B: Dengan argumen
+    parts = clean_args.split(maxsplit=1)
+    raw_id = parts[0].lstrip("#")
+    if not raw_id.isdigit():
+        send_message(
+            chat_id,
+            "⚠️ ID pinjaman tidak valid.\n"
+            "Format: `/lunasi <ID> [nominal]`\n"
+            "Contoh: `/lunasi 1` atau `/lunasi 1 100k`",
+            bot_token=bot_token,
+        )
+        return
+    loan_id = int(raw_id)
+
+    loan = get_internal_loan_by_id(db, user_id=user_id, loan_id=loan_id)
+    if not loan:
+        send_message(chat_id, f"⚠️ Pinjaman internal dengan ID `#{loan_id}` tidak ditemukan.", bot_token=bot_token)
+        return
+
+    if loan.status != "active":
+        send_message(chat_id, f"ℹ️ Pinjaman `#{loan_id}` sudah tidak aktif (status: `{loan.status}`).", bot_token=bot_token)
+        return
+
+    settle_amt = None
+    if len(parts) > 1 and parts[1].strip():
+        from app.core.parser import parse_amount
+        try:
+            amt, _ = parse_amount(parts[1].strip())
+        except (ValueError, OverflowError):
+            amt = None
+
+        if not amt or not (0 < amt <= 9_000_000_000_000_000):
+            send_message(chat_id, "⚠️ Nominal pelunasan tidak valid.", bot_token=bot_token)
+            return
+        settle_amt = int(amt)
+
+    target_acc = db.query(Account).filter(Account.id == loan.target_account_id, Account.user_id == user_id).first()
+    source_acc = db.query(Account).filter(Account.id == loan.source_account_id, Account.user_id == user_id).first()
+    if not target_acc or not source_acc:
+        send_message(chat_id, "⚠️ Rekening terkait pinjaman ini tidak ditemukan.", bot_token=bot_token)
+        return
+
+    to_pay = min(settle_amt, loan.remaining_amount) if settle_amt else loan.remaining_amount
+    target_bal = get_acc_balance(target_acc.name, db, user_id=user_id)
+    if target_bal < to_pay:
+        send_message(
+            chat_id,
+            f"⚠️ Saldo rekening peminjam '{target_acc.name}' tidak mencukupi untuk pelunasan "
+            f"(Tersedia: {format_rp(target_bal)}, Dibutuhkan: {format_rp(to_pay)}).",
+            bot_token=bot_token,
+        )
+        return
+
+    try:
+        payload = InternalLoanSettleRequest(amount=settle_amt, note=None)
+        settled_loan = settle_internal_loan(db, current_user=user, loan_id=loan_id, payload=payload)
+    except HTTPException as e:
+        send_message(chat_id, f"⚠️ {e.detail}", bot_token=bot_token)
+        return
+
+    bal_target = get_acc_balance(target_acc.name, db, user_id=user_id)
+    bal_source = get_acc_balance(source_acc.name, db, user_id=user_id)
+
+    is_lunas = (settled_loan.remaining_amount == 0)
+    status_str = "LUNAS 🎉" if is_lunas else f"Sisa: {format_rp(settled_loan.remaining_amount)}"
+
+    msg = (
+        f"✅ **Pelunasan Dana Talangan Berhasil!**\n"
+        f"• ID Pinjaman: #{settled_loan.id}\n"
+        f"• Nominal Dilunasi: {format_rp(to_pay)}\n"
+        f"• Sisa Pinjaman: **{status_str}**\n"
+        f"• Dari: {target_acc.name} (Debitur)\n"
+        f"• Ke: {source_acc.name} (Kreditor)\n\n"
+        f"Saldo terkini:\n"
+        f"• {target_acc.name}: {format_rp(bal_target)}\n"
+        f"• {source_acc.name}: {format_rp(bal_source)}"
+    )
+    if not is_lunas:
+        msg += f"\n\n💡 Gunakan /lunasi {settled_loan.id} saat ingin mengembalikan sisa dana."
+
+    send_message(chat_id, msg, bot_token=bot_token)
+
 def handle_batal(chat_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", bot_token=bot_token)
@@ -1016,8 +1392,18 @@ def handle_gajian(chat_id: int, text: str, db: Session, user: Optional[User] = N
     buckets = get_or_seed_buckets(db, cfg.id)
     user_accs = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).order_by(Account.id.asc()).with_for_update().all()
     accounts_by_name = {a.name: a for a in user_accs}
+    accounts_by_id = {a.id: a.name for a in user_accs}
 
     source_account = cfg.source_account if (cfg.source_account and cfg.source_account in accounts_by_name) else (user_accs[0].name if user_accs else "Rekening Utama")
+    source_acc_obj = accounts_by_name.get(source_account)
+    active_debts = []
+    if source_acc_obj:
+        active_debts = db.query(InternalLoan).filter(
+            InternalLoan.user_id == user_id,
+            InternalLoan.target_account_id == source_acc_obj.id,
+            InternalLoan.status == "active",
+            InternalLoan.remaining_amount > 0,
+        ).order_by(InternalLoan.created_at.asc()).all()
 
     cycle_start = today_wib
     if cfg.cycle_type == "monthly_date":
@@ -1049,6 +1435,19 @@ def handle_gajian(chat_id: int, text: str, db: Session, user: Optional[User] = N
             return
 
     if not parsed_amt or parsed_amt <= 0:
+        debt_status_section = ""
+        if active_debts:
+            total_debt = sum(d.remaining_amount for d in active_debts)
+            debt_status_lines = [
+                f"\n\n⚠️ **Pengingat Dana Talangan Internal:**",
+                f"Rekening `{source_account}` memiliki kewajiban talangan aktif sebesar **{format_rp(total_debt)}**:",
+            ]
+            for d in active_debts:
+                creditor_name = accounts_by_id.get(d.source_account_id, "Rekening Kreditor")
+                debt_status_lines.append(f"• Pinjaman #{d.id}: {format_rp(d.remaining_amount)} ke `{creditor_name}`")
+            debt_status_lines.append("💡 _Segera kembalikan uang dingin dengan perintah:_ `/lunasi <ID>`")
+            debt_status_section = "\n".join(debt_status_lines)
+
         latest_receipt = db.query(PaycheckReceipt).join(
             Transaction, Transaction.id == PaycheckReceipt.transaction_id
         ).filter(
@@ -1078,13 +1477,14 @@ def handle_gajian(chat_id: int, text: str, db: Session, user: Optional[User] = N
 📅 **Tanggal Masuk:** `{tx.date}` (Siklus berakhir `{end_str}`)
 
 📋 **Status Rencana Alokasi Transfer:**
-{alloc_str}
+{alloc_str}{debt_status_section}
 
 💡 *Untuk mencatat gajian baru:*
 Ketik: `/gajian [nominal]` (contoh: `/gajian 5.000.000` atau `/gajian 5jt`)"""
             send_message(chat_id, msg, bot_token=bot_token)
             return
         else:
+            debt_info = f"\n{debt_status_section}\n" if debt_status_section else "\n"
             msg = f"""💰 **Pencatatan Gajian & Payroll**
 
 Gunakan perintah ini untuk mencatat gaji masuk secara rapi dan menyiapkan alur pembagian ke rekening/pos anggaran.
@@ -1094,8 +1494,7 @@ Gunakan perintah ini untuk mencatat gaji masuk secara rapi dan menyiapkan alur p
 Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
 
 🏦 **Rekening Penampung Default:** `{source_account}`
-📅 **Siklus Tanggal Anggaran:** `{cycle_label}`
-
+📅 **Siklus Tanggal Anggaran:** `{cycle_label}`{debt_info}
 ℹ️ _Gaji akan dicatat sebagai pemasukan riil di rekening penampung. Pos alokasi rekening lain disiapkan sebagai rencana transfer terpisah._"""
             send_message(chat_id, msg, bot_token=bot_token)
             return
@@ -1171,6 +1570,20 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
 
     distrib_str = "\n".join(distrib_lines)
 
+    debt_section = ""
+    if active_debts:
+        total_debt = sum(d.remaining_amount for d in active_debts)
+        debt_lines = [
+            f"\n⚠️ **Pengingat Pelunasan Dana Talangan Internal:**",
+            f"Rekening operasional `{source_account}` memiliki kewajiban talangan aktif sebesar **{format_rp(total_debt)}**:",
+        ]
+        for d in active_debts:
+            creditor_name = accounts_by_id.get(d.source_account_id, "Rekening Kreditor")
+            d_note = f" ({d.note})" if d.note else ""
+            debt_lines.append(f"• Pinjaman #{d.id}: {format_rp(d.remaining_amount)} ke `{creditor_name}`{d_note}")
+        debt_lines.append("💡 _Rekomendasi: Kembalikan uang dingin segera dengan perintah:_ `/lunasi <ID>`\n")
+        debt_section = "\n".join(debt_lines)
+
     msg = f"""🎉 **GAJIAN MASUK & ALUR ANGGARAN TERCATAT!**
 
 💰 **Total Gaji Masuk:** {format_rp(total)}
@@ -1179,7 +1592,7 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
 
 📊 **Rencana Alokasi Pos ({len(buckets)} Pos Anggaran):**
 {distrib_str}
-
+{debt_section}
 ℹ️ _Pemasukan gaji dicatat utuh di rekening `{source_account}`. Alokasi transfer ke rekening/pos lain dapat dieksekusi terpisah via `/transfer` atau Checklist Dashboard._
 🌐 [Buka dashboard Tillfold]({settings.APP_BASE_URL}){sheet_info}"""
 
@@ -1708,6 +2121,21 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     date=tx_date,
                 )
                 db.add(tx)
+
+                if p.get("is_transfer", False) and p.get("admin_fee", 0) > 0:
+                    admin_fee = int(p.get("admin_fee", 0))
+                    tx_fee = Transaction(
+                        user_id=user.id,
+                        type="expense",
+                        amount=admin_fee,
+                        account=chosen_acc,
+                        category="Biaya Admin",
+                        description=f"Biaya Admin Transfer ke {merchant} (Ref: {ref_num})",
+                        raw_text=f"[receipt_radar:ref_{ref_num}_admin] Auto-recorded transfer admin fee",
+                        date=tx_date,
+                    )
+                    db.add(tx_fee)
+
                 db.commit()
                 db.refresh(tx)
 
@@ -1722,6 +2150,108 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     f"• **Kategori**: `{cat_name}`\n"
                     f"• **No. Ref**: `{ref_num}`\n\n"
                     f"{s2s_snippet}"
+                )
+
+            requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": edit_text,
+                "parse_mode": "Markdown",
+                "reply_markup": {"inline_keyboard": []},
+            }, timeout=8)
+
+        elif action == "rcpt_xfer":
+            # format: rcpt_xfer:<ref_num>:<source_acc>:<dest_acc>:<admin_fee>
+            source_acc = parts[2] if len(parts) > 2 else "Mandiri"
+            dest_acc = parts[3] if len(parts) > 3 else "Bank Jago"
+            admin_fee_str = parts[4] if len(parts) > 4 else "0"
+            try:
+                admin_fee = int(admin_fee_str)
+            except ValueError:
+                admin_fee = 0
+
+            entry = get_pending_receipt(ref_num)
+            if not entry:
+                requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": msg_id,
+                    "text": f"⚠️ **TRANSAKSI KEDALUWARSA**\nData draf struk `{ref_num}` tidak ditemukan atau sudah diproses.",
+                    "parse_mode": "Markdown",
+                    "reply_markup": {"inline_keyboard": []},
+                }, timeout=8)
+                return
+
+            p = entry.get("parsed", entry)
+            nominal = p.get("nominal", 0)
+            tx_date_str = p.get("date")
+
+            try:
+                tx_date = datetime.fromisoformat(tx_date_str).date()
+            except Exception:
+                tx_date = datetime.now(WIB).date()
+
+            existing = db.query(Transaction).filter(
+                Transaction.user_id == user.id,
+                Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_num}]%"),
+            ).first()
+
+            if existing:
+                edit_text = (
+                    f"ℹ️ **SUDAH TERCATAT SEBELUMNYA**\n"
+                    f"Transaksi referensi `{ref_num}` sudah ada di buku besar Tillfold."
+                )
+            else:
+                tx_out = Transaction(
+                    user_id=user.id,
+                    type="transfer_out",
+                    account=source_acc,
+                    amount=nominal,
+                    category="Transfer",
+                    description=f"Transfer ke {dest_acc} (Ref: {ref_num})",
+                    raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded transfer",
+                    date=tx_date,
+                )
+                tx_in = Transaction(
+                    user_id=user.id,
+                    type="transfer_in",
+                    account=dest_acc,
+                    amount=nominal,
+                    category="Transfer",
+                    description=f"Transfer dari {source_acc} (Ref: {ref_num})",
+                    raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded transfer",
+                    date=tx_date,
+                )
+                db.add(tx_out)
+                db.add(tx_in)
+                db.flush()
+
+                # Link pair via pair_id tag
+                tx_out.raw_text = f"{tx_out.raw_text} [pair_id:{tx_in.id}]"
+                tx_in.raw_text = f"{tx_in.raw_text} [pair_id:{tx_out.id}]"
+
+                if admin_fee > 0:
+                    tx_fee = Transaction(
+                        user_id=user.id,
+                        type="expense",
+                        account=source_acc,
+                        amount=admin_fee,
+                        category="Biaya Admin",
+                        description=f"Biaya Admin Transfer ke {dest_acc} (Ref: {ref_num})",
+                        raw_text=f"[receipt_radar:ref_{ref_num}_admin] Auto-recorded transfer admin fee",
+                        date=tx_date,
+                    )
+                    db.add(tx_fee)
+
+                db.commit()
+                delete_pending_receipt(ref_num)
+
+                edit_text = (
+                    f"✅ **TRANSFER ANTAR-REKENING BERHASIL DICATAT**\n\n"
+                    f"• **Dari**: `{source_acc}`\n"
+                    f"• **Ke**: `{dest_acc}`\n"
+                    f"• **Nominal**: `Rp {nominal:,}`\n"
+                    f"• **Biaya Admin**: `Rp {admin_fee:,}`\n"
+                    f"• **No. Ref**: `{ref_num}`"
                 )
 
             requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
@@ -1821,7 +2351,7 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
         return
 
     lower_text = text.lower()
-    cmd = text.split()[0].lower()
+    cmd = text.split()[0].lower().split("@")[0] if text.split() else ""
     if (
         lower_text in ["📊 rekap", "rekap"]
         or cmd in ["/rekap", "/bulan", "/siklus"]
@@ -1843,6 +2373,10 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
         handle_gajian(chat_id, text, db, user=user, bot_token=bot_token)
     elif lower_text in ["🔄 transfer", "transfer", "tf"] or cmd in ["/transfer", "/tf"] or lower_text.startswith("transfer ") or lower_text.startswith("tf "):
         handle_transfer(chat_id, text, db, user=user, bot_token=bot_token)
+    elif lower_text in ["💸 pinjam", "pinjam", "talangan"] or cmd in ["/pinjam", "/talangan"] or lower_text.startswith(("pinjam ", "talangan ")):
+        handle_pinjam(chat_id, text, db, user=user, bot_token=bot_token)
+    elif lower_text in ["💳 lunasi", "lunasi", "bayar pinjam", "bayar_pinjam"] or cmd in ["/lunasi", "/bayar_pinjam", "/bayar-pinjam"] or lower_text.startswith(("lunasi ", "bayar_pinjam ", "bayar pinjam ")):
+        handle_lunasi(chat_id, text, db, user=user, bot_token=bot_token)
     elif cmd in ["/set_sheet", "/setsheet", "/set-sheet"] or lower_text.startswith(("/set_sheet", "/setsheet", "/set-sheet", "set_sheet", "setsheet")):
         handle_set_sheet(chat_id, text, db, user=user, bot_token=bot_token)
     elif lower_text in ["📑 google sheets", "google sheets", "sheets"] or cmd in ["/sheets", "/sheet", "/sync_sheets"]:

@@ -9,7 +9,18 @@ from app.db.session import Base, get_db
 from app.models.user import User
 from app.models.account import Account
 from app.models.transaction import Transaction
-from app.core.receipt_parser import parse_mandiri_receipt, parse_brimo_receipt, infer_category, html_to_text
+from app.core.receipt_parser import (
+    parse_mandiri_receipt,
+    parse_brimo_receipt,
+    parse_google_play_receipt,
+    infer_category,
+    html_to_text,
+)
+from app.core.receipt_store import (
+    save_pending_receipt,
+    get_pending_receipt,
+    delete_pending_receipt,
+)
 from app.services.receipt_service import record_receipt_mutation
 from app.api.deps import get_current_user
 from main import app
@@ -164,6 +175,123 @@ BRIMO_ACCOUNT_6532_HTML = """
 </html>
 """
 
+GOOGLE_PLAY_SAMPLE_HTML = """
+<!DOCTYPE html>
+<html>
+<body>
+    <div>Google Play</div>
+    <div>Terima kasih atas pesanan Anda.</div>
+    <div>Nomor pesanan: GPA.3311-6234-1706-42627</div>
+    <div>Tanggal pemesanan: Nov 13, 2026 7:58:44 PM GMT+7</div>
+    <div>Item</div>
+    <div>Claude Pro Subscription (Claude by Anthropic)</div>
+    <div>Rp 387.390/bulan</div>
+    <div>Pajak: Rp 38.390</div>
+    <div>Total: Rp 387.390</div>
+    <div>Metode pembayaran: GoPay: •••• 3744</div>
+</body>
+</html>
+"""
+
+GOOGLE_PLAY_SAMPLE_TEXT = """
+Google Play
+Thank you for your order.
+Order number: GPA.1234-5678-9012-34567
+Order date: Nov 10, 2026 2:15:30 PM GMT+7
+Item
+Google One (100 GB)
+Total: Rp 26.900/month
+Payment method: Bank Jago: •••• 1234
+"""
+
+MANDIRI_INTERNAL_BIFAST_HTML = """
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Livin' by Mandiri</h2>
+    <p>Transfer dengan BI Fast Berhasil</p>
+    <div>Penerima</div>
+    <div>ALIF IHSAN</div>
+    <div>Bank Tujuan</div>
+    <div>Bank Jago</div>
+    <div>No. Rekening Tujuan</div>
+    <div>1029384756</div>
+    <div>Tanggal</div>
+    <div>10 Nov 2026</div>
+    <div>Jam</div>
+    <div>14:20:00 WIB</div>
+    <div>Nominal Transfer</div>
+    <div>Rp 500.000,00</div>
+    <div>Biaya Transfer</div>
+    <div>Rp 2.500,00</div>
+    <div>Total Transaksi</div>
+    <div>Rp 502.500,00</div>
+    <div>No. Referensi BI Fast</div>
+    <div>20261110BMRIIDJA010O1234567890</div>
+    <div>Sumber Dana</div>
+    <div>ALIF IHSAN ****7292</div>
+</body>
+</html>
+"""
+
+BRIMO_INTERNAL_TRANSFER_HTML = """
+<!DOCTYPE html>
+<html>
+<body>
+    <div>Bank BRI - Transaksi Berhasil</div>
+    <div>Pemindahan Dana Sesama Rekening BRI</div>
+    <div>Tanggal</div>
+    <div>09 November 2026 , 14:00:00 WIB</div>
+    <div>Nomor Referensi</div>
+    <div>247999888111</div>
+    <div>Sumber Dana</div>
+    <div>ALIF IHSAN</div>
+    <div>5722 **** **** 1532</div>
+    <div>Nama Tujuan</div>
+    <div>ALIF IHSAN</div>
+    <div>Nomor Tujuan</div>
+    <div>5722 0100 9999 6532</div>
+    <div>Bank Tujuan</div>
+    <div>BANK BRI</div>
+    <div>Nominal</div>
+    <div>Rp 200.000</div>
+    <div>Biaya Admin</div>
+    <div>Rp 0</div>
+    <div>Total</div>
+    <div>Rp 200.000</div>
+</body>
+</html>
+"""
+
+BRIMO_BIFAST_INTERNAL_HTML = """
+<!DOCTYPE html>
+<html>
+<body>
+    <div>Bank BRI - Transaksi Berhasil</div>
+    <div>Pemindahan Dana Bank Lain Dalam Negeri</div>
+    <div>Tanggal</div>
+    <div>10 November 2026 , 15:30:00 WIB</div>
+    <div>Nomor Referensi</div>
+    <div>248111222333</div>
+    <div>Sumber Dana</div>
+    <div>ALIF IHSAN</div>
+    <div>5722 **** **** 1532</div>
+    <div>Nama Tujuan</div>
+    <div>ALIF IHSAN</div>
+    <div>Nomor Tujuan</div>
+    <div>1029384756</div>
+    <div>Bank Tujuan</div>
+    <div>BANK JAGO</div>
+    <div>Nominal</div>
+    <div>Rp 50.000</div>
+    <div>Biaya Admin</div>
+    <div>Rp 2.500</div>
+    <div>Total</div>
+    <div>Rp 52.500</div>
+</body>
+</html>
+"""
+
 def test_parse_mandiri_receipt_qris():
     res = parse_mandiri_receipt(MANDIRI_SAMPLE_HTML, raw_subject="Pembayaran Berhasil!")
     assert res is not None
@@ -179,10 +307,28 @@ def test_parse_mandiri_bifast_total_amount():
     res = parse_mandiri_receipt(MANDIRI_BIFAST_HTML, raw_subject="Transfer dengan BI Fast Berhasil")
     assert res is not None
     assert res["bank"] == "mandiri"
-    assert res["nominal"] == 162511
+    assert res["nominal"] == 160011
+    assert res["admin_fee"] == 2500
     assert res["merchant"] == "ALDYTO RAFIF ABHINAYA"
     assert res["ref_number"] == "20261031BMRIIDJA010O0220930922"
     assert res["datetime"] == datetime(2026, 10, 31, 21, 28, 14)
+    assert res["is_transfer"] is True
+    assert res["is_internal_transfer"] is False
+    assert res["destination_name"] == "ALDYTO RAFIF ABHINAYA"
+    assert res["destination_account_candidate"] is None
+
+def test_parse_mandiri_bifast_internal_transfer():
+    res = parse_mandiri_receipt(MANDIRI_INTERNAL_BIFAST_HTML, raw_subject="Transfer dengan BI Fast Berhasil")
+    assert res is not None
+    assert res["bank"] == "mandiri"
+    assert res["nominal"] == 500000
+    assert res["admin_fee"] == 2500
+    assert res["destination_name"] == "ALIF IHSAN"
+    assert res["destination_bank"] == "Bank Jago"
+    assert res["is_transfer"] is True
+    assert res["is_internal_transfer"] is True
+    assert res["destination_account_candidate"] == "Bank Jago"
+    assert res["ref_number"] == "20261110BMRIIDJA010O1234567890"
 
 def test_parse_brimo_receipt_qris():
     res = parse_brimo_receipt(BRIMO_QRIS_HTML, raw_subject="Pembelian QRIS Berhasil")
@@ -201,11 +347,66 @@ def test_parse_brimo_receipt_transfer():
     assert res is not None
     assert res["bank"] == "bri"
     assert res["nominal"] == 1300332
+    assert res["admin_fee"] == 0
     assert res["merchant"] == "FLIPTECH LENTERA INS"
     assert res["ref_number"] == "247834695002"
     assert res["datetime"] == datetime(2026, 11, 8, 10, 32, 51)
     assert res["default_account"] == "BRI 1"
     assert res["is_ambiguous_account"] is True
+    assert res["is_transfer"] is True
+    assert res["is_internal_transfer"] is False
+    assert res["destination_name"] == "FLIPTECH LENTERA INS"
+    assert res["destination_account_candidate"] is None
+
+def test_parse_brimo_receipt_internal_transfer_sesama_bri():
+    res = parse_brimo_receipt(BRIMO_INTERNAL_TRANSFER_HTML, raw_subject="Pemindahan Dana Sesama Rekening BRI")
+    assert res is not None
+    assert res["bank"] == "bri"
+    assert res["nominal"] == 200000
+    assert res["admin_fee"] == 0
+    assert res["destination_name"] == "ALIF IHSAN"
+    assert res["destination_bank"] == "BANK BRI"
+    assert res["is_transfer"] is True
+    assert res["is_internal_transfer"] is True
+    assert res["destination_account_candidate"] == "BRI 2"
+    assert res["ref_number"] == "247999888111"
+
+def test_parse_brimo_receipt_internal_transfer_bifast():
+    res = parse_brimo_receipt(BRIMO_BIFAST_INTERNAL_HTML, raw_subject="Pemindahan Dana Bank Lain Dalam Negeri")
+    assert res is not None
+    assert res["bank"] == "bri"
+    assert res["nominal"] == 50000
+    assert res["admin_fee"] == 2500
+    assert res["destination_name"] == "ALIF IHSAN"
+    assert res["destination_bank"] == "BANK JAGO"
+    assert res["is_transfer"] is True
+    assert res["is_internal_transfer"] is True
+    assert res["destination_account_candidate"] == "Bank Jago"
+    assert res["ref_number"] == "248111222333"
+
+def test_parse_google_play_receipt_html():
+    res = parse_google_play_receipt(GOOGLE_PLAY_SAMPLE_HTML, raw_subject="Google Play Order Receipt")
+    assert res is not None
+    assert res["bank"] == "google_play"
+    assert res["ref_number"] == "GPA.3311-6234-1706-42627"
+    assert res["nominal"] == 387390
+    assert res["merchant"] == "Claude Pro Subscription (Claude by Anthropic)"
+    assert res["datetime"] == datetime(2026, 11, 13, 19, 58, 44)
+    assert res["payment_method"] == "GoPay: •••• 3744"
+    assert res["is_transfer"] is False
+    assert res["inferred_category"] == "Langganan & Servis"
+    assert res["default_account"] == "BRI 1"
+    assert "GPA.3311-6234-1706-42627" in res["raw_text"]
+
+def test_parse_google_play_receipt_text():
+    res = parse_google_play_receipt(GOOGLE_PLAY_SAMPLE_TEXT, raw_subject="Tanda terima pesanan Google Play Anda")
+    assert res is not None
+    assert res["bank"] == "google_play"
+    assert res["ref_number"] == "GPA.1234-5678-9012-34567"
+    assert res["nominal"] == 26900
+    assert "Google One" in res["merchant"]
+    assert res["payment_method"] == "Bank Jago: •••• 1234"
+    assert res["is_transfer"] is False
 
 def test_brimo_account_detection_1532_darurat():
     res = parse_brimo_receipt(BRIMO_ACCOUNT_1532_HTML, raw_subject="Notifikasi Transaksi")
@@ -223,6 +424,7 @@ def test_non_bank_email_rejection():
     spam_html = "<html><body><h1>Promo Diskon 50%</h1><p>Beli sekarang di Shopee</p></body></html>"
     assert parse_mandiri_receipt(spam_html, raw_subject="Promo") is None
     assert parse_brimo_receipt(spam_html, raw_subject="Promo") is None
+    assert parse_google_play_receipt(spam_html, raw_subject="Promo") is None
 
 def test_infer_category():
     assert infer_category("Warmindo Fajar 99") == "Makanan & Minuman"
@@ -389,4 +591,120 @@ def test_receipt_radar_callback_authorization_rejected(monkeypatch):
     assert reject_call["json"]["callback_query_id"] == "cb_unauth_1"
     assert "Akses ditolak" in reject_call["json"]["text"]
     assert reject_call["json"]["show_alert"] is True
+
+def test_receipt_radar_callback_rcpt_xfer_atomic_and_idempotent(db_session, monkeypatch):
+    import app.bot.bot as bot
+
+    # 1. Setup user & accounts in db_session
+    u = db_session.query(User).filter(User.id == 1).first()
+    u.telegram_chat_id = 1357550611
+    jago = db_session.query(Account).filter(Account.user_id == 1, Account.name == "Bank Jago").first()
+    if not jago:
+        db_session.add(Account(id=6, user_id=1, name="Bank Jago", type="operasional"))
+    db_session.commit()
+
+    # Monkeypatch SessionLocal in bot module to use db_session
+    monkeypatch.setattr(bot, "SessionLocal", lambda: db_session)
+
+    telegram_calls = []
+    def fake_post(url, json=None, timeout=None):
+        telegram_calls.append({"url": url, "json": json})
+        class DummyResp:
+            status_code = 200
+            def json(self):
+                return {"ok": True}
+        return DummyResp()
+
+    monkeypatch.setattr(bot.requests, "post", fake_post)
+
+    ref_test = "GPA.TEST-XFER-9999-11111"
+    pending_data = {
+        "bank": "mandiri",
+        "nominal": 75000,
+        "merchant": "Bank Jago",
+        "ref_number": ref_test,
+        "date": "2026-11-10T14:20:00",
+        "category": "Transfer",
+        "source_account": "Mandiri",
+        "default_account": "Mandiri",
+        "is_transfer": True,
+        "is_internal_transfer": True,
+        "destination_bank": "Bank Jago",
+        "destination_name": "ALIF IHSAN",
+        "destination_account_candidate": "Bank Jago",
+        "admin_fee": 2500,
+        "payment_method": None,
+    }
+    save_pending_receipt(ref_test, pending_data)
+    assert get_pending_receipt(ref_test) is not None
+
+    cb = {
+        "id": "cb_xfer_1",
+        "data": f"rcpt_xfer:{ref_test}:Mandiri:Bank Jago:2500",
+        "message": {"message_id": 1001, "chat": {"id": -1004483626622}},
+        "from": {"id": 1357550611}
+    }
+
+    bot.handle_callback_query(cb)
+
+    # Verify transactions created in database
+    tx_out = db_session.query(Transaction).filter(
+        Transaction.user_id == 1,
+        Transaction.type == "transfer_out",
+        Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_test}]%")
+    ).first()
+    tx_in = db_session.query(Transaction).filter(
+        Transaction.user_id == 1,
+        Transaction.type == "transfer_in",
+        Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_test}]%")
+    ).first()
+    tx_fee = db_session.query(Transaction).filter(
+        Transaction.user_id == 1,
+        Transaction.type == "expense",
+        Transaction.category == "Biaya Admin",
+        Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_test}_admin]%")
+    ).first()
+
+    assert tx_out is not None
+    assert tx_out.account == "Mandiri"
+    assert tx_out.amount == 75000
+    assert f"[pair_id:{tx_in.id}]" in tx_out.raw_text
+
+    assert tx_in is not None
+    assert tx_in.account == "Bank Jago"
+    assert tx_in.amount == 75000
+    assert f"[pair_id:{tx_out.id}]" in tx_in.raw_text
+
+    assert tx_fee is not None
+    assert tx_fee.account == "Mandiri"
+    assert tx_fee.amount == 2500
+
+    # Verify pending receipt was cleared from store
+    assert get_pending_receipt(ref_test) is None
+
+    # Verify edit message call was sent to Telegram
+    edit_calls = [c for c in telegram_calls if "editMessageText" in c["url"]]
+    assert len(edit_calls) == 1
+    assert "TRANSFER ANTAR-REKENING BERHASIL DICATAT" in edit_calls[0]["json"]["text"]
+
+    # Test Idempotency: Trigger callback again with same ref_test
+    save_pending_receipt(ref_test, pending_data)
+    cb2 = {
+        "id": "cb_xfer_2",
+        "data": f"rcpt_xfer:{ref_test}:Mandiri:Bank Jago:2500",
+        "message": {"message_id": 1001, "chat": {"id": -1004483626622}},
+        "from": {"id": 1357550611}
+    }
+    bot.handle_callback_query(cb2)
+
+    total_tx_out = db_session.query(Transaction).filter(
+        Transaction.user_id == 1,
+        Transaction.type == "transfer_out",
+        Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_test}]%")
+    ).count()
+    assert total_tx_out == 1
+
+    edit_calls_2 = [c for c in telegram_calls if "editMessageText" in c["url"]]
+    assert len(edit_calls_2) == 2
+    assert "SUDAH TERCATAT SEBELUMNYA" in edit_calls_2[-1]["json"]["text"]
 

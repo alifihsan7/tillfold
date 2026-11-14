@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 from app.models.user import User
 from app.models.account import Account
 from app.models.transaction import Transaction
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.subscription import Subscription
 from app.models.goal import Goal
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt
@@ -111,7 +111,7 @@ def test_bot_saldo_accounts_and_pockets(db_session, bot_user, capture_messages):
     db_session.add_all([acc1, acc2])
     db_session.commit()
 
-    pocket1 = JagoPocket(
+    pocket1 = Pocket(
         user_id=bot_user.id,
         account_id=acc2.id,
         name="Kantong Tagihan",

@@ -491,9 +491,26 @@ def get_paycheck_config_and_buckets(
     cfg = get_or_seed_config(db, current_user.id)
     buckets = get_or_seed_buckets(db, cfg.id)
     active_names = {row.name for row in db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False)}
+    from app.services.internal_loans import get_internal_loans_summary
+    loans_summary = get_internal_loans_summary(db, current_user.id)
     return {
         "config": PaycheckConfigOut.from_orm(cfg),
         "buckets": [PaycheckBucketOut.from_orm(b) for b in buckets if b.account in active_names],
+        "total_active_loan_amount": loans_summary["total_active_loan_amount"],
+        "active_internal_loans": [
+            {
+                "id": l.id,
+                "source_account_id": l.source_account_id,
+                "source_account_name": l.source_account_name,
+                "target_account_id": l.target_account_id,
+                "target_account_name": l.target_account_name,
+                "amount": l.amount,
+                "remaining_amount": l.remaining_amount,
+                "status": l.status,
+                "note": l.note,
+            }
+            for l in loans_summary["loans"]
+        ],
     }
 
 @router.put("/config", response_model=PaycheckConfigOut)
@@ -838,3 +855,42 @@ def cancel_paycheck_session(
     session.status = "cancelled"
     db.commit()
     return {"message": "Sesi alokasi gajian dibatalkan dan transaksi dibersihkan"}
+
+
+@router.post("/auto-settle-loans")
+def auto_settle_loans_on_paycheck(
+    account_id: Optional[int] = None,
+    amount: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Auto-settle active internal loans for salary or target account during paycheck distribution.
+    """
+    from app.services.internal_loans import auto_settle_internal_loans_for_account
+    from app.models.account import Account
+
+    if account_id is None:
+        cfg = get_or_seed_config(db, current_user.id)
+        acc = db.query(Account).filter(Account.user_id == current_user.id, Account.name == cfg.source_account).first()
+        if not acc:
+            acc = db.query(Account).filter(Account.user_id == current_user.id, Account.type == "operasional").first()
+        target_id = acc.id if acc else 1
+    else:
+        target_id = account_id
+
+    settled = auto_settle_internal_loans_for_account(
+        db=db,
+        current_user=current_user,
+        target_account_id=target_id,
+        available_amount=amount,
+        note="Auto-settle saat gajian",
+    )
+    return {
+        "status": "success",
+        "settled_count": len(settled),
+        "settled_loans": [
+            {"id": l.id, "remaining_amount": l.remaining_amount, "status": l.status}
+            for l in settled
+        ],
+    }

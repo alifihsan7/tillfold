@@ -12,7 +12,7 @@ from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.account import Account
 from app.models.category import Category
 from app.models.goal import Goal
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.paycheck import (
     LegacyPaycheckCycle, PaycheckBucket, PaycheckConfig, PaycheckCycle,
     PaycheckReceipt, PaycheckSession,
@@ -29,7 +29,7 @@ MODELS = {
     "subscriptions": Subscription, "goals": Goal, "paycheck_configs": PaycheckConfig,
     "paycheck_buckets": PaycheckBucket, "paycheck_sessions": PaycheckSession,
     "paycheck_cycles": PaycheckCycle, "legacy_paycheck_cycles": LegacyPaycheckCycle,
-    "paycheck_receipts": PaycheckReceipt, "pockets": JagoPocket,
+    "paycheck_receipts": PaycheckReceipt, "pockets": Pocket,
     "subscription_payments": SubscriptionPayment,
 }
 MAX_BYTES = 25 * 1024 * 1024
@@ -243,10 +243,10 @@ def restore_backup(db: Session, user: User, data):
     populated = any(scoped(db, model, user.id).first() is not None for model in (
         Account, Transaction, Subscription, Goal, PaycheckSession, PaycheckReceipt, LegacyPaycheckCycle, SubscriptionPayment,
     ))
-    from app.api.v1.endpoints.jago_pockets import DEFAULT_POCKET_SPECS
+    from app.api.v1.endpoints.pockets import DEFAULT_POCKET_SPECS
 
     defaults = {spec["slug"]: spec for spec in DEFAULT_POCKET_SPECS}
-    for pocket in scoped(db, JagoPocket, user.id):
+    for pocket in scoped(db, Pocket, user.id):
         spec = defaults.get(pocket.slug)
         if (not spec or pocket.account_id is not None or pocket.subscription_id is not None
                 or pocket.name != spec["name"] or pocket.role != spec.get("role", "operasional")
@@ -255,7 +255,7 @@ def restore_backup(db: Session, user: User, data):
     if populated:
         raise HTTPException(409, "Restore hanya tersedia untuk akun dengan data keuangan kosong.")
     # A new account may already have seeded categories and paycheck defaults.
-    scoped(db, JagoPocket, user.id).delete(synchronize_session=False)
+    scoped(db, Pocket, user.id).delete(synchronize_session=False)
     scoped(db, PaycheckBucket, user.id).delete(synchronize_session=False)
     scoped(db, PaycheckConfig, user.id).delete(synchronize_session=False)
     scoped(db, Category, user.id).delete(synchronize_session=False)

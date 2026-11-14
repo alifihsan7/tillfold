@@ -15,7 +15,7 @@ from app.db.session import Base, get_db
 from app.models.account import Account
 from app.models.category import Category
 from app.models.goal import Goal
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.paycheck import (
     LegacyPaycheckCycle, PaycheckBucket, PaycheckConfig, PaycheckCycle, PaycheckReceipt, PaycheckSession,
 )
@@ -69,7 +69,7 @@ def recovery():
                               cycle_end=date(2026, 11, 15), allocations_json=json.dumps([
                                   {"account_id": 102, "amount": 200_000, "transfer_id": 103},
                               ])))
-        db.add(JagoPocket(user_id=1, account_id=102, subscription_id=101, name="Tagihan", slug="tagihan", role="tagihan", target_amount=100_000))
+        db.add(Pocket(user_id=1, account_id=102, subscription_id=101, name="Tagihan", slug="tagihan", role="tagihan", target_amount=100_000))
         db.commit()
         app = FastAPI()
         app.include_router(backup.router, prefix="/backup")
@@ -111,7 +111,7 @@ def test_full_restore_to_empty_account_preserves_balances_and_relationships(reco
     assert client.get("/analytics/periods").json() == source_periods
     assert client.get("/analytics/summary", params={"period_type": "custom", "start": "2026-11-01", "end": "2026-11-30"}).json()["total_balance"] == 950_000
     assert {row["name"]: row["current_balance"] for row in client.get("/accounts").json()} == expected["balances"]
-    pocket = db.query(JagoPocket).filter_by(user_id=2).one()
+    pocket = db.query(Pocket).filter_by(user_id=2).one()
     assert db.get(Account, pocket.account_id).user_id == 2
     assert db.get(Subscription, pocket.subscription_id).user_id == 2
     receipt = db.query(PaycheckReceipt).filter_by(user_id=2).one()

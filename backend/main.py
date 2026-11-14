@@ -16,30 +16,20 @@ import app.models.goal
 import app.models.paycheck
 import app.models.user
 import app.models.category
+import app.models.pocket
 import app.models.jago_pocket
+import app.models.internal_loan
 
-# Create database tables automatically
+from app.db.pocket_schema import ensure_pocket_schema, ensure_pocket_subscription_schema
+from app.db.internal_loan_schema import ensure_internal_loan_schema
+
+# Ensure schema migrations run before table creation to preserve legacy data
+ensure_pocket_schema(engine)
 Base.metadata.create_all(bind=engine)
 ensure_account_archive_schema(engine)
 ensure_user_spreadsheet_schema(engine)
-
-def ensure_pocket_schema_compatibility():
-    """Idempotently adds account_id and role columns to jago_pockets if table predates schema update."""
-    from sqlalchemy import inspect, text
-    try:
-        inspector = inspect(engine)
-        if "jago_pockets" in inspector.get_table_names():
-            cols = {c["name"] for c in inspector.get_columns("jago_pockets")}
-            with engine.begin() as conn:
-                if "account_id" not in cols:
-                    conn.execute(text("ALTER TABLE jago_pockets ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE"))
-                if "role" not in cols:
-                    conn.execute(text("ALTER TABLE jago_pockets ADD COLUMN role VARCHAR(30) DEFAULT 'operasional' NOT NULL"))
-    except Exception:
-        pass
-
-ensure_pocket_schema_compatibility()
-ensure_pocket_subscription_schema(engine)
+ensure_pocket_schema(engine)
+ensure_internal_loan_schema(engine)
 
 IS_PROD = os.getenv("ENVIRONMENT", "production").lower() == "production"
 

@@ -8,14 +8,14 @@ from sqlalchemy import func, case
 
 from app.db.session import get_db
 from app.models.account import Account
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.user import User
 from app.models.subscription import Subscription, SubscriptionPayment
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate, PocketBreakdownItem
-from app.schemas.jago_pocket import JagoPocketsSummaryResponse
+from app.schemas.pocket import PocketSummaryResponse
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.ledger import signed_amount
@@ -139,12 +139,12 @@ def get_accounts(
         query = query.filter(func.lower(Account.type) == type.strip().lower())
     accounts = query.order_by(Account.id.asc()).all()
 
-    all_user_pockets = db.query(JagoPocket).filter(
-        JagoPocket.user_id == current_user.id,
-        JagoPocket.is_active == True,
+    all_user_pockets = db.query(Pocket).filter(
+        Pocket.user_id == current_user.id,
+        Pocket.is_active == True,
     ).all()
 
-    pocket_by_account: dict[int, list[JagoPocket]] = {}
+    pocket_by_account: dict[int, list[Pocket]] = {}
     for p in all_user_pockets:
         if p.account_id:
             pocket_by_account.setdefault(p.account_id, []).append(p)
@@ -162,14 +162,17 @@ def get_accounts(
             target = int(p.target_amount)
             if p.slug.startswith("utama") and target == 0:
                 target = max(0, curr_bal - sum_other_targets)
+            pocket_bal = target
             pockets_breakdown.append(PocketBreakdownItem(
                 id=p.id,
                 name=p.name,
                 slug=p.slug,
                 role=p.role,
+                balance=pocket_bal,
+                current_balance=pocket_bal,
                 target_amount=target,
                 spent_amount=0,
-                remaining_amount=target,
+                remaining_amount=pocket_bal,
                 percentage_spent=0.0,
                 is_active=p.is_active,
             ))
@@ -189,7 +192,7 @@ def get_accounts(
     return results
 
 
-@router.get("/{account_id}/pockets", response_model=JagoPocketsSummaryResponse)
+@router.get("/{account_id}/pockets", response_model=PocketSummaryResponse)
 def get_account_pockets(
     account_id: int,
     cycle_start: Optional[date] = None,
@@ -198,7 +201,7 @@ def get_account_pockets(
     db: Session = Depends(get_db),
 ):
     """Get full pocket breakdown and metrics for a specific parent account."""
-    from app.api.v1.endpoints.jago_pockets import compute_pockets_summary
+    from app.api.v1.endpoints.pockets import compute_pockets_summary
     return compute_pockets_summary(
         db=db,
         user_id=current_user.id,

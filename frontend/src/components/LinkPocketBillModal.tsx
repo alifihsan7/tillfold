@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Link2 } from "lucide-react";
-import { getPocketBills, linkPocketBill, JagoPocketItem, JagoPocketsSummaryResponse, PocketBill } from "@/lib/api";
+import { getPocketBills, linkPocketBill, PocketItem, PocketsSummaryResponse, PocketBill } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
 
-interface Props {
-  pockets: JagoPocketItem[];
+export interface LinkPocketBillModalProps {
+  pockets: PocketItem[];
   initialPocketId: number;
   accountName: string;
   formatRupiah: (value: number) => string;
   onClose: () => void;
-  onSuccess: (data: JagoPocketsSummaryResponse) => void;
+  onSuccess: (data: PocketsSummaryResponse) => void;
 }
 
-export function LinkPocketBillModal({ pockets, initialPocketId, accountName, formatRupiah, onClose, onSuccess }: Props) {
+export function LinkPocketBillModal({ pockets, initialPocketId, accountName, formatRupiah, onClose, onSuccess }: LinkPocketBillModalProps) {
   const [pocketId, setPocketId] = useState(initialPocketId);
   const pocket = pockets.find(item => item.id === pocketId);
   const [billId, setBillId] = useState(String(pocket?.subscription_id || "manual"));
@@ -36,7 +36,7 @@ export function LinkPocketBillModal({ pockets, initialPocketId, accountName, for
 
   const used = new Set(pockets.filter(item => item.id !== pocketId).map(item => item.subscription_id));
   const eligible = bills.filter(bill => bill.is_active && bill.account.trim().toLowerCase() === accountName.trim().toLowerCase() && !used.has(bill.id));
-  const choices = [{ value: "manual", label: "Atur plafon manual" }, ...eligible.map(bill => ({
+  const choices = [{ value: "manual", label: "Atur target manual" }, ...eligible.map(bill => ({
     value: String(bill.id), label: `${bill.name} · ${formatRupiah(bill.amount)} / ${bill.billing_type === "exact_date" ? "periode" : bill.billing_cycle === "yearly" ? "tahun" : "bulan"}`,
   }))];
   if (pocket?.subscription_id && !eligible.some(bill => bill.id === pocket.subscription_id)) {
@@ -57,7 +57,7 @@ export function LinkPocketBillModal({ pockets, initialPocketId, accountName, for
     }
   };
 
-  return <CustomModal isOpen onClose={() => { if (!saving) onClose(); }} title="Hubungkan tagihan" subtitle={`Rekening induk: ${accountName}`} icon={<Link2 className="w-5 h-5" />} maxWidth="lg">
+  return <CustomModal isOpen onClose={() => { if (!saving) onClose(); }} title="Hubungkan tagihan" subtitle={`Rekening induk: ${accountName}`} icon={<Link2 className="w-5 h-5 text-luma-gold" />} maxWidth="lg">
     <form onSubmit={submit} className="space-y-4">
       {error && <p role="alert" className="text-sm text-luma-coral">{error}</p>}
       <fieldset disabled={saving}>
@@ -76,8 +76,8 @@ export function LinkPocketBillModal({ pockets, initialPocketId, accountName, for
         <CustomSelect value={billId} onChange={setBillId} disabled={saving} options={choices} />
         {eligible.length === 0 && <p className="text-xs text-luma-smoke mt-2">Belum ada tagihan aktif yang tersedia untuk {accountName}. Buat atau atur rekening tagihan di halaman Tagihan.</p>}
       </fieldset>}
-      <p className="text-sm text-luma-smoke">Hanya tagihan aktif dari rekening yang sama yang bisa dihubungkan. Satu tagihan untuk satu kantong. Plafon mengikuti nominal per tagihan, termasuk tagihan tahunan, tanpa membaginya per bulan.</p>
-      <p className="text-xs text-luma-smoke">Pilih “Atur plafon manual” untuk melepas hubungan. Plafon terakhir dipertahankan; tagihan nonaktif menghasilkan plafon 0. Tidak ada transaksi pembayaran yang dibuat.</p>
+      <p className="text-sm text-luma-smoke">Hanya tagihan aktif dari rekening yang sama yang bisa dihubungkan. Satu tagihan untuk satu kantong. Target komitmen otomatis mengikuti nominal per tagihan.</p>
+      <p className="text-xs text-luma-smoke">Pilih “Atur target manual” untuk melepas hubungan. Target terakhir dipertahankan; tagihan nonaktif menghasilkan target 0. Mutasi saldo kas dilakukan terpisah melalui menu Pindah Saldo.</p>
       <div className="flex justify-end gap-2 pt-4 border-t border-luma-smokeline">
         <button type="button" disabled={saving} onClick={onClose} className="px-4 py-2 border border-luma-smokeline text-luma-smoke">Batal</button>
         <button type="submit" disabled={saving || loading || !!loadError || !pocket} className="px-4 py-2 bg-luma-ivory text-luma-charcoal">{saving ? "Menyimpan…" : "Simpan hubungan"}</button>

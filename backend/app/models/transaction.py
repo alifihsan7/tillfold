@@ -1,4 +1,6 @@
+from typing import Optional
 from sqlalchemy import Column, Integer, BigInteger, String, Text, Date, DateTime, ForeignKey, func
+from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.models.user import User
 
@@ -14,4 +16,11 @@ class Transaction(Base):
     description = Column(String(255), nullable=False)
     raw_text = Column(Text, nullable=True)
     date = Column(Date, nullable=False, index=True)
+    pocket_id = Column(Integer, ForeignKey("pockets.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    pocket = relationship("Pocket", foreign_keys=[pocket_id])
+
+    @property
+    def pocket_name(self) -> Optional[str]:
+        return self.pocket.name if self.pocket else None

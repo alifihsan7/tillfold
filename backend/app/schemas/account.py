@@ -25,6 +25,8 @@ class PocketBreakdownItem(BaseModel):
     name: str
     slug: str
     role: str = "operasional"
+    balance: int = 0
+    current_balance: int = 0
     target_amount: int = 0
     spent_amount: int = 0
     remaining_amount: int = 0

@@ -451,6 +451,9 @@ def get_monthly_summary(
         today_wib=today_wib,
     )
 
+    from app.services.internal_loans import get_total_active_loan_amount
+    total_active_loan_amt = get_total_active_loan_amount(db, current_user.id)
+
     return MonthlySummary(
         period_type=period_type,
         period_label=period_label,
@@ -468,7 +471,8 @@ def get_monthly_summary(
         accounts=accounts,
         total_balance=total_balance,
         daily_trend=daily_trend,
-        safe_to_spend=safe_info
+        safe_to_spend=safe_info,
+        total_active_loan_amount=total_active_loan_amt,
     )
 
 @router.post("/sync-sheets")

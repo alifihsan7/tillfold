@@ -14,7 +14,7 @@ from app.models.transaction import Transaction
 from app.services.subscription_payments import billing_period, payment_for_period, payment_status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.user import User
 from app.api.deps import get_current_user
 from app.schemas.subscription import (
@@ -295,11 +295,11 @@ def update_subscription(
     if "account" in update_data and (not update_data["account"] or not update_data["account"].strip()):
         raise HTTPException(status_code=400, detail="Rekening tagihan tidak boleh kosong")
     if "account" in update_data and update_data["account"].strip().casefold() != sub.account.strip().casefold():
-        if db.query(JagoPocket.id).filter(JagoPocket.subscription_id == sub.id).first():
+        if db.query(Pocket.id).filter(Pocket.subscription_id == sub.id).first():
             raise HTTPException(status_code=409, detail="Lepaskan hubungan kantong sebelum memindahkan rekening tagihan")
     for field, value in update_data.items():
         setattr(sub, field, value)
-    for pocket in db.query(JagoPocket).filter(JagoPocket.user_id == current_user.id, JagoPocket.subscription_id == sub.id).all():
+    for pocket in db.query(Pocket).filter(Pocket.user_id == current_user.id, Pocket.subscription_id == sub.id).all():
         pocket.target_amount = int(sub.amount) if sub.is_active else 0
 
     db.commit()
@@ -336,7 +336,7 @@ def delete_subscription(
     if not sub:
         raise HTTPException(status_code=404, detail="Langganan tidak ditemukan")
 
-    if db.query(JagoPocket.id).filter(JagoPocket.subscription_id == sub.id).first():
+    if db.query(Pocket.id).filter(Pocket.subscription_id == sub.id).first():
         raise HTTPException(status_code=409, detail="Lepaskan hubungan kantong sebelum menghapus tagihan")
     db.query(SubscriptionPayment).filter(
         SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.subscription_id == sub.id,

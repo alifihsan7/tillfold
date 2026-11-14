@@ -14,6 +14,7 @@ from sqlalchemy import desc, func, case, extract
 
 from app.db.session import get_db
 from app.models.transaction import Transaction
+from app.models.pocket import Pocket
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt
 from app.models.account import Account
 from app.models.user import User
@@ -178,6 +179,12 @@ def create_transaction(
         raise HTTPException(400, "Gunakan fitur transfer agar saldo asal dan tujuan tercatat berpasangan.")
     require_owned_accounts(db, current_user.id, payload.account)
 
+    pocket_id = payload.pocket_id
+    if pocket_id is not None:
+        p = db.query(Pocket).filter(Pocket.id == pocket_id, Pocket.user_id == current_user.id).first()
+        if not p:
+            raise HTTPException(404, "Kantong tidak ditemukan")
+
     tx = Transaction(
         user_id=current_user.id,
         type=payload.type,
@@ -186,7 +193,8 @@ def create_transaction(
         category=payload.category,
         description=payload.description,
         raw_text=f"manual web: {payload.description}",
-        date=tx_date
+        date=tx_date,
+        pocket_id=pocket_id,
     )
     db.add(tx)
     db.commit()
@@ -385,6 +393,10 @@ def update_transaction(
     update_data = payload.model_dump(exclude_unset=True)
     if update_data.get("account") is not None and update_data["account"] != tx.account:
         require_owned_accounts(db, current_user.id, update_data["account"])
+    if update_data.get("pocket_id") is not None:
+        p = db.query(Pocket).filter(Pocket.id == update_data["pocket_id"], Pocket.user_id == current_user.id).first()
+        if not p:
+            raise HTTPException(404, "Kantong tidak ditemukan")
     payment = db.query(SubscriptionPayment).filter(
         SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.transaction_id == tx.id,
     ).with_for_update().first()

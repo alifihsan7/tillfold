@@ -111,7 +111,7 @@ def test_previous_week_summary_matches_selected_transactions(ledger):
 
 
 def test_short_month_payday_starts_cycle_on_last_day(ledger):
-    from app.api.v1.endpoints.jago_pockets import get_current_cycle_bounds
+    from app.api.v1.endpoints.pockets import get_current_cycle_bounds
 
     client, db = ledger
     cfg = paycheck.get_or_seed_config(db, 1)

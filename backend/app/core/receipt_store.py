@@ -31,7 +31,7 @@ def save_pending_receipt(ref_number: str, data: Dict[str, Any]) -> bool:
     pending = list_pending_receipts()
     pending[ref_number] = data
     try:
-        PENDING_FILE.write_text(json.dumps(pending, indent=2), encoding="utf-8")
+        PENDING_FILE.write_text(json.dumps(pending, indent=2, default=str), encoding="utf-8")
         return True
     except Exception as e:
         logger.error("Failed to save pending receipt %s: %s", ref_number, e)

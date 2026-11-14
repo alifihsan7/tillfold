@@ -9,6 +9,7 @@ class TransactionBase(BaseModel):
     category: str
     description: str
     date: Optional[dt_date] = None
+    pocket_id: Optional[int] = None
 
 class TransactionCreate(TransactionBase):
     pass
@@ -20,6 +21,7 @@ class TransactionUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     date: Optional[dt_date] = None
+    pocket_id: Optional[int] = None
 
 class TransactionOut(TransactionBase):
     type: Literal["expense", "income", "transfer_out", "transfer_in", "adjustment_in", "adjustment_out"]
@@ -27,6 +29,8 @@ class TransactionOut(TransactionBase):
     amount: int = Field(..., ge=0, le=9_000_000_000_000_000)
     id: int
     raw_text: Optional[str] = None
+    pocket_id: Optional[int] = None
+    pocket_name: Optional[str] = None
     created_at: dt_datetime
 
     class Config:
@@ -89,6 +93,7 @@ class MonthlySummary(BaseModel):
     total_balance: int
     daily_trend: List[DailyTrendItem]
     safe_to_spend: Optional[SafeToSpendInfo] = None
+    total_active_loan_amount: Optional[int] = 0
 
 class PaycheckRequest(BaseModel):
     total_amount: int = Field(1500000, gt=0, le=9_000_000_000_000_000, description="Nominal alokasi gajian wajib > 0 dan <= 9.000.000.000.000.000")

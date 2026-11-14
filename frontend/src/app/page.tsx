@@ -42,7 +42,8 @@ import { LumaRecentTransactions } from "@/components/LumaRecentTransactions";
 import { AccountGrid } from "@/components/AccountGrid";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { SmartBudgetEnvelopes } from "@/components/MandiriEnvelopes";
-import { JagoPockets, AccountPockets } from "@/components/JagoPockets";
+import { AccountPockets } from "@/components/AccountPockets";
+import { InternalLoansWidget } from "@/components/InternalLoansWidget";
 import { Transaction } from "@/components/TransactionTable";
 import { BurnRateChart } from "@/components/BurnRateChart";
 import { TransactionLedgerView } from "@/components/TransactionLedgerView";
@@ -80,7 +81,7 @@ import {
   setStoredUser,
   setAuthToken,
   UserProfile,
-  JagoPocketsSummaryResponse,
+  PocketsSummaryResponse,
   syncGoogleSheets,
 } from "@/lib/api";
 import { DashboardLoadError, loadDashboardData } from "@/lib/dashboardData";
@@ -654,10 +655,11 @@ export default function FinanceDashboard() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [jagoRefreshSignal, setJagoRefreshSignal] = useState(0);
-  const [jagoPocketsData, setJagoPocketsData] = useState<JagoPocketsSummaryResponse | null>(null);
+  const [pocketsRefreshSignal, setPocketsRefreshSignal] = useState(0);
+  const [loansRefreshSignal, setLoansRefreshSignal] = useState(0);
+  const [pocketsData, setPocketsData] = useState<PocketsSummaryResponse | null>(null);
 
-  const pocketsCount = (jagoPocketsData?.pockets ?? jagoPocketsData?.items)?.length ?? 0;
+  const pocketsCount = (pocketsData?.pockets ?? pocketsData?.items)?.length ?? 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -832,8 +834,8 @@ export default function FinanceDashboard() {
       if (Array.isArray(data.paycheck?.buckets)) setPaycheckBuckets(data.paycheck.buckets);
       if (Array.isArray(data.categories)) setCategories(data.categories);
 
-      // Refresh Bank Jago pockets after any ledger-affecting fetch.
-      setJagoRefreshSignal((prev) => prev + 1);
+      // Refresh account pockets after any ledger-affecting fetch.
+      setPocketsRefreshSignal((prev) => prev + 1);
     } catch (err) {
       if (requestId !== dashboardRequestRef.current) return;
       if (err instanceof DashboardLoadError && err.status === 401) setIsAuthModalOpen(true);
@@ -844,7 +846,10 @@ export default function FinanceDashboard() {
     }
   };
 
-  const fetchData = () => fetchDashboard();
+  const fetchData = () => {
+    fetchDashboard();
+    setLoansRefreshSignal((s) => s + 1);
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -2051,17 +2056,32 @@ export default function FinanceDashboard() {
               loading={loading}
             />
 
-            {/* 7. Sub-Kantong Operasional */}
-            <JagoPockets
+            {/* 7. Sub-Kantong Rekening */}
+            <AccountPockets
               cycleStart={summary.start_date}
               cycleEnd={summary.end_date}
               accountId={(customAccounts.find(account => account.name === summary.safe_to_spend?.pocket_account) || customAccounts.find(account => account.type === "operasional") || customAccounts[0])?.id}
               formatRupiah={formatRupiah}
-              refreshSignal={jagoRefreshSignal}
+              refreshSignal={pocketsRefreshSignal}
               onToast={showToast}
+              onDataLoaded={setPocketsData}
             />
 
-            {/* 8. Grafik Burn Rate */}
+            {/* 8. Dana Talangan Internal (Internal Loans) */}
+            <InternalLoansWidget
+              accounts={activeAccounts}
+              pockets={pocketsData?.pockets ?? pocketsData?.items}
+              formatRupiah={formatRupiah}
+              refreshSignal={loansRefreshSignal}
+              onToast={showToast}
+              onDataChanged={() => {
+                fetchData();
+                setPocketsRefreshSignal((s) => s + 1);
+                setLoansRefreshSignal((s) => s + 1);
+              }}
+            />
+
+            {/* 9. Grafik Burn Rate */}
             <BurnRateChart summary={summary} formatRupiah={formatRupiah} />
 
               </div>
@@ -2136,8 +2156,23 @@ export default function FinanceDashboard() {
               cycleEnd={summary.end_date}
               accounts={activeAccounts}
               formatRupiah={formatRupiah}
-              refreshSignal={jagoRefreshSignal}
+              refreshSignal={pocketsRefreshSignal}
               onToast={showToast}
+              onDataLoaded={setPocketsData}
+            />
+
+            {/* Dana Talangan Internal (Internal Loans) */}
+            <InternalLoansWidget
+              accounts={activeAccounts}
+              pockets={pocketsData?.pockets ?? pocketsData?.items}
+              formatRupiah={formatRupiah}
+              refreshSignal={loansRefreshSignal}
+              onToast={showToast}
+              onDataChanged={() => {
+                fetchData();
+                setPocketsRefreshSignal((s) => s + 1);
+                setLoansRefreshSignal((s) => s + 1);
+              }}
             />
 
             {/* Pos Tagihan & Utilitas */}
@@ -2534,9 +2569,9 @@ export default function FinanceDashboard() {
                   cycleEnd={summary.end_date}
                   accounts={activeAccounts}
                   formatRupiah={formatRupiah}
-                  refreshSignal={jagoRefreshSignal}
+                  refreshSignal={pocketsRefreshSignal}
                   onToast={showToast}
-                  onDataLoaded={setJagoPocketsData}
+                  onDataLoaded={setPocketsData}
                 />
               </div>
             )}

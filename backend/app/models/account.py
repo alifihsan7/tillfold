@@ -16,4 +16,4 @@ class Account(Base):
     initial_balance = Column(BigInteger, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    pockets = relationship("JagoPocket", back_populates="account", cascade="all, delete-orphan", lazy="selectin")
+    pockets = relationship("Pocket", back_populates="account", cascade="all, delete-orphan", lazy="selectin")

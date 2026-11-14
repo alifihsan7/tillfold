@@ -15,7 +15,7 @@ from app.db.session import Base, get_db
 from app.models.account import Account
 from app.models.subscription import Subscription, SubscriptionPayment
 from app.models.transaction import Transaction
-from app.models.jago_pocket import JagoPocket
+from app.models.pocket import Pocket
 from app.models.user import User
 
 
@@ -208,9 +208,9 @@ def test_deleting_bill_keeps_expense_history_and_valid_backup(bills):
 def test_bill_payment_uses_its_linked_pocket_instead_of_first_matching_role(bills):
     client, db, users, current = bills
     db.add_all([
-        JagoPocket(user_id=1, account_id=1, name="Tagihan lain", slug="lain", role="tagihan", target_amount=100_000),
-        JagoPocket(user_id=1, account_id=1, name="Keperluan rutin", slug="rutin", role="tagihan", target_amount=50_000, subscription_id=1),
-        JagoPocket(user_id=1, account_id=1, name="Utama", slug="utama-1", role="operasional", target_amount=0),
+        Pocket(user_id=1, account_id=1, name="Tagihan lain", slug="lain", role="tagihan", target_amount=100_000),
+        Pocket(user_id=1, account_id=1, name="Keperluan rutin", slug="rutin", role="tagihan", target_amount=50_000, subscription_id=1),
+        Pocket(user_id=1, account_id=1, name="Utama", slug="utama-1", role="operasional", target_amount=0),
     ])
     db.commit()
     assert client.post("/subscriptions/1/payment", json=request(client)).status_code == 200

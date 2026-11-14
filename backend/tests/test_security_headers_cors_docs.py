@@ -109,7 +109,6 @@ async def main():
     
     expected_headers = {
         "x-content-type-options": "nosniff",
-        "x-frame-options": "DENY",
         "referrer-policy": "strict-origin-when-cross-origin",
         "permissions-policy": "camera=(), microphone=(), geolocation=()",
         "strict-transport-security": "max-age=31536000; includeSubDomains",
@@ -120,9 +119,12 @@ async def main():
         print(f"Header '{h}': {actual}")
         assert actual == val, f"Header {h} mismatch: expected {val}, got {actual}"
     
+    assert "x-frame-options" not in headers, "X-Frame-Options must not be set (superseded by frame-ancestors for Telegram Mini App)"
+    
     csp = headers.get("content-security-policy")
     print(f"Header 'content-security-policy': {csp}")
     assert csp is not None and "default-src 'self'" in csp, "CSP header missing or incomplete!"
+    assert "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org;" in csp, "frame-ancestors for Telegram Mini App missing from CSP!"
     assert "https://ai7finance.alifihsan.my.id" in csp, "ai7finance origin missing from connect-src!"
     assert "https://tillfold.alifihsan.my.id" in csp, "tillfold origin missing from connect-src!"
     print("PASS: All required security headers successfully present.")

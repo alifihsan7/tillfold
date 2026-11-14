@@ -66,7 +66,6 @@ app.add_middleware(
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
@@ -74,6 +73,7 @@ async def add_security_headers(request: Request, call_next):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://accounts.google.com; "
         "frame-src 'self' https://accounts.google.com; "
+        "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org; "
         "style-src 'self' 'unsafe-inline' https://accounts.google.com; "
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "

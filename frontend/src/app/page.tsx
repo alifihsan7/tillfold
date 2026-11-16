@@ -94,6 +94,7 @@ interface MonthlySummary {
   end_date?: string;
   month: string;
   income: number;
+  opening_balance?: number;
   expense: number;
   net: number;
   savings_rate: number;
@@ -1871,6 +1872,7 @@ export default function FinanceDashboard() {
             <LumaOverview
               totalBalance={summary.total_balance ?? (summary.income - summary.expense)}
               income={summary.income}
+              openingBalance={summary.opening_balance ?? 0}
               expense={summary.expense}
               accountCount={summary.accounts?.length ?? 0}
               safeDaily={summary.safe_to_spend?.safe_daily ?? 0}

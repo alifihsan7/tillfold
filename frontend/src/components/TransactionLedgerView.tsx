@@ -67,7 +67,7 @@ export function TransactionLedgerView({
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
-  const [history, setHistory] = useState<{ items: Transaction[]; total: number; income: number; expense: number; net: number }>({ items: [], total: 0, income: 0, expense: 0, net: 0 });
+  const [history, setHistory] = useState<{ items: Transaction[]; total: number; income: number; opening_balance?: number; expense: number; net: number }>({ items: [], total: 0, income: 0, opening_balance: 0, expense: 0, net: 0 });
   const [loading, setLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
   const [retry, setRetry] = useState(0);
@@ -180,7 +180,7 @@ export function TransactionLedgerView({
 
   const totalPages = Math.max(1, Math.ceil(history.total / pageSize));
   const paginatedTransactions = history.items;
-  const stats = { count: history.total, income: history.income, expense: history.expense, net: history.net };
+  const stats = { count: history.total, income: history.income, opening: history.opening_balance ?? 0, expense: history.expense, net: history.net };
 
   // Active filters count
   const activeFiltersCount = useMemo(() => {
@@ -259,7 +259,7 @@ export function TransactionLedgerView({
               </div>
             )}
             <p className="text-xs text-zinc-400 mt-0.5 truncate">
-              Pemasukan sesuai filter
+              {stats.opening > 0 ? `Tanpa saldo awal ${formatRupiah(stats.opening)}` : "Pemasukan sesuai filter"}
             </p>
           </div>
         </div>

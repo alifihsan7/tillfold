@@ -9,7 +9,7 @@ from sqlalchemy import func, case, desc
 
 from app.db.session import get_db
 from app.models.transaction import Transaction
-from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
+from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
 from app.services.paycheck_cycles import legacy_cycle_covers, recorded_cycle_ends
 from app.models.account import Account
@@ -332,23 +332,19 @@ def get_monthly_summary(
 
     query_end_date = end_date + timedelta(days=1)
 
-    # Monthly totals (income and expense) dalam rentang periode terpilih
-    totals = db.query(
-        Transaction.type,
-        func.coalesce(func.sum(Transaction.amount), 0).label("total")
+    # Period totals. Opening balances are reported apart from earned income.
+    income_sum, opening_sum, expense_sum = db.query(
+        func.coalesce(func.sum(case((is_earned_income(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((is_opening_balance(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)), 0),
     ).filter(
         Transaction.user_id == current_user.id,
         Transaction.date >= start_date,
         Transaction.date < query_end_date
-    ).group_by(Transaction.type).all()
-
-    income_total = 0
-    expense_total = 0
-    for r in totals:
-        if r.type == "income":
-            income_total = int(r.total)
-        elif r.type == "expense":
-            expense_total = int(r.total)
+    ).one()
+    income_total = int(income_sum)
+    opening_balance_total = int(opening_sum)
+    expense_total = int(expense_sum)
 
     net_total = income_total - expense_total
     savings_rate = round((net_total / income_total * 100), 1) if income_total > 0 else 0.0
@@ -363,7 +359,8 @@ def get_monthly_summary(
         Transaction.user_id == current_user.id,
         Transaction.date >= start_date,
         Transaction.date < query_end_date,
-        Transaction.type.in_(["expense", "income"])
+        Transaction.type.in_(["expense", "income"]),
+        ~is_opening_balance(),
     ).group_by(Transaction.category, Transaction.type).order_by(func.sum(Transaction.amount).desc()).all()
 
     categories = []
@@ -425,7 +422,7 @@ def get_monthly_summary(
     # Daily trend dalam periode
     trend_rows = db.query(
         Transaction.date,
-        func.sum(case((Transaction.type == "income", Transaction.amount), else_=0)).label("income"),
+        func.sum(case((is_earned_income(), Transaction.amount), else_=0)).label("income"),
         func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)).label("expense")
     ).filter(
         Transaction.user_id == current_user.id,
@@ -463,6 +460,7 @@ def get_monthly_summary(
         year=start_date.year,
         month_num=start_date.month,
         income=income_total,
+        opening_balance=opening_balance_total,
         expense=expense_total,
         net=net_total,
         savings_rate=savings_rate,

@@ -23,7 +23,7 @@ from app.core.parser import parse_transaction, parse_multi_transactions, parse_a
 from app.core.transfer import find_paired_transfer
 from app.db.session import SessionLocal, Base, engine
 from app.models.transaction import Transaction
-from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
+from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
 from app.models.account import Account
 from app.models.pocket import Pocket
 from app.models.internal_loan import InternalLoan
@@ -394,22 +394,18 @@ def handle_rekap(
             f"(Hari ke-{day_of_cycle}/{cycle_days} • Sisa {days_remaining} hari)"
         )
 
-    totals = db.query(
-        Transaction.type,
-        func.coalesce(func.sum(Transaction.amount), 0).label("total")
+    income_sum, opening_sum, expense_sum = db.query(
+        func.coalesce(func.sum(case((is_earned_income(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((is_opening_balance(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)), 0),
     ).filter(
         Transaction.user_id == user_id,
         Transaction.date >= start_date,
         Transaction.date <= end_date
-    ).group_by(Transaction.type).all()
-
-    income_total = 0
-    expense_total = 0
-    for r in totals:
-        if r.type == "income":
-            income_total = int(r.total)
-        elif r.type == "expense":
-            expense_total = int(r.total)
+    ).one()
+    income_total = int(income_sum)
+    opening_balance_total = int(opening_sum)
+    expense_total = int(expense_sum)
 
     net_total = income_total - expense_total
 
@@ -431,6 +427,8 @@ def handle_rekap(
         f"📈 **Net Cashflow:** {format_rp(net_total)}\n",
         "📂 **Rincian Pengeluaran per Kategori:**"
     ]
+    if opening_balance_total > 0:
+        lines.insert(2, f"🏦 **Saldo Awal Dicatat:** {format_rp(opening_balance_total)} _(tidak dihitung sebagai pemasukan)_")
 
     if not cat_rows:
         period_name = "siklus ini" if mode == "cycle" else ("bulan ini" if mode == "month" else "siklus tersebut")

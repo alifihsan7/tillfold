@@ -48,6 +48,7 @@ export interface AnalyticsSummary {
   year: number;
   month_num: number;
   income: number;
+  opening_balance?: number;
   expense: number;
   net: number;
   savings_rate: number;
@@ -107,6 +108,9 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
         </dl>
         {!loading && summary.income > 0 && (
           <p className="mt-4 text-xs text-luma-smoke">Selisih dari pemasukan: {summary.savings_rate.toFixed(1)}%</p>
+        )}
+        {!loading && (summary.opening_balance ?? 0) > 0 && (
+          <p className="mt-1 text-xs text-luma-smoke">Saldo awal {formatRupiah(summary.opening_balance ?? 0)} dicatat terpisah, tidak termasuk pemasukan.</p>
         )}
       </section>
 

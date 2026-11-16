@@ -1,4 +1,5 @@
 import React from "react";
+import { formatShortDate, formatSignedRupiah } from "@/lib/format";
 import { Edit2, Trash2 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 import { getCategoryBadgeClasses } from "@/lib/categoryColors";
@@ -92,7 +93,7 @@ export function TransactionTable({
                 return (
                   <tr key={tx.id} data-new-transaction={newTransactionIds?.has(tx.id) || undefined} className="hover:bg-white/[0.04] transition group">
                     <td className="py-4 px-4 sm:px-6 text-luma-smoke font-sans whitespace-nowrap text-xs sm:text-sm">
-                      {tx.date}
+                      {formatShortDate(tx.date)}
                     </td>
                     <td className="py-4 px-4 sm:px-6 text-luma-ivory font-medium min-w-[200px] leading-snug break-words">
                       {tx.description}
@@ -116,7 +117,7 @@ export function TransactionTable({
                         isAdjustment ? "text-luma-ivory" : isTransfer ? "text-luma-transfer" : isIncome ? "text-luma-sage" : "text-luma-coral"
                       }`}
                     >
-                      {isPositive ? "+" : "-"} {formatRupiah(tx.amount)}
+                      {formatSignedRupiah(tx.amount, isPositive, formatRupiah)}
                     </td>
                     {showActions && (
                       <td className="py-4 px-4 sm:px-6 text-center whitespace-nowrap">

@@ -44,48 +44,52 @@ const ACCOUNT_COLOR_DOTS: Record<string, string> = {
   ember: "bg-luma-ember", sage: "bg-luma-sage", mintRise: "bg-emerald-500",
 };
 
+// Account role is a category, not a financial status: one neutral badge style,
+// so green, coral and transfer blue keep their meaning elsewhere.
+const ROLE_BADGE_CLASS = "bg-transparent text-luma-smoke border-luma-smokeline";
+
 export function getAccountRoleBadge(type?: string): { label: string; className: string } {
   const t = (type || "").toLowerCase().trim();
   switch (t) {
     case "gajian":
       return {
         label: "Gajian",
-        className: "bg-mintRise/15 text-mintRise border-mintRise/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "operasional":
       return {
         label: "Operasional",
-        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "tagihan":
       return {
         label: "Tagihan",
-        className: "bg-luma-gold/15 text-luma-gold border-luma-gold/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "darurat":
       return {
         label: "Dana darurat",
-        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "tabungan":
       return {
         label: "Tabungan",
-        className: "bg-luma-sage/15 text-luma-sage border-luma-sage/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "investasi":
       return {
         label: "Investasi",
-        className: "bg-luma-sage/15 text-luma-sage border-luma-sage/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "ewallet":
       return {
         label: "E-wallet",
-        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
+        className: ROLE_BADGE_CLASS,
       };
     default:
       return {
         label: type || "Akun",
-        className: "bg-white/[0.06] text-luma-smoke border-luma-smokeline",
+        className: ROLE_BADGE_CLASS,
       };
   }
 }

@@ -29,6 +29,39 @@ from app.core.config import settings
 router = APIRouter()
 WIB = zoneinfo.ZoneInfo(settings.TIMEZONE)
 
+# Period labels are shown verbatim in the UI: Indonesian month names (strftime
+# follows the server locale), sentence case, and at most one bracket.
+ID_MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+ID_MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
+             "Agustus", "September", "Oktober", "November", "Desember"]
+
+
+def format_period_range(start: date, end: date) -> str:
+    """9–22 Nov 2026, 26 Okt – 8 Nov 2026, or 28 Des 2026 – 10 Jan 2027."""
+    def day_month(d: date) -> str:
+        return f"{d.day} {ID_MONTHS_SHORT[d.month - 1]}"
+    if start.year != end.year:
+        return f"{day_month(start)} {start.year} – {day_month(end)} {end.year}"
+    if start.month != end.month:
+        return f"{day_month(start)} – {day_month(end)} {end.year}"
+    return f"{start.day}–{day_month(end)} {end.year}"
+
+
+def period_label(prefix: str, start: date, end: date) -> str:
+    return f"{prefix} · {format_period_range(start, end)}"
+
+
+def cycle_label_prefix(cycle_type: str, cycle_days: int, paycheck_day: int) -> str:
+    if cycle_type == "monthly_date":
+        return f"Siklus bulanan, gajian tgl {paycheck_day}"
+    if cycle_days == 30 or cycle_type == "monthly":
+        return "Siklus bulanan"
+    if cycle_days == 14 or cycle_type == "biweekly":
+        return "Siklus 2 mingguan"
+    if cycle_days == 7 or cycle_type == "weekly":
+        return "Siklus mingguan"
+    return f"Siklus {cycle_days} hari"
+
 def get_monthly_date_bounds(ref_date: date, payday: int) -> tuple[date, date]:
     """
     Returns (cycle_start, cycle_end) for a recurring payday (1-31).
@@ -69,16 +102,7 @@ def get_available_periods(
     anchor_start = cfg.cycle_start_date if cfg and cfg.cycle_start_date else None
     paycheck_day = cfg.paycheck_day if cfg and cfg.paycheck_day else (anchor_start.day if anchor_start else 25)
 
-    if cycle_type == "monthly_date":
-        label_prefix = f"Siklus Bulanan (Tgl {paycheck_day})"
-    elif cycle_days == 30 or cycle_type == "monthly":
-        label_prefix = "Siklus Bulanan (30 Hari)"
-    elif cycle_days == 14 or cycle_type == "biweekly":
-        label_prefix = "Siklus 2-Mingguan"
-    elif cycle_days == 7 or cycle_type == "weekly":
-        label_prefix = "Siklus Mingguan"
-    else:
-        label_prefix = f"Siklus {cycle_days} Hari"
+    label_prefix = cycle_label_prefix(cycle_type, cycle_days, paycheck_day)
 
     # 1. Ambil semua gajian unik milik user
     paycheck_rows = db.query(Transaction.date).filter(
@@ -103,7 +127,7 @@ def get_available_periods(
             "type": "cycle",
             "start": str(default_start),
             "end": str(default_end),
-            "label": f"{label_prefix} ({default_start.strftime('%d %b')} – {default_end.strftime('%d %b %Y')})",
+            "label": period_label(label_prefix, default_start, default_end),
             "is_current": False
         })
     else:
@@ -119,7 +143,7 @@ def get_available_periods(
                 c_end = c_start + timedelta(days=cycle_days - 1)
             if c_start in cycle_ends:
                 c_end = cycle_ends[c_start]
-                cycle_label = f"Siklus {(c_end - c_start).days + 1} Hari"
+                cycle_label = f"Siklus {(c_end - c_start).days + 1} hari"
             if c_start in seen_starts:
                 continue
             seen_starts.add(c_start)
@@ -128,7 +152,7 @@ def get_available_periods(
                 "type": "cycle",
                 "start": str(c_start),
                 "end": str(c_end),
-                "label": f"{cycle_label} ({c_start.strftime('%d %b')} – {c_end.strftime('%d %b %Y')})",
+                "label": period_label(cycle_label, c_start, c_end),
                 "is_current": False
             })
 
@@ -137,7 +161,7 @@ def get_available_periods(
     current_cycle = next((cycle for cycle in cycles if cycle["start"] <= today_key <= cycle["end"]), None)
     if current_cycle:
         current_cycle["is_current"] = True
-        current_cycle["label"] += " (Aktif)"
+        current_cycle["label"] += " · berjalan"
 
     # 2. Minggu ini & minggu lalu
     this_week_start = today_wib - timedelta(days=today_wib.weekday())
@@ -151,7 +175,7 @@ def get_available_periods(
             "type": "week",
             "start": str(this_week_start),
             "end": str(this_week_end),
-            "label": f"Minggu Ini ({this_week_start.strftime('%d %b')} – {this_week_end.strftime('%d %b %Y')})",
+            "label": period_label("Minggu ini", this_week_start, this_week_end),
             "is_current": True
         },
         {
@@ -159,7 +183,7 @@ def get_available_periods(
             "type": "week",
             "start": str(last_week_start),
             "end": str(last_week_end),
-            "label": f"Minggu Lalu ({last_week_start.strftime('%d %b')} – {last_week_end.strftime('%d %b %Y')})",
+            "label": period_label("Minggu lalu", last_week_start, last_week_end),
             "is_current": False
         }
     ]
@@ -184,7 +208,7 @@ def get_available_periods(
             "month": f"{target_yr:04d}-{target_mo:02d}",
             "start": str(m_start),
             "end": str(m_end),
-            "label": f"Bulan {m_start.strftime('%B %Y')}{' (Bulan Ini)' if is_cur else ''}",
+            "label": f"{ID_MONTHS[m_start.month - 1]} {m_start.year}{' · bulan ini' if is_cur else ''}",
             "is_current": is_cur
         })
 
@@ -222,12 +246,12 @@ def get_monthly_summary(
         latest_cycle_start = today_wib
 
     # Tentukan start_date & end_date berdasarkan period_type
-    period_label = ""
+    label_text = ""
     if period_type == "custom" and start and end:
         try:
             start_date = datetime.strptime(start, "%Y-%m-%d").date()
             end_date = datetime.strptime(end, "%Y-%m-%d").date()
-            period_label = f"Kustom: {start_date.strftime('%d %b')} – {end_date.strftime('%d %b %Y')}"
+            label_text = period_label("Kustom", start_date, end_date)
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid start/end date format, use YYYY-MM-DD")
     elif period_type == "week":
@@ -239,10 +263,10 @@ def get_monthly_summary(
             raise HTTPException(status_code=400, detail="Tanggal awal minggu tidak valid.")
         week_label = "Minggu"
         if start_date == this_week_start:
-            week_label = "Minggu Ini"
+            week_label = "Minggu ini"
         elif start_date == this_week_start - timedelta(days=7):
-            week_label = "Minggu Lalu"
-        period_label = f"{week_label} ({start_date.strftime('%d %b')} – {end_date.strftime('%d %b %Y')})"
+            week_label = "Minggu lalu"
+        label_text = period_label(week_label, start_date, end_date)
     elif period_type == "month":
         if month:
             try:
@@ -255,7 +279,7 @@ def get_monthly_summary(
         start_date = date(yr, mo, 1)
         next_month = date(yr + 1, 1, 1) if mo == 12 else date(yr, mo + 1, 1)
         end_date = next_month - timedelta(days=1)
-        period_label = f"Bulan {start_date.strftime('%B %Y')}"
+        label_text = f"{ID_MONTHS[start_date.month - 1]} {start_date.year}"
     else:
         # Default: Siklus gajian dinamis (sesuai PaycheckConfig)
         period_type = "cycle"
@@ -315,20 +339,13 @@ def get_monthly_summary(
                 end_date = start_date + timedelta(days=cycle_days - 1)
 
         if start_date in cycle_ends:
-            label_prefix = f"Siklus {(end_date - start_date).days + 1} Hari"
-        elif cycle_type == "monthly_date":
-            cycle_days = (end_date - start_date).days + 1
-            label_prefix = f"Siklus Bulanan (Tgl {paycheck_day})"
-        elif cycle_days == 30 or cycle_type == "monthly":
-            label_prefix = "Siklus Bulanan (30 Hari)"
-        elif cycle_days == 14 or cycle_type == "biweekly":
-            label_prefix = "Siklus 2-Mingguan"
-        elif cycle_days == 7 or cycle_type == "weekly":
-            label_prefix = "Siklus Mingguan"
+            label_prefix = f"Siklus {(end_date - start_date).days + 1} hari"
         else:
-            label_prefix = f"Siklus {cycle_days} Hari"
+            if cycle_type == "monthly_date":
+                cycle_days = (end_date - start_date).days + 1
+            label_prefix = cycle_label_prefix(cycle_type, cycle_days, paycheck_day)
 
-        period_label = f"{label_prefix} ({start_date.strftime('%d %b')} – {end_date.strftime('%d %b %Y')})"
+        label_text = period_label(label_prefix, start_date, end_date)
 
     query_end_date = end_date + timedelta(days=1)
 
@@ -453,7 +470,7 @@ def get_monthly_summary(
 
     return MonthlySummary(
         period_type=period_type,
-        period_label=period_label,
+        period_label=label_text,
         start_date=str(start_date),
         end_date=str(end_date),
         month=f"{start_date.year:04d}-{start_date.month:02d}",

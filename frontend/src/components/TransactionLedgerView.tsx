@@ -1,4 +1,5 @@
 import { TransactionCalendar } from "./TransactionCalendar";
+import { formatSignedRupiah } from "@/lib/format";
 import { authFetch } from "@/lib/api";
 import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
 import { DateField } from "@/components/ui/DateField";
@@ -301,8 +302,7 @@ export function TransactionLedgerView({
                   stats.net >= 0 ? "text-mintRise" : "text-coralFall"
                 }`}
               >
-                {stats.net >= 0 ? "+" : "-"}
-                {formatRupiah(Math.abs(stats.net))}
+                {formatSignedRupiah(stats.net, stats.net >= 0, formatRupiah)}
               </div>
             )}
             <p className="text-xs text-zinc-400 mt-0.5 truncate">

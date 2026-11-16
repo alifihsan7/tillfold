@@ -78,10 +78,6 @@ const COLOR_THEMES: Record<
   },
 };
 
-function formatNumber(num: number): string {
-  return new Intl.NumberFormat("id-ID").format(num);
-}
-
 function formatDateIndo(dateStr: string | null): string {
   if (!dateStr) return "";
   try {
@@ -360,9 +356,8 @@ export function GoalsView({
                   {/* Amounts & Percentage Display — tabular numerals, mono percent */}
                   <div className="space-y-2 pt-1">
                     <div className="flex items-baseline justify-between gap-2">
-                      <div className="flex items-baseline gap-1 ai7-type-metric text-luma-ivory tracking-tight tabular-nums">
-                        <span className="text-sm font-sans font-normal text-luma-smoke">Rp</span>
-                        <span>{formatNumber(goal.current_amount)}</span>
+                      <div className="ai7-type-metric text-luma-ivory tracking-tight tabular-nums">
+                        {formatRupiah(goal.current_amount)}
                       </div>
                       <div
                         className={`text-xs font-sans font-semibold px-3 py-1 rounded-full border tabular-nums ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}

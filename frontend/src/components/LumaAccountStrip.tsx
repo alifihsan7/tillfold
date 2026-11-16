@@ -63,24 +63,23 @@ export function LumaAccountStrip({ accounts, formatRupiah, loading, hideBalance,
             key={acc.name}
             className="luma-account-item"
           >
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Wallet className="w-4 h-4 text-luma-smoke shrink-0" aria-hidden="true" />
-                <p className="text-xs font-normal text-luma-smoke leading-snug break-words">
-                  {acc.name}
-                </p>
-              </div>
-              {acc.type && (
-                <span
-                  className={`text-xs font-sans font-semibold px-2 py-0.5 rounded-badge border whitespace-nowrap shrink-0 ${getAccountRoleBadge(acc.type).className}`}
-                >
-                  {getAccountRoleBadge(acc.type).label}
-                </span>
-              )}
+            {/* Name on its own line so a role badge never squeezes it onto two lines. */}
+            <div className="flex items-center gap-2 min-w-0">
+              <Wallet className="w-4 h-4 text-luma-smoke shrink-0" aria-hidden="true" />
+              <p className="text-xs font-normal text-luma-smoke leading-snug truncate" title={acc.name}>
+                {acc.name}
+              </p>
             </div>
             <p className="text-lg font-medium text-luma-ivory mt-2 tabular-nums break-words">
               {hideBalance ? <HiddenAmount /> : formatRupiah(acc.balance)}
             </p>
+            {acc.type && (
+              <span
+                className={`inline-flex mt-2 text-xs font-sans font-semibold px-2 py-0.5 rounded-badge border whitespace-nowrap ${getAccountRoleBadge(acc.type).className}`}
+              >
+                {getAccountRoleBadge(acc.type).label}
+              </span>
+            )}
           </div>
         ))}
       </div>

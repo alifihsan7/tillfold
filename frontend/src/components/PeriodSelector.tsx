@@ -1,4 +1,5 @@
 import { DateField } from "@/components/ui/DateField";
+import { formatShortDate } from "@/lib/format";
 import React, { useState, useEffect, useRef, useId } from "react";
 import { Calendar, ChevronDown, Check, Clock, CalendarDays, SlidersHorizontal } from "lucide-react";
 import { authFetch } from "@/lib/api";
@@ -93,7 +94,7 @@ export function PeriodSelector({
     const customOpt: PeriodOption = {
       id: `custom_${customStart}_${customEnd}`,
       type: "custom",
-      label: `Kustom (${customStart} – ${customEnd})`,
+      label: `Kustom · ${formatShortDate(customStart)} – ${formatShortDate(customEnd)}`,
       start: customStart,
       end: customEnd,
     };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatSignedRupiah } from "@/lib/format";
 import { Search, X } from "lucide-react";
 import { authFetch } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
@@ -78,7 +79,7 @@ export function GlobalSearchModal({ isOpen, onClose, onChoose }: Props) {
               className="flex min-h-11 w-full flex-col gap-1 rounded-xl px-3 py-3 text-left text-luma-ivory transition-colors hover:bg-luma-coal focus-visible:outline focus-visible:outline-2 focus-visible:outline-luma-ember sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <span className="min-w-0"><span className="block break-words text-sm font-medium">{result.title}</span>
                 <span className="mt-1 block break-words text-xs text-luma-smoke">{result.subtitle}</span></span>
-              <span className="shrink-0 text-sm tabular-nums">{result.kind === "transaction" ? `${["income", "transfer_in", "adjustment_in"].includes(result.data.type) ? "+" : "−"} ${rupiah.format(result.amount)}` : result.kind === "goal" ? `Target ${rupiah.format(result.amount)}` : rupiah.format(result.amount)}</span>
+              <span className="shrink-0 text-sm tabular-nums">{result.kind === "transaction" ? formatSignedRupiah(result.amount, ["income", "transfer_in", "adjustment_in"].includes(result.data.type), (value) => rupiah.format(value)) : result.kind === "goal" ? `Target ${rupiah.format(result.amount)}` : rupiah.format(result.amount)}</span>
             </button>
           </li>)}
         </ul>

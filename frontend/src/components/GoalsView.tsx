@@ -421,6 +421,17 @@ export function GoalsView({
                       </div>
                     )}
 
+                    {!isCompleted && goal.is_behind_schedule && goal.required_per_cycle ? (
+                      <p role="note" className="flex items-start gap-2 text-xs text-luma-gold">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+                        <span>
+                          {goal.target_date && goal.target_date <= new Date().toLocaleDateString("en-CA")
+                            ? `Deadline sudah lewat, masih kurang ${formatRupiah(goal.required_per_cycle)}.`
+                            : `Perkiraan selesai lewat deadline. Sisihkan ${formatRupiah(goal.required_per_cycle)} per siklus agar tepat waktu.`}
+                        </span>
+                      </p>
+                    ) : null}
+
                     {goal.target_date && (
                       <div className="flex items-center gap-2 text-xs text-luma-smoke pt-0.5">
                         <Calendar className="w-3.5 h-3.5 text-luma-smoke shrink-0" />

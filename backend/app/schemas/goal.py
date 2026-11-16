@@ -37,6 +37,8 @@ class GoalResponse(GoalBase):
     estimated_cycles: Optional[int] = None
     estimated_months: Optional[float] = None
     estimated_finish_date: Optional[date] = None
+    is_behind_schedule: bool = False
+    required_per_cycle: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

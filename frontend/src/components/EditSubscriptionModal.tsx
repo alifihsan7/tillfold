@@ -157,6 +157,7 @@ export function EditSubscriptionModal({
           <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
             <button
               type="button"
+              aria-pressed={billingType === "fixed_day"}
               onClick={() => setBillingType("fixed_day")}
               className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 billingType === "fixed_day"
@@ -169,6 +170,7 @@ export function EditSubscriptionModal({
             </button>
             <button
               type="button"
+              aria-pressed={billingType === "exact_date"}
               onClick={() => {
                 setBillingType("exact_date");
                 if (!exactDueDate) {

@@ -87,7 +87,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Tambah rekening / akun baru"
+      title="Tambah rekening"
       subtitle="Tambahkan rekening bank, dompet digital, atau rekening investasi."
       icon={<Wallet className="w-5 h-5" />}
     >
@@ -116,7 +116,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Tipe / Kategori Pos
+              Tipe rekening
             </label>
             <CustomSelect
               value={type}
@@ -126,7 +126,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
           </div>
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Warna / Aksen
+              Warna
             </label>
             <CustomSelect
               value={color}
@@ -138,7 +138,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
 
         <div>
           <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-            Label / Deskripsi Ringkas
+            Label singkat
           </label>
           <input
             type="text"

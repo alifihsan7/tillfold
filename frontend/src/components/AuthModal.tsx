@@ -266,7 +266,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
-            Daftar Baru
+            Daftar baru
           </button>
         </div>
 
@@ -321,7 +321,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <div className="mt-2.5 p-3.5 rounded-2xl bg-obsidian-panel border border-amberGold/20 text-xs text-zinc-300 space-y-2 animate-fadeIn">
                   <div className="flex items-center gap-1.5 text-amberGold font-medium text-xs">
                     <Info className="w-3.5 h-3.5" />
-                    <span>Langkah Menghubungkan Google OAuth:</span>
+                    <span>Langkah menghubungkan Google OAuth:</span>
                   </div>
                   <ol className="list-decimal list-inside space-y-1 text-xs text-zinc-400 leading-relaxed">
                     <li>Buka <b>Google Cloud Console</b> &rarr; APIs & Services &rarr; Credentials.</li>
@@ -360,7 +360,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <form key="login-form" onSubmit={handleLogin} className="space-y-3.5 animate-fadeIn duration-150">
             <div>
               <label htmlFor="auth-login-id" className="block text-xs font-medium text-zinc-300 mb-1.5">
-                Username atau Email
+                Username atau email
               </label>
               <div className="relative">
                 <AtSign className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -408,7 +408,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 ) : (
                   <>
                     <LogIn className="w-4 h-4" />
-                    Masuk Sekarang
+                    Masuk
                   </>
                 )}
               </button>
@@ -419,7 +419,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <form key="register-form" onSubmit={handleRegister} className="space-y-3 animate-fadeIn duration-150">
             <div>
               <label htmlFor="auth-register-name" className="block text-xs font-medium text-zinc-300 mb-1">
-                Nama Lengkap
+                Nama lengkap
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -507,12 +507,12 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 border-2 border-slate-950/20 border-t-slate-950 rounded-full animate-spin" />
-                    Membuat Akun...
+                    Membuat akun…
                   </span>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4" />
-                    Daftar & Mulai Wizard Setup
+                    Daftar dan mulai pengaturan
                   </>
                 )}
               </button>

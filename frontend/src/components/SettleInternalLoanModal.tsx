@@ -119,7 +119,7 @@ export function SettleInternalLoanModal({
               Detail Kewajiban #{loan.id}
             </span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-luma-gold/15 text-luma-gold border border-luma-gold/30 font-medium">
-              Aktif Terutang
+              Belum lunas
             </span>
           </div>
 
@@ -147,7 +147,7 @@ export function SettleInternalLoanModal({
             {/* Creditor (Yang menerima pelunasan) */}
             <div className="min-w-0 text-right">
               <span className="text-[10px] uppercase font-semibold text-luma-smoke tracking-wider block">
-                Sumber Awal (Penerima)
+                Rekening pemberi pinjaman
               </span>
               <p className="text-xs sm:text-sm font-semibold text-luma-ivory truncate mt-0.5">
                 {loan.source_account_name}
@@ -186,7 +186,7 @@ export function SettleInternalLoanModal({
         {/* Settlement Mode Selection */}
         <div className="space-y-2">
           <label className="block text-xs font-medium text-luma-smoke">
-            Pilihan Pelunasan
+            Cara pelunasan
           </label>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -220,7 +220,7 @@ export function SettleInternalLoanModal({
               }`}
             >
               <Coins className="w-4 h-4 shrink-0" />
-              <span>Cicil / Sebagian</span>
+              <span>Cicil sebagian</span>
             </button>
           </div>
         </div>
@@ -230,7 +230,7 @@ export function SettleInternalLoanModal({
           <div className="space-y-1.5 animate-fadeIn">
             <div className="flex justify-between items-center">
               <label htmlFor="settle-amount-input" className="block text-xs font-medium text-luma-smoke">
-                Nominal Pelunasan
+                Nominal pelunasan
               </label>
               <button
                 type="button"
@@ -259,7 +259,7 @@ export function SettleInternalLoanModal({
         {/* Note Input */}
         <div className="space-y-1.5">
           <label htmlFor="settle-note-input" className="block text-xs font-medium text-luma-smoke">
-            Keterangan Pelunasan (Opsional)
+            Keterangan (opsional)
           </label>
           <input
             id="settle-note-input"

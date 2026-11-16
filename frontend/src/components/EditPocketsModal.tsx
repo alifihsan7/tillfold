@@ -150,7 +150,7 @@ export function EditPocketsModal({
                 </p>
               ) : pocket.slug === "utama" ? (
                 <p className="text-xs text-luma-smoke">
-                  Kantong Utama adalah kas bebas / unallocated pool. Target dapat diisi 0.
+                  Kantong Utama adalah kas bebas yang belum dialokasikan. Targetnya boleh 0.
                 </p>
               ) : null}
             </fieldset>
@@ -182,7 +182,7 @@ export function EditPocketsModal({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
-                Simpan Target
+                Simpan target
               </>
             )}
           </button>

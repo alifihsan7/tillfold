@@ -94,7 +94,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit rekening / akun"
+      title="Ubah rekening"
       subtitle={`Perbarui parameter rekening ${account.name}`}
       icon={<Wallet className="w-5 h-5 text-amberGold" />}
       accent="amber"
@@ -129,7 +129,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Tipe / Kategori Pos
+              Tipe rekening
             </label>
             <CustomSelect
               value={type}
@@ -139,7 +139,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
           </div>
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Warna / Aksen
+              Warna
             </label>
             <CustomSelect
               value={color}
@@ -151,7 +151,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
 
         <div>
           <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-            Label / Deskripsi Ringkas
+            Label singkat
           </label>
           <input
             type="text"

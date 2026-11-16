@@ -101,7 +101,7 @@ export function EditTransactionModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit transaksi"
+      title="Ubah transaksi"
       subtitle={`Ubah data transaksi #${transaction.id}`}
       accent={type === "income" ? "mint" : "coral"}
       maxWidth="md"
@@ -169,7 +169,7 @@ export function EditTransactionModal({
 
         <div>
           <label className="block text-xs font-sans text-zinc-400 mb-1.5">
-            Rekening / Akun
+            Rekening
           </label>
           <CustomSelect
             value={account}

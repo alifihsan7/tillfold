@@ -90,7 +90,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
       isOpen={isOpen}
       onClose={onClose}
       title="Transfer antar rekening"
-      subtitle="Pindah saldo tanpa memotong kuota belanja rutin (Safe-to-Spend tetap terjaga)"
+      subtitle="Pindahkan saldo antar-rekening Anda sendiri."
       icon={<ArrowLeftRight className="w-5 h-5" />}
       accent="cyan"
       maxWidth="md"
@@ -106,7 +106,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Dari Rekening
+              Dari rekening
             </label>
             <CustomSelect
               value={fromAccount}
@@ -117,7 +117,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
 
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Ke Rekening
+              Ke rekening
             </label>
             <CustomSelect
               value={toAccount}
@@ -130,7 +130,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
         {/* Nominal with CurrencyInput */}
         <div>
           <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-            Nominal Transfer
+            Nominal
           </label>
           <CurrencyInput
             value={amount}
@@ -145,7 +145,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
         {/* Catatan / Keterangan */}
         <div>
           <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-            Keterangan / Catatan (Opsional)
+            Catatan (opsional)
           </label>
           <input
             type="text"
@@ -182,7 +182,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
             className="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-cyanHub text-slate-950 hover:brightness-110 rounded-2xl transition inline-flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{loading ? "Memproses..." : "Konfirmasi Transfer"}</span>
+            <span>{loading ? "Memproses..." : "Transfer"}</span>
           </button>
         </div>
       </form>

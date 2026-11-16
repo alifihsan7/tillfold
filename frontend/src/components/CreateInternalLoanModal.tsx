@@ -274,7 +274,7 @@ export function CreateInternalLoanModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Rekening Sumber
+                Rekening sumber
               </label>
               <CustomSelect
                 value={sourceAccountId}
@@ -290,7 +290,7 @@ export function CreateInternalLoanModal({
 
             <div>
               <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Sub-Kantong Sumber (Opsional)
+                Kantong sumber (opsional)
               </label>
               <CustomSelect
                 value={sourcePocketId}
@@ -342,7 +342,7 @@ export function CreateInternalLoanModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Rekening Tujuan
+                Rekening tujuan
               </label>
               <CustomSelect
                 value={targetAccountId}
@@ -358,7 +358,7 @@ export function CreateInternalLoanModal({
 
             <div>
               <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Sub-Kantong Tujuan (Opsional)
+                Kantong tujuan (opsional)
               </label>
               <CustomSelect
                 value={targetPocketId}
@@ -378,7 +378,7 @@ export function CreateInternalLoanModal({
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <label htmlFor="loan-amount-input" className="block text-xs font-medium text-luma-smoke">
-              Nominal Dana Talangan
+              Nominal pinjaman
             </label>
             {sourceAvailableBalance > 0 && (
               <button
@@ -386,7 +386,7 @@ export function CreateInternalLoanModal({
                 onClick={handleSetMax}
                 className="text-xs font-semibold text-luma-gold hover:underline cursor-pointer"
               >
-                Gunakan Maksimal
+                Pakai maksimal
               </button>
             )}
           </div>
@@ -406,7 +406,7 @@ export function CreateInternalLoanModal({
         {/* Note / Keperluan Input */}
         <div className="space-y-1.5">
           <label htmlFor="loan-note-input" className="block text-xs font-medium text-luma-smoke">
-            Keterangan / Keperluan (Opsional)
+            Keperluan (opsional)
           </label>
           <input
             id="loan-note-input"
@@ -423,7 +423,7 @@ export function CreateInternalLoanModal({
         <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-[11px] text-luma-smoke flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-luma-sage shrink-0" />
           <span>
-            Pencatatan ini memicu mutasi ledger transfer kas secara otomatis. Total kekayaan bersih (net worth) Anda tetap utuh.
+            Dicatat sebagai transfer antar-rekening, jadi total kekayaan Anda tidak berubah.
           </span>
         </div>
 

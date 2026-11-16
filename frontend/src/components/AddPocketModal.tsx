@@ -45,7 +45,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
       onClose={() => {
         if (!saving) onClose();
       }}
-      title="Tambah Kantong Sub-Akun"
+      title="Tambah kantong"
       subtitle={`Rekening induk: ${accountName}`}
       icon={<Wallet className="w-5 h-5 text-luma-gold" />}
       accent="amber"
@@ -79,10 +79,10 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
             onChange={setRole}
             disabled={saving}
             options={[
-              { value: "operasional", label: "Operasional / Umum" },
-              { value: "tagihan", label: "Tagihan / Langganan" },
-              { value: "darurat", label: "Dana Darurat" },
-              { value: "tabungan", label: "Tabungan / Impian" },
+              { value: "operasional", label: "Operasional / umum" },
+              { value: "tagihan", label: "Tagihan / langganan" },
+              { value: "darurat", label: "Dana darurat" },
+              { value: "tabungan", label: "Tabungan / impian" },
               { value: "investasi", label: "Investasi" },
             ]}
           />

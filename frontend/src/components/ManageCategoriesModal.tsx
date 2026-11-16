@@ -306,7 +306,7 @@ export function ManageCategoriesModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Kelola kategori transaksi"
-      subtitle="Kustomisasi kategori pengeluaran & pemasukan. Perubahan nama kategori otomatis diperbarui ke seluruh transaksi terkait."
+      subtitle="Atur kategori pengeluaran dan pemasukan. Nama kategori yang diubah ikut diperbarui di semua transaksinya."
       icon={<Tag className="w-5 h-5" />}
       accent={activeTab === "expense" ? "coral" : "mint"}
       maxWidth="lg"
@@ -401,7 +401,7 @@ export function ManageCategoriesModal({
           {/* Color Badge Picker */}
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-              Pilihan Warna Badge:
+              Warna label
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((c) => {
@@ -658,7 +658,7 @@ export function ManageCategoriesModal({
               <div className="space-y-2 bg-obsidian-panel p-3.5 rounded-2xl border border-luma-smokeline">
                 <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                   <ArrowRight className="w-3.5 h-3.5 text-amberGold" />
-                  Pindahkan Transaksi ke Kategori:
+                  Pindahkan transaksi ke kategori
                 </label>
                 <CustomSelect
                   value={fallbackCategory}

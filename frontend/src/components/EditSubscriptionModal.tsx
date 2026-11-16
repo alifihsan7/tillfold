@@ -124,7 +124,7 @@ export function EditSubscriptionModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit tagihan / masa aktif"
+      title="Ubah tagihan"
       subtitle={`Perbarui parameter siklus dan tanggal jatuh tempo untuk ${subscription.name}`}
       accent="amber"
       maxWidth="md"
@@ -266,7 +266,7 @@ export function EditSubscriptionModal({
           </div>
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Akun Pembayaran
+              Rekening pembayaran
             </label>
             <CustomSelect
               value={account}

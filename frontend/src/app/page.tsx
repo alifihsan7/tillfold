@@ -613,8 +613,16 @@ export default function FinanceDashboard() {
     return () => window.removeEventListener("hashchange", handleHashSync);
   }, []);
 
-  // Update URL hash and auto-scroll viewport when activeNav changes
+  // Update URL hash and auto-scroll viewport when activeNav changes.
+  // Skip the first run: on mount the hash is the source of truth, and the
+  // listener above has only just scheduled the matching activeNav. Writing
+  // here would send every deep link and refresh back to #/overview.
+  const hashWriteReadyRef = useRef(false);
   useEffect(() => {
+    if (!hashWriteReadyRef.current) {
+      hashWriteReadyRef.current = true;
+      return;
+    }
     const rawHash = window.location.hash;
     const cleanHash = rawHash.replace(/^#\/?/, "").replace(/\/+$/, "").toLowerCase();
     const currentNav = SLUG_TO_NAV[rawHash] || SLUG_TO_NAV[cleanHash] || SLUG_TO_NAV["#" + cleanHash] || SLUG_TO_NAV["#/" + cleanHash];

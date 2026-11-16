@@ -644,7 +644,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   --ai7-primary: #2d4159;
   --ai7-primary-hover: #202f42;
   --ai7-primary-ink: #fbfcfe;
-  --ai7-field-border: #7b899a;
+  --ai7-field-border: #687688; /* 3.7:1 on #e0e7ef buttons, 4.5:1 on panels */
   --ai7-selected: #dbe5f0;
 }
 :is(.luma-app, .luma-dialog-panel) button.bg-amberGold,

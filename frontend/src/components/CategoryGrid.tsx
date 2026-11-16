@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { SegmentedControl } from "./ui/controls";
 import {
   Tag,
   ArrowUpRight,
@@ -571,30 +572,10 @@ export function CategoryGrid({
           {/* Tipe Selector: Expense vs Income */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-300">Tipe kategori</label>
-            <div className="grid grid-cols-2 gap-2 bg-obsidian-card p-1 rounded-xl border border-luma-smokeline">
-              <button
-                type="button"
-                onClick={() => setAddType("expense")}
-                className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  addType === "expense"
-                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                Pengeluaran (Belanja)
-              </button>
-              <button
-                type="button"
-                onClick={() => setAddType("income")}
-                className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  addType === "income"
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                Pemasukan (Masuk)
-              </button>
-            </div>
+            <SegmentedControl fill label="Tipe kategori" value={addType} onChange={setAddType} options={[
+              { value: "expense", label: "Pengeluaran", tone: "expense" },
+              { value: "income", label: "Pemasukan", tone: "income" },
+            ]} />
           </div>
 
           {/* Nama Kategori */}
@@ -605,7 +586,7 @@ export function CategoryGrid({
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
               placeholder="Contoh: Makan Harian, Langganan AI, Hiburan"
-              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-amberGold/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-400 outline-none transition"
+              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-luma-ember/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-400 outline-none transition"
               autoFocus
             />
           </div>
@@ -623,7 +604,7 @@ export function CategoryGrid({
                     onClick={() => setAddColor(col.id)}
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
-                        ? "border-amberGold bg-amberGold/15 text-white"
+                        ? "ui-selected"
                         : "border-luma-smokeline bg-obsidian-card text-zinc-400 hover:text-white hover:border-white/[0.2]"
                     }`}
                   >
@@ -642,19 +623,19 @@ export function CategoryGrid({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-luma-smokeline">
+          <div className="ui-dialog-actions">
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
               disabled={addLoading}
-              className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white rounded-xl transition cursor-pointer"
+              className="luma-action-secondary"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={addLoading || !addName.trim()}
-              className="px-4 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="luma-action-primary disabled:cursor-not-allowed"
             >
               {addLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Simpan kategori</span>
@@ -682,30 +663,10 @@ export function CategoryGrid({
           {/* Tipe Selector */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-300">Tipe kategori</label>
-            <div className="grid grid-cols-2 gap-2 bg-obsidian-card p-1 rounded-xl border border-luma-smokeline">
-              <button
-                type="button"
-                onClick={() => setEditType("expense")}
-                className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  editType === "expense"
-                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                Pengeluaran (Belanja)
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditType("income")}
-                className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                  editType === "income"
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                Pemasukan (Masuk)
-              </button>
-            </div>
+            <SegmentedControl fill label="Tipe kategori" value={editType} onChange={setEditType} options={[
+              { value: "expense", label: "Pengeluaran", tone: "expense" },
+              { value: "income", label: "Pemasukan", tone: "income" },
+            ]} />
           </div>
 
           {/* Nama Kategori */}
@@ -716,7 +677,7 @@ export function CategoryGrid({
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder="Nama kategori"
-              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-amberGold/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-400 outline-none transition"
+              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-luma-ember/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-400 outline-none transition"
             />
           </div>
 
@@ -733,7 +694,7 @@ export function CategoryGrid({
                     onClick={() => setEditColor(col.id)}
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
-                        ? "border-amberGold bg-amberGold/15 text-white"
+                        ? "ui-selected"
                         : "border-luma-smokeline bg-obsidian-card text-zinc-400 hover:text-white hover:border-white/[0.2]"
                     }`}
                   >
@@ -752,19 +713,19 @@ export function CategoryGrid({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-luma-smokeline">
+          <div className="ui-dialog-actions">
             <button
               type="button"
               onClick={() => setEditingCat(null)}
               disabled={editLoading}
-              className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white rounded-xl transition cursor-pointer"
+              className="luma-action-secondary"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={editLoading || !editName.trim()}
-              className="px-4 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="luma-action-primary disabled:cursor-not-allowed"
             >
               {editLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Simpan perubahan</span>
@@ -837,12 +798,12 @@ export function CategoryGrid({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-luma-smokeline">
+          <div className="ui-dialog-actions">
             <button
               type="button"
               onClick={() => setDeletingCat(null)}
               disabled={deleteLoading}
-              className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white rounded-xl transition cursor-pointer"
+              className="luma-action-secondary"
             >
               Batal
             </button>

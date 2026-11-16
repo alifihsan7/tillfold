@@ -296,7 +296,7 @@ export function UserProfileModal({
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pengaturan akun">
+        <div className="ui-segmented" role="tablist" aria-label="Pengaturan akun">
           <button
             type="button"
             role="tab"
@@ -304,7 +304,7 @@ export function UserProfileModal({
             aria-controls="profile-panel"
             id="profile-tab"
             onClick={() => { setActiveTab("profile"); setMsg(null); }}
-            className={`cursor-pointer ${activeTab === "profile" ? "luma-action-primary" : "luma-action-secondary"}`}
+            className="ui-segment"
           >
             Profil
           </button>
@@ -315,7 +315,7 @@ export function UserProfileModal({
             aria-controls="telegram-panel"
             id="telegram-tab"
             onClick={() => { setActiveTab("telegram"); setMsg(null); }}
-            className={`cursor-pointer ${activeTab === "telegram" ? "luma-action-primary" : "luma-action-secondary"}`}
+            className="ui-segment"
           >
             <Send className="h-4 w-4" />Integrasi Telegram
           </button>
@@ -326,7 +326,7 @@ export function UserProfileModal({
             aria-controls="sheets-panel"
             id="sheets-tab"
             onClick={() => { setActiveTab("sheets"); setMsg(null); }}
-            className={`cursor-pointer ${activeTab === "sheets" ? "luma-action-primary" : "luma-action-secondary"}`}
+            className="ui-segment"
           >
             <FileSpreadsheet className="h-4 w-4" />Google Sheets
           </button>
@@ -464,9 +464,9 @@ export function UserProfileModal({
             <div className="space-y-3 rounded-[var(--ai7-radius-panel)] border border-luma-smokeline bg-luma-coal p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-medium text-luma-ivory">Google Sheets Rapor Keuangan</h3>
+                  <h3 className="font-medium text-luma-ivory">Laporan di Google Sheets</h3>
                   <p className="text-luma-smoke text-xs mt-1">
-                    Hubungkan Google Spreadsheet pribadi untuk membuat cadangan real-time serta visualisasi laporan siklus payroll secara otomatis.
+                    Hubungkan Google Spreadsheet pribadi untuk cadangan otomatis dan laporan tiap siklus gajian.
                   </p>
                 </div>
                 {user.google_spreadsheet_id ? (
@@ -477,7 +477,7 @@ export function UserProfileModal({
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-xs text-luma-smoke font-medium px-2.5 py-1 rounded-full bg-white/[0.04] border border-luma-smokeline shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-luma-smoke"></span>
-                    Belum Terhubung
+                    Belum terhubung
                   </span>
                 )}
               </div>
@@ -494,7 +494,7 @@ export function UserProfileModal({
                     className="inline-flex items-center gap-1.5 text-luma-sage hover:underline font-medium"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Buka Spreadsheet
+                    Buka spreadsheet
                   </a>
                 </div>
               )}
@@ -536,7 +536,7 @@ export function UserProfileModal({
             {/* Input Form */}
             <form onSubmit={handleSaveSheets} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="sheets-link" className="font-medium text-luma-ivory">Google Spreadsheet Link</label>
+                <label htmlFor="sheets-link" className="font-medium text-luma-ivory">Tautan Google Spreadsheet</label>
                 <input
                   id="sheets-link"
                   type="text"

@@ -454,7 +454,7 @@ export default function PaycheckModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-                Total Uang Masuk
+                Total uang masuk
               </label>
               <CurrencyInput
                 value={totalAmountStr}
@@ -531,7 +531,7 @@ export default function PaycheckModal({
             <div className="flex justify-between items-center pb-3 border-b border-luma-smokeline">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-zinc-400 ">
-                  Alokasi Pos (Dapat Disesuaikan)
+                  Pembagian (bisa diubah)
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-sans font-semibold bg-obsidian-card text-zinc-300 border border-luma-smokeline">
                   {buckets.length} Pos
@@ -544,7 +544,7 @@ export default function PaycheckModal({
                 title="Kembalikan ke formula persentase standar"
               >
                 <RotateCcw className="w-3 h-3" />
-                Reset Default
+                Kembalikan bawaan
               </button>
             </div>
 
@@ -567,7 +567,7 @@ export default function PaycheckModal({
                             {b.percentage}%
                           </span>
                           {config.use_gate && b.via_gate && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium text-amberGold bg-amberGold/10 border border-amberGold/20">
+                            <span className="ui-badge ui-badge--neutral">
                               Lewat perantara
                             </span>
                           )}
@@ -597,7 +597,7 @@ export default function PaycheckModal({
             {/* Total Balance Status Banner */}
             <div className="pt-3 border-t border-luma-smokeline flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-400">Total Terbagi:</span>
+                <span className="text-xs text-zinc-400">Total terbagi:</span>
                 <span className="font-sans font-semibold text-sm text-white">
                   Rp {totalAllocated.toLocaleString("id-ID")}
                 </span>
@@ -608,14 +608,14 @@ export default function PaycheckModal({
                 {balanceDifference === 0 ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-mintRise/10 text-mintRise border border-mintRise/20">
                     <Check className="w-3.5 h-3.5" />
-                    Alokasi Seimbang 100%
+                    Terbagi 100%
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amberGold/10 text-amberGold border border-amberGold/20">
                     <AlertCircle className="w-3.5 h-3.5" />
                     Selisih: {balanceDifference > 0 ? "+" : ""}
                     Rp {balanceDifference.toLocaleString("id-ID")}{" "}
-                    {balanceDifference > 0 ? "(Kurang Alokasi)" : "(Kelebihan)"}
+                    {balanceDifference > 0 ? "(belum terbagi semua)" : "(Kelebihan)"}
                   </span>
                 )}
               </div>
@@ -642,7 +642,7 @@ export default function PaycheckModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
+                className="luma-action-secondary"
               >
                 Batal
               </button>
@@ -668,7 +668,7 @@ export default function PaycheckModal({
             <div className="flex justify-between items-center">
               <div>
                 <span className="text-xs font-semibold text-zinc-400 ">
-                  Status Distribusi
+                  Status pembagian
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="font-sans font-semibold text-lg sm:text-xl text-white">
@@ -706,7 +706,7 @@ export default function PaycheckModal({
                   <Check className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-mintRise">Alokasi Gajian Selesai!</h4>
+                  <h4 className="font-semibold text-sm text-mintRise">Pembagian gaji selesai</h4>
                   <p className="text-xs text-zinc-300 mt-0.5">
                     Seluruh transfer alokasi berhasil dicatat ke saldo rekening.
                   </p>
@@ -733,14 +733,14 @@ export default function PaycheckModal({
                   ? `FASE 1: Buka ${config.source_account} (Rekening Hub)`
                   : phaseNum === 2
                   ? `FASE 2: Buka ${config.gate_name} (Distribusi Bebas Admin)`
-                  : "FASE 3: Alokasi Rekening Investasi & Sekunder";
+                  : "Fase 3: rekening investasi dan sekunder";
 
               const phaseColor =
                 phaseNum === 1
-                  ? "border-cyanHub/30 text-cyanHub bg-cyanHub/5"
+                  ? "border-luma-smokeline text-luma-ivory bg-white/[0.03]"
                   : phaseNum === 2
-                  ? "border-amberGold/30 text-amberGold bg-amberGold/5"
-                  : "border-mintRise/30 text-mintRise bg-mintRise/5";
+                  ? "border-luma-smokeline text-luma-ivory bg-white/[0.03]"
+                  : "border-luma-smokeline text-luma-ivory bg-white/[0.03]";
 
               return (
                 <div key={phaseNum} className="space-y-2">
@@ -850,7 +850,7 @@ export default function PaycheckModal({
                   disabled={loading}
                   className="px-4 py-2 text-xs font-semibold text-zinc-300 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
                 >
-                  Tandai Semua Selesai
+                  Tandai semua selesai
                 </button>
               )}
               <button
@@ -1041,7 +1041,7 @@ export default function PaycheckModal({
             <button
               type="button"
               onClick={() => settingsOnly ? onClose() : setView("setup")}
-              className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline rounded-2xl transition cursor-pointer"
+              className="luma-action-secondary"
             >
               Batal
             </button>

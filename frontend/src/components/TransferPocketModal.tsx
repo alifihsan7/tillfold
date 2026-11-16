@@ -175,7 +175,7 @@ export function TransferPocketModal({
           ? `Alokasikan saldo kas fisik antar-kantong di ${accountName}`
           : "Pindah dana kas riil antar sub-kantong"
       }
-      icon={<ArrowLeftRight className="w-5 h-5 text-luma-gold" />}
+      icon={<ArrowLeftRight className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
       maxWidth="md"
     >
@@ -194,7 +194,7 @@ export function TransferPocketModal({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-zinc-300">
-                Dari Kantong (Sumber)
+                Dari kantong
               </label>
               {sourcePocket && (
                 <span className="text-xs text-luma-smoke tabular-nums">
@@ -233,7 +233,7 @@ export function TransferPocketModal({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-zinc-300">
-                Ke Kantong (Tujuan)
+                Ke kantong
               </label>
               {targetPocket && (
                 <span className="text-xs text-luma-smoke tabular-nums">
@@ -267,16 +267,16 @@ export function TransferPocketModal({
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-zinc-300">
-              Nominal Pindah Dana
+              Nominal
             </label>
             {sourceBalance > 0 && (
               <button
                 type="button"
                 onClick={handleSetMax}
                 disabled={loading}
-                className="text-xs text-luma-gold hover:underline cursor-pointer font-medium"
+                className="luma-text-action !min-h-0 !py-0"
               >
-                Pindah Semua ({formatRupiah(sourceBalance)})
+                Pindah semua ({formatRupiah(sourceBalance)})
               </button>
             )}
           </div>
@@ -297,7 +297,7 @@ export function TransferPocketModal({
         {numericAmount > 0 && sourcePocket && targetPocket && fromPocketId !== toPocketId && (
           <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-2">
             <span className="text-xs text-zinc-400 font-medium block">
-              Pratinjau Saldo Setelah Pindah:
+              Saldo setelah dipindah
             </span>
             <div className="grid grid-cols-2 gap-3 text-xs tabular-nums">
               <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
@@ -323,7 +323,7 @@ export function TransferPocketModal({
         {/* Keterangan / Note (Optional) */}
         <div className="space-y-1.5">
           <label htmlFor="pocket-transfer-note" className="text-xs font-semibold text-zinc-300">
-            Catatan / Keperluan (Opsional)
+            Catatan (opsional)
           </label>
           <input
             id="pocket-transfer-note"
@@ -332,8 +332,8 @@ export function TransferPocketModal({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             disabled={loading}
-            placeholder="Contoh: Alokasi iuran bulanan GYM"
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-luma-ivory placeholder-zinc-500 focus:outline-none focus:border-luma-gold transition"
+            placeholder="Contoh: Alokasi iuran bulanan gym"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-luma-ivory placeholder-zinc-500 focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -343,7 +343,7 @@ export function TransferPocketModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2.5 rounded-full border border-luma-smokeline text-xs font-semibold text-luma-smoke hover:bg-white/[0.04] hover:text-luma-ivory transition cursor-pointer disabled:opacity-50 min-h-[44px]"
+            className="luma-action-secondary"
           >
             Batal
           </button>

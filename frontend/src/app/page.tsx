@@ -2849,10 +2849,11 @@ export default function FinanceDashboard() {
             <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
               <button
                 type="button"
+                aria-pressed={subBillingType === "fixed_day"}
                 onClick={() => setSubBillingType("fixed_day")}
                 className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   subBillingType === "fixed_day"
-                    ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
+                    ? "ui-selected"
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -2861,6 +2862,7 @@ export default function FinanceDashboard() {
               </button>
               <button
                 type="button"
+                aria-pressed={subBillingType === "exact_date"}
                 onClick={() => {
                   setSubBillingType("exact_date");
                   if (!subExactDueDate) {
@@ -2871,7 +2873,7 @@ export default function FinanceDashboard() {
                 }}
                 className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   subBillingType === "exact_date"
-                    ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
+                    ? "ui-selected"
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -2882,7 +2884,7 @@ export default function FinanceDashboard() {
                 type="button"
                 aria-pressed={subBillingType === "yearly"}
                 onClick={() => setSubBillingType("yearly")}
-                className={`col-span-2 rounded-xl px-2 py-2 text-xs font-semibold ${subBillingType === "yearly" ? "bg-amberGold text-slate-950" : "text-luma-smoke hover:text-luma-ivory"}`}
+                className={`col-span-2 rounded-xl px-2 py-2 text-xs font-semibold ${subBillingType === "yearly" ? "ui-selected" : "text-luma-smoke hover:text-luma-ivory"}`}
               >
                 Tahunan
               </button>

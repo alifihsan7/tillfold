@@ -103,7 +103,7 @@ export function EditPocketsModal({
           ? `Atur target komitmen sinking fund dalam ${accountName}`
           : "Perbarui target komitmen kantong rekening"
       }
-      icon={<Landmark className="w-5 h-5 text-luma-gold" />}
+      icon={<Landmark className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
       maxWidth="lg"
     >
@@ -150,7 +150,7 @@ export function EditPocketsModal({
                 </p>
               ) : pocket.slug === "utama" ? (
                 <p className="text-xs text-luma-smoke">
-                  Kantong Utama adalah kas bebas / unallocated pool. Target dapat diisi 0.
+                  Kantong Utama adalah kas bebas yang belum dialokasikan. Targetnya boleh 0.
                 </p>
               ) : null}
             </fieldset>
@@ -168,7 +168,7 @@ export function EditPocketsModal({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium text-luma-smoke hover:text-luma-ivory border border-luma-smokeline hover:border-white/[0.16] transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>
@@ -182,7 +182,7 @@ export function EditPocketsModal({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
-                Simpan Target
+                Simpan target
               </>
             )}
           </button>

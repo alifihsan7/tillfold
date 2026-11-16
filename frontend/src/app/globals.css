@@ -1003,6 +1003,7 @@ textarea:focus-visible,
 
 .ui-chip[aria-pressed="true"],
 .ui-segment[aria-pressed="true"],
+.ui-segment[aria-selected="true"],
 .luma-app .ai7-tab-group [role="tab"][aria-selected="true"],
 .luma-sidebar nav button[aria-current] {
   color: var(--ui-selected-ink); background: var(--ui-selected-bg);
@@ -1024,3 +1025,11 @@ textarea:focus-visible,
 .ui-badge--negative { color: var(--luma-coral); border-color: rgb(var(--luma-coral-rgb) / .45); background: rgb(var(--luma-coral-rgb) / .1); }
 .ui-badge--warning { color: var(--luma-gold); border-color: rgb(var(--luma-gold-rgb) / .45); background: rgb(var(--luma-gold-rgb) / .1); }
 .ui-badge--transfer { color: var(--luma-transfer); border-color: rgb(var(--luma-transfer-rgb) / .45); background: rgb(var(--luma-transfer-rgb) / .1); }
+
+/* Dialog-level additions to the shared controls. */
+.ui-segmented--fill { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
+.ui-segment[data-tone="expense"][aria-pressed="true"] { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .12); border-color: rgb(var(--luma-coral-rgb) / .5); }
+.ui-segment[data-tone="income"][aria-pressed="true"] { color: var(--luma-sage); background: rgb(var(--luma-sage-rgb) / .12); border-color: rgb(var(--luma-sage-rgb) / .5); }
+/* Same silver selected state for hand-built pickers (icons, colors, steps). */
+.ui-selected { color: var(--ui-selected-ink) !important; background: var(--ui-selected-bg) !important; border: 1px solid var(--ui-selected-border) !important; font-weight: 600; box-shadow: none !important; }
+.ui-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding-top: 16px; border-top: 1px solid var(--luma-smokeline); }

@@ -45,9 +45,9 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
       onClose={() => {
         if (!saving) onClose();
       }}
-      title="Tambah Kantong Sub-Akun"
+      title="Tambah kantong"
       subtitle={`Rekening induk: ${accountName}`}
-      icon={<Wallet className="w-5 h-5 text-luma-gold" />}
+      icon={<Wallet className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
       maxWidth="md"
     >
@@ -69,7 +69,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
             onChange={(e) => setName(e.target.value)}
             disabled={saving}
             placeholder="Contoh: Tabungan Liburan, Biaya Sekolah"
-            className="w-full px-3.5 py-2.5 border border-luma-smokeline rounded-2xl bg-obsidian-panel text-luma-ivory text-xs sm:text-sm focus:outline-none focus:border-luma-gold transition"
+            className="w-full px-3.5 py-2.5 border border-luma-smokeline rounded-2xl bg-obsidian-panel text-luma-ivory text-xs sm:text-sm focus:outline-none focus:border-luma-ember transition"
           />
         </div>
         <fieldset disabled={saving} className="space-y-1.5">
@@ -79,10 +79,10 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
             onChange={setRole}
             disabled={saving}
             options={[
-              { value: "operasional", label: "Operasional / Umum" },
-              { value: "tagihan", label: "Tagihan / Langganan" },
-              { value: "darurat", label: "Dana Darurat" },
-              { value: "tabungan", label: "Tabungan / Impian" },
+              { value: "operasional", label: "Operasional / umum" },
+              { value: "tagihan", label: "Tagihan / langganan" },
+              { value: "darurat", label: "Dana darurat" },
+              { value: "tabungan", label: "Tabungan / impian" },
               { value: "investasi", label: "Investasi" },
             ]}
           />
@@ -99,7 +99,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
             type="button"
             disabled={saving}
             onClick={onClose}
-            className="min-h-[44px] px-5 py-2.5 rounded-full border border-luma-smokeline text-xs font-semibold text-luma-smoke hover:bg-white/[0.04] hover:text-luma-ivory transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>

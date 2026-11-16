@@ -78,20 +78,24 @@ export interface SegmentedOption<T extends string> {
   value: T;
   label: React.ReactNode;
   icon?: React.ReactNode;
+  /** Money direction: the selected segment takes the expense or income color. */
+  tone?: "expense" | "income";
 }
 
-export function SegmentedControl<T extends string>({ label, value, options, onChange, className }: {
+export function SegmentedControl<T extends string>({ label, value, options, onChange, className, fill }: {
   label: string;
   value: T;
   options: SegmentedOption<T>[];
   onChange: (value: T) => void;
   className?: string;
+  /** Stretch segments to share the full width, as in dialog forms. */
+  fill?: boolean;
 }) {
   return (
-    <div role="group" aria-label={label} className={cx("ui-segmented", className)}>
+    <div role="group" aria-label={label} className={cx("ui-segmented", fill && "ui-segmented--fill", className)}>
       {options.map((option) => (
         <button key={option.value} type="button" className="ui-segment" aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}>
+          data-tone={option.tone} onClick={() => onChange(option.value)}>
           {option.icon && <span className="ui-btn-icon" aria-hidden="true">{option.icon}</span>}
           {option.label}
         </button>

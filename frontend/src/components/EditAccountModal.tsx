@@ -94,9 +94,9 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit rekening / akun"
+      title="Ubah rekening"
       subtitle={`Perbarui parameter rekening ${account.name}`}
-      icon={<Wallet className="w-5 h-5 text-amberGold" />}
+      icon={<Wallet className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,7 +117,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
             placeholder="Misal: BCA, SeaBank, Rekening Utama"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
           />
           {name.trim() !== account.name && (
             <p className="text-xs text-amberGold/80 mt-1">
@@ -129,7 +129,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Tipe / Kategori Pos
+              Tipe rekening
             </label>
             <CustomSelect
               value={type}
@@ -139,7 +139,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
           </div>
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Warna / Aksen
+              Warna
             </label>
             <CustomSelect
               value={color}
@@ -151,14 +151,14 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
 
         <div>
           <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-            Label / Deskripsi Ringkas
+            Label singkat
           </label>
           <input
             type="text"
             placeholder="Misal: Saku Belanja, Tabungan Dingin, Cadangan Pokok"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -166,14 +166,14 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white hover:bg-white/[0.06] transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center gap-2 bg-amberGold text-slate-950 px-5 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm hover:bg-amber-300 transition shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="luma-action-primary"
           >
             {loading ? (
               <span>Menyimpan...</span>

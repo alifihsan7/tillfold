@@ -57,7 +57,7 @@ export function LinkPocketBillModal({ pockets, initialPocketId, accountName, for
     }
   };
 
-  return <CustomModal isOpen onClose={() => { if (!saving) onClose(); }} title="Hubungkan tagihan" subtitle={`Rekening induk: ${accountName}`} icon={<Link2 className="w-5 h-5 text-luma-gold" />} maxWidth="lg">
+  return <CustomModal isOpen onClose={() => { if (!saving) onClose(); }} title="Hubungkan tagihan" subtitle={`Rekening induk: ${accountName}`} icon={<Link2 className="w-5 h-5 text-luma-smoke" />} maxWidth="lg">
     <form onSubmit={submit} className="space-y-4">
       {error && <p role="alert" className="text-sm text-luma-coral">{error}</p>}
       <fieldset disabled={saving}>
@@ -77,9 +77,9 @@ export function LinkPocketBillModal({ pockets, initialPocketId, accountName, for
         {eligible.length === 0 && <p className="text-xs text-luma-smoke mt-2">Belum ada tagihan aktif yang tersedia untuk {accountName}. Buat atau atur rekening tagihan di halaman Tagihan.</p>}
       </fieldset>}
       <p className="text-sm text-luma-smoke">Hanya tagihan aktif dari rekening yang sama yang bisa dihubungkan. Satu tagihan untuk satu kantong. Target komitmen otomatis mengikuti nominal per tagihan.</p>
-      <p className="text-xs text-luma-smoke">Pilih “Atur target manual” untuk melepas hubungan. Target terakhir dipertahankan; tagihan nonaktif menghasilkan target 0. Mutasi saldo kas dilakukan terpisah melalui menu Pindah Saldo.</p>
+      <p className="text-xs text-luma-smoke">Pilih “Atur target manual” untuk melepas hubungan. Target terakhir dipertahankan; tagihan nonaktif menghasilkan target 0. Mutasi saldo kas dilakukan terpisah melalui tombol Pindah saldo.</p>
       <div className="flex justify-end gap-2 pt-4 border-t border-luma-smokeline">
-        <button type="button" disabled={saving} onClick={onClose} className="px-4 py-2 border border-luma-smokeline text-luma-smoke">Batal</button>
+        <button type="button" disabled={saving} onClick={onClose} className="luma-action-secondary">Batal</button>
         <button type="submit" disabled={saving || loading || !!loadError || !pocket} className="px-4 py-2 bg-luma-ivory text-luma-charcoal">{saving ? "Menyimpan…" : "Simpan hubungan"}</button>
       </div>
     </form>

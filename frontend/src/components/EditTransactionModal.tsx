@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { SegmentedControl } from "./ui/controls";
 import React, { useState, useEffect } from "react";
 import { CustomModal } from "./ui/CustomModal";
 import { CurrencyInput } from "./ui/CurrencyInput";
@@ -101,7 +102,7 @@ export function EditTransactionModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit transaksi"
+      title="Ubah transaksi"
       subtitle={`Ubah data transaksi #${transaction.id}`}
       accent={type === "income" ? "mint" : "coral"}
       maxWidth="md"
@@ -117,30 +118,10 @@ export function EditTransactionModal({
           <label className="block text-xs font-sans text-zinc-400 mb-2">
             Tipe transaksi
           </label>
-          {isTransfer ? <p className="text-sm text-luma-smoke">{type === "transfer_in" ? "Transfer masuk" : "Transfer keluar"}. Nominal dan tanggal akan diperbarui pada kedua sisi transfer.</p> : <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              className={`py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
-                type === "expense"
-                  ? "bg-coralFall/20 text-coralFall border border-coralFall/40 shadow-xs"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              Pengeluaran
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              className={`py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
-                type === "income"
-                  ? "bg-mintRise/20 text-mintRise border border-mintRise/40 shadow-xs"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              Pemasukan
-            </button>
-          </div>}
+          {isTransfer ? <p className="text-sm text-luma-smoke">{type === "transfer_in" ? "Transfer masuk" : "Transfer keluar"}. Nominal dan tanggal akan diperbarui pada kedua sisi transfer.</p> : <SegmentedControl fill label="Jenis transaksi" value={type === "income" ? "income" : "expense"} onChange={setType} options={[
+            { value: "expense", label: "Pengeluaran", tone: "expense" },
+            { value: "income", label: "Pemasukan", tone: "income" },
+          ]} />}
         </div>
 
         <div>
@@ -169,7 +150,7 @@ export function EditTransactionModal({
 
         <div>
           <label className="block text-xs font-sans text-zinc-400 mb-1.5">
-            Rekening / Akun
+            Rekening
           </label>
           <CustomSelect
             value={account}
@@ -200,24 +181,16 @@ export function EditTransactionModal({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Contoh: Makan siang, bayar wifi..."
             required
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
-        <div className="pt-2 flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 bg-obsidian-panel hover:bg-white/[0.06] border border-luma-smokeline text-zinc-400 hover:text-white rounded-2xl text-sm font-semibold transition cursor-pointer"
-          >
+        <div className="ui-dialog-actions">
+          <button type="button" onClick={onClose} className="luma-action-secondary">
             Batal
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 py-2.5 bg-amberGold hover:bg-amber-300 text-slate-950 font-semibold rounded-2xl text-sm transition disabled:opacity-50 shadow-sm cursor-pointer"
-          >
-            {loading ? "Menyimpan..." : "Simpan perubahan"}
+          <button type="submit" disabled={loading} className="luma-action-primary disabled:cursor-not-allowed">
+            {loading ? "Menyimpan…" : "Simpan perubahan"}
           </button>
         </div>
       </form>

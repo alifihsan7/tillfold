@@ -124,7 +124,7 @@ export function EditSubscriptionModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit tagihan / masa aktif"
+      title="Ubah tagihan"
       subtitle={`Perbarui parameter siklus dan tanggal jatuh tempo untuk ${subscription.name}`}
       accent="amber"
       maxWidth="md"
@@ -145,7 +145,7 @@ export function EditSubscriptionModal({
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -157,10 +157,11 @@ export function EditSubscriptionModal({
           <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
             <button
               type="button"
+              aria-pressed={billingType === "fixed_day"}
               onClick={() => setBillingType("fixed_day")}
               className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 billingType === "fixed_day"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
+                  ? "ui-selected"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
@@ -169,6 +170,7 @@ export function EditSubscriptionModal({
             </button>
             <button
               type="button"
+              aria-pressed={billingType === "exact_date"}
               onClick={() => {
                 setBillingType("exact_date");
                 if (!exactDueDate) {
@@ -179,7 +181,7 @@ export function EditSubscriptionModal({
               }}
               className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 billingType === "exact_date"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
+                  ? "ui-selected"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
@@ -190,7 +192,7 @@ export function EditSubscriptionModal({
               type="button"
               aria-pressed={billingType === "yearly"}
               onClick={() => setBillingType("yearly")}
-              className={`col-span-2 rounded-xl px-2 py-2 text-xs font-semibold ${billingType === "yearly" ? "bg-amberGold text-slate-950" : "text-luma-smoke hover:text-luma-ivory"}`}
+              className={`col-span-2 rounded-xl px-2 py-2 text-xs font-semibold ${billingType === "yearly" ? "ui-selected" : "text-luma-smoke hover:text-luma-ivory"}`}
             >
               Tahunan
             </button>
@@ -224,7 +226,7 @@ export function EditSubscriptionModal({
                 max={31}
                 value={billingDay}
                 onChange={(e) => setBillingDay(e.target.value)}
-                className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white font-sans focus:outline-none focus:border-amberGold transition"
+                className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white font-sans focus:outline-none focus:border-luma-ember transition"
               />
             </div>
           ) : (
@@ -237,7 +239,7 @@ export function EditSubscriptionModal({
                   <button
                     type="button"
                     onClick={() => handleAddDays(30)}
-                    className="text-xs font-sans px-2 py-0.5 rounded-full bg-amberGold/15 text-amberGold hover:bg-amberGold/25 transition inline-flex items-center gap-1 cursor-pointer"
+                    className="ai7-amount-preset"
                   >
                     <Sparkles className="w-2.5 h-2.5" />
                     +30 Hari
@@ -266,7 +268,7 @@ export function EditSubscriptionModal({
           </div>
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-              Akun Pembayaran
+              Rekening pembayaran
             </label>
             <CustomSelect
               value={account}
@@ -287,7 +289,7 @@ export function EditSubscriptionModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Contoh: Paket bulanan"
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -295,14 +297,14 @@ export function EditSubscriptionModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 bg-obsidian-panel hover:bg-white/[0.06] border border-luma-smokeline text-zinc-400 hover:text-white rounded-2xl text-xs sm:text-sm font-semibold transition cursor-pointer"
+            className="luma-action-secondary flex-1"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 py-2.5 bg-amberGold hover:bg-amber-300 text-slate-950 font-semibold rounded-2xl text-xs sm:text-sm transition disabled:opacity-50 shadow-sm cursor-pointer"
+            className="luma-action-primary flex-1"
           >
             {loading ? "Menyimpan..." : "Simpan perubahan"}
           </button>

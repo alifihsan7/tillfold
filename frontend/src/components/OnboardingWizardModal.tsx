@@ -310,6 +310,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
             return (
               <div
                 key={s.num}
+                aria-current={isActive ? "step" : undefined}
                 className={`flex items-center gap-2 p-2 rounded-2xl border transition ${
                   isActive
                     ? "ui-selected"
@@ -329,7 +330,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
                 >
                   {isDone ? <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" /> : s.num}
                 </div>
-                <div className="hidden sm:block min-w-0">
+                <div className="sr-only sm:not-sr-only sm:block min-w-0">
                   <p className="text-xs font-medium leading-none truncate">{s.label}</p>
                 </div>
               </div>

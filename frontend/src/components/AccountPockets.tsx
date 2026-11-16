@@ -263,18 +263,18 @@ export function Pockets({
           {/* Real Cash Metric Grid */}
           <dl className="mt-3.5 grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
             <div className="min-w-0">
-              <dt className="text-xs text-luma-smoke">Total Saldo Kas</dt>
+              <dt className="text-xs text-luma-smoke">Total saldo</dt>
               <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(totalAccountBalance)}
               </dd>
               <span className="text-[10px] text-zinc-500 block">Saldo kas rekening</span>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-luma-smoke">Kas Bebas (Utama)</dt>
+              <dt className="text-xs text-luma-smoke">Kas bebas</dt>
               <dd className="text-sm font-semibold text-luma-gold tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(utamaBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">Unallocated cash pool</span>
+              <span className="text-[10px] text-zinc-500 block">Belum dialokasikan ke kantong</span>
             </div>
             <div className="min-w-0">
               <dt className="text-xs text-luma-smoke">Saldo Sub-Kantong</dt>
@@ -389,7 +389,7 @@ export function Pockets({
                           {pocket.name}
                         </span>
                         <span className="text-[10px] text-luma-smoke capitalize block">
-                          {isUtama ? "Kas Utama Bebas" : pocket.role || "Sub-Akun"}
+                          {isUtama ? "Kas utama bebas" : pocket.role || "Sub-Akun"}
                         </span>
                       </div>
                     </div>
@@ -475,7 +475,7 @@ export function Pockets({
                       className="inline-flex items-center gap-1.5 text-luma-gold hover:text-amber-300 font-medium transition cursor-pointer"
                     >
                       <ArrowLeftRight className="w-3.5 h-3.5" aria-hidden="true" />
-                      <span>Alokasikan ke Kantong Lain</span>
+                      <span>Alokasikan ke kantong lain</span>
                     </button>
                   ) : (
                     <button
@@ -490,7 +490,7 @@ export function Pockets({
                       className="inline-flex items-center gap-1.5 text-luma-smoke hover:text-luma-ivory transition cursor-pointer"
                     >
                       <ArrowLeftRight className="w-3.5 h-3.5" aria-hidden="true" />
-                      <span>{balance > 0 ? "Pindah Dana" : "Isi dari Kas Utama"}</span>
+                      <span>{balance > 0 ? "Pindah dana" : "Isi dari Kas Utama"}</span>
                     </button>
                   )}
 

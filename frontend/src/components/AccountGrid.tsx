@@ -94,21 +94,21 @@ export function getDefaultTagForType(type?: string): string {
   const t = (type || "").toLowerCase().trim();
   switch (t) {
     case "operasional":
-      return "Pos Operasional & Saku Harian";
+      return "Operasional & saku harian";
     case "tagihan":
-      return "Pos Tagihan & Autodebet";
+      return "Tagihan & autodebet";
     case "gajian":
-      return "Rekening Pemasukan Utama";
+      return "Rekening pemasukan utama";
     case "tabungan":
-      return "Pos Tabungan & Simpanan";
+      return "Tabungan & simpanan";
     case "investasi":
-      return "Pos Investasi Portofolio";
+      return "Investasi";
     case "darurat":
-      return "Cadangan Proteksi Darurat";
+      return "Dana darurat";
     case "ewallet":
-      return "Dompet Digital / E-Wallet";
+      return "Dompet digital";
     default:
-      return "Rekening Kas Aktif";
+      return "Rekening aktif";
   }
 }
 
@@ -186,7 +186,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Rekening Utama",
-      tag: "Pos Operasional & Saku Harian",
+      tag: "Operasional & saku harian",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -199,7 +199,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Tabungan",
-      tag: "Pos Tabungan & Simpanan",
+      tag: "Tabungan & simpanan",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -212,7 +212,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Investasi",
-      tag: "Pos Investasi Portofolio",
+      tag: "Investasi",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -225,7 +225,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Dana Darurat",
-      tag: "Cadangan Proteksi Darurat",
+      tag: "Dana darurat",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -414,7 +414,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
               {acc.is_archived ? <p className="text-xs text-luma-smoke">Diarsipkan · tersedia di riwayat</p> : isInvest ? (
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-0.5 text-xs text-luma-sage font-sans">
-                    <span className="whitespace-nowrap">Target Portofolio</span>
+                    <span className="whitespace-nowrap">Target portofolio</span>
                     <span className="whitespace-nowrap font-semibold tabular-nums">+{formatRupiah(acc.allocated)}/siklus</span>
                   </div>
                   <div className="h-1.5 bg-black/25 rounded-full overflow-hidden">

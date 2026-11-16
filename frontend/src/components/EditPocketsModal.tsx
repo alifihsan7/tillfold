@@ -97,7 +97,7 @@ export function EditPocketsModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Atur Target Kantong Rekening"
+      title="Atur target kantong"
       subtitle={
         accountName
           ? `Atur target komitmen sinking fund dalam ${accountName}`

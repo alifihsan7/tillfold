@@ -181,7 +181,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
             ) : (
               <>
                 <PlusCircle className="w-4 h-4" />
-                <span>Simpan Rekening</span>
+                <span>Simpan rekening</span>
               </>
             )}
           </button>

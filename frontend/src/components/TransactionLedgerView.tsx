@@ -12,7 +12,6 @@ import {
   ArrowLeftRight,
   Calendar,
   Filter,
-  Plus,
   ChevronLeft,
   ChevronRight,
   Receipt,
@@ -40,7 +39,6 @@ interface TransactionLedgerViewProps {
   formatRupiah: (val: number) => string;
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
-  onOpenAddModal: () => void;
   loading?: boolean;
 }
 
@@ -52,7 +50,6 @@ export function TransactionLedgerView({
   formatRupiah,
   onEdit,
   onDelete,
-  onOpenAddModal,
 }: TransactionLedgerViewProps) {
   // Filter States
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -354,14 +351,6 @@ export function TransactionLedgerView({
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={onOpenAddModal}
-              className="px-4 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 font-semibold text-xs sm:text-sm rounded-2xl transition shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span className="hidden sm:inline">Catat transaksi</span>
-            </button>
           </div>
         </div>
 

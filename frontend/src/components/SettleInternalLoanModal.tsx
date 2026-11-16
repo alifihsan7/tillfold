@@ -94,7 +94,7 @@ export function SettleInternalLoanModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Lunasi Dana Talangan Internal"
+      title="Lunasi dana talangan"
       subtitle={`Pelunasan kewajiban dari ${loan.target_account_name} kembali ke ${loan.source_account_name}.`}
       icon={<Coins className="w-5 h-5 text-luma-sage" />}
       accent="sage"
@@ -163,13 +163,13 @@ export function SettleInternalLoanModal({
           {/* Balance comparison */}
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="p-2.5 rounded-xl bg-white/[0.02] border border-luma-smokeline/40">
-              <span className="text-[11px] text-luma-smoke block">Pinjaman Awal</span>
+              <span className="text-[11px] text-luma-smoke block">Pinjaman awal</span>
               <p className="text-xs sm:text-sm font-mono font-medium text-luma-smoke mt-0.5 tabular-nums">
                 {formatRupiah(loan.amount)}
               </p>
             </div>
             <div className="p-2.5 rounded-xl bg-luma-gold/5 border border-luma-gold/20">
-              <span className="text-[11px] text-luma-gold font-medium block">Sisa Kewajiban</span>
+              <span className="text-[11px] text-luma-gold font-medium block">Sisa pinjaman</span>
               <p className="text-xs sm:text-sm font-mono font-bold text-luma-gold mt-0.5 tabular-nums">
                 {formatRupiah(loan.remaining_amount)}
               </p>
@@ -300,7 +300,7 @@ export function SettleInternalLoanModal({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Kembalikan Dana Kas</span>
+                <span>Kembalikan dana</span>
               </>
             )}
           </button>

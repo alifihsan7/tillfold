@@ -116,7 +116,7 @@ export function PeriodSelector({
       >
         <Calendar className="w-3.5 h-3.5 text-luma-ivory shrink-0" />
         <span className="min-w-0 flex-1 text-left truncate">
-          {currentPeriod.label || "Pilih Periode"}
+          {currentPeriod.label || "Pilih periode"}
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-slateText-muted shrink-0 transition-transform duration-200 ${
@@ -297,7 +297,7 @@ export function PeriodSelector({
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <label htmlFor={`${popupId}-start`} className="block text-xs text-slateText-muted mb-1">Tanggal Mulai</label>
+                    <label htmlFor={`${popupId}-start`} className="block text-xs text-slateText-muted mb-1">Tanggal mulai</label>
                     <DateField
                       id={`${popupId}-start`}
                       required
@@ -306,7 +306,7 @@ export function PeriodSelector({
                     />
                   </div>
                   <div>
-                    <label htmlFor={`${popupId}-end`} className="block text-xs text-slateText-muted mb-1">Tanggal Selesai</label>
+                    <label htmlFor={`${popupId}-end`} className="block text-xs text-slateText-muted mb-1">Tanggal selesai</label>
                     <DateField
                       id={`${popupId}-end`}
                       required

@@ -819,7 +819,7 @@ export default function FinanceDashboard() {
           setSelectedPeriod({
             id: `cycle_${data.summary.start_date}`,
             type: data.summary.period_type || "cycle",
-            label: data.summary.period_label || "Siklus Aktif",
+            label: data.summary.period_label || "Siklus aktif",
             start: data.summary.start_date,
             end: data.summary.end_date,
             is_current: true,
@@ -1277,7 +1277,7 @@ export default function FinanceDashboard() {
                   {currentUser ? currentUser.full_name : "Masuk / Akun"}
                 </p>
                 <p className="text-xs text-luma-smoke font-sans truncate">
-                  {currentUser ? `@${currentUser.username}` : "Mode Tamu"}
+                  {currentUser ? `@${currentUser.username}` : "Mode tamu"}
                 </p>
               </div>
               {currentUser ? (
@@ -1345,7 +1345,7 @@ export default function FinanceDashboard() {
           </button>
           <button
             onClick={() => setIsMobileDrawerOpen(true)}
-            title="Buka Menu"
+            title="Buka menu"
             aria-label="Buka menu navigasi"
             className="luma-touch min-w-[44px] inline-flex items-center justify-center text-luma-smoke hover:text-luma-ivory bg-white/[0.05] border border-luma-smokeline rounded-full transition active:scale-95 cursor-pointer"
           >
@@ -1499,7 +1499,7 @@ export default function FinanceDashboard() {
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                          <span className="font-semibold truncate">Buka Spreadsheet</span>
+                          <span className="font-semibold truncate">Buka spreadsheet</span>
                         </div>
                         <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-70" />
                       </a>
@@ -1534,7 +1534,7 @@ export default function FinanceDashboard() {
                 <div className="min-w-0 flex-1">
                   <p className="text-luma-ivory font-semibold truncate">{currentUser?.full_name || "Pengguna AI7"}</p>
                   <p className="text-xs text-luma-smoke font-sans truncate">
-                    {currentUser?.telegram_chat_id ? `Telegram ID: ${currentUser.telegram_chat_id}` : "Mode Tamu"}
+                    {currentUser?.telegram_chat_id ? `Telegram ID: ${currentUser.telegram_chat_id}` : "Mode tamu"}
                   </p>
                 </div>
                 {currentUser ? (
@@ -1765,10 +1765,10 @@ export default function FinanceDashboard() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
-                className="luma-touch py-2 px-3 sm:px-4 text-xs font-semibold rounded-full bg-luma-ivory text-luma-charcoal hover:brightness-95 transition inline-flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap active:scale-95 cursor-pointer"
+                className="luma-action-primary shrink-0 whitespace-nowrap"
               >
-                <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-                <span className="font-semibold">Catat transaksi</span>
+                <Plus className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>Catat transaksi</span>
               </button>
             </div>
           </div>
@@ -1778,32 +1778,15 @@ export default function FinanceDashboard() {
           {/* Page Title & Antislop Copy Header */}
           <div className="mb-2 sm:mb-4">
             <h1 className="ai7-type-page tracking-tight text-luma-ivory">
-              {activeNav === "Ringkasan" && "Ringkasan"}
-              {activeNav === "Transaksi" && "Transaksi"}
-              {activeNav === "Anggaran" && "Anggaran"}
-              {activeNav === "Rencana" && (planSubTab === "target" ? "Target tabungan" : "Tagihan")}
-              {activeNav === "Laporan" && "Laporan"}
-              {activeNav === "Pengaturan" && (
-                settingsSubTab === "rekening"
-                  ? "Rekening"
-                  : settingsSubTab === "kantong"
-                  ? "Kantong"
-                  : settingsSubTab === "kategori"
-                  ? "Kategori"
-                  : "Profil dan preferensi"
-              )}
+              {activeNav}
             </h1>
             <p className="text-sm text-luma-smoke mt-1 tabular-nums">
               {activeNav === "Ringkasan" && "Saldo kas dan batas belanja harian."}
               {activeNav === "Transaksi" && "Cari, filter, dan ekspor transaksi."}
               {activeNav === "Anggaran" && "Atur batas belanja dan alokasi pemasukan."}
-              {activeNav === "Rencana" && (planSubTab === "target" ? "Pantau progres target tabungan." : "Tagihan rutin dan tanggal jatuh tempo.")}
+              {activeNav === "Rencana" && "Target tabungan dan tagihan rutin."}
               {activeNav === "Laporan" && "Arus kas, kategori pengeluaran, dan laju belanja."}
-              {activeNav === "Pengaturan" && (
-                settingsSubTab === "kantong"
-                  ? "Atur kantong dan alokasi tiap rekening."
-                  : "Kelola rekening, kategori, tema, dan profil."
-              )}
+              {activeNav === "Pengaturan" && "Rekening, kantong, kategori, tema, dan profil."}
             </p>
           </div>
 
@@ -1863,7 +1846,7 @@ export default function FinanceDashboard() {
                   onClick={() => setIsPaycheckModalOpen(true)}
                   className="luma-touch px-4 py-2 rounded-full text-xs font-semibold bg-luma-sage text-luma-charcoal hover:brightness-105 transition shrink-0 inline-flex items-center justify-center gap-1.5 cursor-pointer self-end sm:self-center"
                 >
-                  <span>Lanjutkan Checklist</span>
+                  <span>Lanjutkan checklist</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -2115,7 +2098,6 @@ export default function FinanceDashboard() {
               formatRupiah={formatRupiah}
               onEdit={(tx) => setTxToEdit(tx)}
               onDelete={(tx) => setTxToDelete(tx)}
-              onOpenAddModal={() => setIsModalOpen(true)}
               loading={loading}
             />
           </div>
@@ -2210,7 +2192,7 @@ export default function FinanceDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-obsidian-panel border border-obsidian-border rounded-lg p-5 space-y-3">
                   <div className="flex justify-between items-center gap-2">
-                    <span className="font-semibold text-slateText-primary text-sm truncate">Komitmen Tagihan Berjalan</span>
+                    <span className="font-semibold text-slateText-primary text-sm truncate">Tagihan berjalan</span>
                     <span className="text-xs font-sans px-2 py-0.5 rounded bg-obsidian-card border border-obsidian-border text-mintRise shrink-0 whitespace-nowrap">
                       Autodebet
                     </span>
@@ -2229,10 +2211,7 @@ export default function FinanceDashboard() {
 
                 <div className="bg-obsidian-panel border border-obsidian-border rounded-lg p-5 space-y-3">
                   <div className="flex justify-between items-center gap-2">
-                    <span className="font-semibold text-slateText-primary text-sm truncate">Pos Tabungan &amp; Investasi</span>
-                    <span className="text-xs font-sans px-2 py-0.5 rounded bg-obsidian-card border border-obsidian-border text-cyanHub shrink-0 whitespace-nowrap">
-                      Pertumbuhan aset
-                    </span>
+                    <span className="font-semibold text-slateText-primary text-sm truncate">Investasi</span>
                   </div>
                   {loading ? (
                     <Skeleton className="h-7 w-36 rounded-md" />
@@ -2250,7 +2229,7 @@ export default function FinanceDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-obsidian-card border border-obsidian-border rounded-xl p-5 space-y-2">
-                <div className="text-cyanHub font-semibold text-sm">Pos Dana Darurat (Cadangan Likuid)</div>
+                <div className="text-slateText-primary font-semibold text-sm">Dana darurat</div>
                 {loading ? (
                   <Skeleton className="h-8 w-40 rounded-md" />
                 ) : (
@@ -2263,7 +2242,7 @@ export default function FinanceDashboard() {
                 </p>
               </div>
               <div className="bg-obsidian-card border border-obsidian-border rounded-xl p-5 space-y-2">
-                <div className="text-purpleLock font-semibold text-sm">Pos Tabungan Terkunci (Target Tabungan)</div>
+                <div className="text-slateText-primary font-semibold text-sm">Tabungan</div>
                 {loading ? (
                   <Skeleton className="h-8 w-40 rounded-md" />
                 ) : (
@@ -2272,7 +2251,7 @@ export default function FinanceDashboard() {
                   </div>
                 )}
                 <p className="text-xs text-slateText-muted">
-                  {tabunganLabels ? `${tabunganLabels} • Tabungan terpisah terkunci` : "Belum ada rekening tipe Tabungan"}
+                  {tabunganLabels ? `${tabunganLabels} • Saldo riil tabungan` : "Belum ada rekening tipe Tabungan"}
                 </p>
               </div>
             </div>
@@ -2544,7 +2523,7 @@ export default function FinanceDashboard() {
               <div className="space-y-4 animate-fadeIn">
                 <div>
                   <h2 className="ai7-type-section text-white tracking-tight">
-                    Rekening &amp; Dompet Kas
+                    Rekening &amp; dompet
                   </h2>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     Daftar rekening bank fisik, dompet digital, dan pos simpanan kas aktif.
@@ -2605,10 +2584,10 @@ export default function FinanceDashboard() {
                       </div>
                       <div>
                         <h2 className="ai7-type-section text-luma-ivory tracking-tight">
-                          {currentUser?.full_name || "Pengguna Tamu"}
+                          {currentUser?.full_name || "Pengguna tamu"}
                         </h2>
                         <p className="text-xs text-luma-smoke font-sans mt-0.5">
-                          {currentUser ? `@${currentUser.username} • ${currentUser.email || "Email belum disetel"}` : "Mode Tamu (Sesi Lokal)"}
+                          {currentUser ? `@${currentUser.username} • ${currentUser.email || "Email belum disetel"}` : "Mode tamu (sesi lokal)"}
                         </p>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           {currentUser ? (
@@ -2666,7 +2645,7 @@ export default function FinanceDashboard() {
                     </h3>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white/[0.03] border border-luma-smokeline">
                       <div>
-                        <div className="text-xs font-semibold text-luma-ivory">Tema Tampilan</div>
+                        <div className="text-xs font-semibold text-luma-ivory">Tema tampilan</div>
                         <div className="text-xs text-luma-smoke mt-0.5">
                           Ganti palet Ink &amp; Silver antara mode Gelap (Dark Glass) dan Terang.
                         </div>
@@ -2722,7 +2701,7 @@ export default function FinanceDashboard() {
                                 className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                               >
                                 <RefreshCw className={`w-3.5 h-3.5 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
-                                <span>{isSyncingSheets ? "Menyinkronkan..." : "Sync Sekarang"}</span>
+                                <span>{isSyncingSheets ? "Menyinkronkan..." : "Sinkronkan sekarang"}</span>
                               </button>
                               <a
                                 href={`https://docs.google.com/spreadsheets/d/${currentUser.google_spreadsheet_id}`}
@@ -2730,7 +2709,7 @@ export default function FinanceDashboard() {
                                 rel="noopener noreferrer"
                                 className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-luma-sage/15 hover:bg-luma-sage/25 text-luma-sage border border-luma-sage/30 text-xs font-semibold transition inline-flex items-center gap-1.5"
                               >
-                                <span>Buka Spreadsheet</span>
+                                <span>Buka spreadsheet</span>
                                 <ExternalLink className="w-3.5 h-3.5 opacity-80" />
                               </a>
                             </>
@@ -2747,7 +2726,7 @@ export default function FinanceDashboard() {
                             }}
                             className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.10] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition cursor-pointer"
                           >
-                            {currentUser?.google_spreadsheet_id ? "Atur Spreadsheet" : "Tautkan Google Sheets"}
+                            {currentUser?.google_spreadsheet_id ? "Atur spreadsheet" : "Tautkan Google Sheets"}
                           </button>
                         </div>
                       </div>
@@ -2781,7 +2760,7 @@ export default function FinanceDashboard() {
                           </button>
                         </div>
                         <p className="text-[11px] text-luma-smoke">
-                          Di Google Sheets: Klik <span className="text-luma-ivory font-medium">Bagikan (Share)</span>, tambahkan email bot di atas sebagai <span className="text-luma-ivory font-medium">Editor</span>, lalu simpan tautan sheet Anda di pengaturan.
+                          Di Google Sheets: Klik <span className="text-luma-ivory font-medium">Bagikan</span>, tambahkan email bot di atas sebagai <span className="text-luma-ivory font-medium">Editor</span>, lalu simpan tautan sheet Anda di pengaturan.
                         </p>
                       </div>
                     </div>
@@ -2834,7 +2813,7 @@ export default function FinanceDashboard() {
       <CustomModal
         isOpen={isSubModalOpen}
         onClose={() => setIsSubModalOpen(false)}
-        title="Tambah Tagihan Rutin"
+        title="Tambah tagihan rutin"
         subtitle="Pilih akun autodebet dan tanggal jatuh tempo untuk tagihan ini."
         icon={<Bell className="w-5 h-5" />}
         accent="amber"
@@ -3063,7 +3042,7 @@ export default function FinanceDashboard() {
         onConfirm={handleConfirmDeleteSubscription}
         title="Hapus Tagihan?"
         message="Tagihan ini akan hilang dari pemantauan bulanan."
-        confirmText="Hapus Tagihan"
+        confirmText="Hapus tagihan"
         loading={deleteLoading}
       />
 

@@ -417,16 +417,16 @@ export default function PaycheckModal({
       onClose={onClose}
       title={
         view === "checklist"
-          ? "Checklist Eksekusi Gajian Bertahap"
+          ? "Checklist transfer gajian"
           : view === "customize"
           ? "Atur alokasi gaji"
           : config.cycle_type === "monthly" || config.cycle_days === 30
-          ? "Alokasi Gajian Bulanan"
+          ? "Alokasi gajian bulanan"
           : config.cycle_type === "weekly" || config.cycle_days === 7
-          ? "Alokasi Gajian Mingguan"
+          ? "Alokasi gajian mingguan"
           : config.cycle_type === "biweekly" || config.cycle_days === 14
-          ? "Alokasi Gajian 2-Mingguan"
-          : `Alokasi Gajian (Siklus ${config.cycle_days || 14} Hari)`
+          ? "Alokasi gajian 2 mingguan"
+          : `Alokasi gajian (siklus ${config.cycle_days || 14} hari)`
       }
       subtitle={
         view === "checklist"
@@ -650,7 +650,7 @@ export default function PaycheckModal({
                 disabled={loading || !cycleValid || balanceDifference !== 0}
                 className="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-mintRise text-slate-950 hover:brightness-110 rounded-2xl transition inline-flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <span>{loading ? "Menyiapkan..." : "Mulai Checklist Transfer"}</span>
+                <span>{loading ? "Menyiapkan..." : "Mulai checklist transfer"}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -837,7 +837,7 @@ export default function PaycheckModal({
               title="Batalkan sesi ini dan hapus transaksi yang sempat dicatat"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Batalkan Sesi</span>
+              <span>Batalkan sesi</span>
             </button>
 
             <div className="flex items-center gap-2 ml-auto">
@@ -856,7 +856,7 @@ export default function PaycheckModal({
                 onClick={onClose}
                 className="px-5 py-2 text-xs sm:text-sm font-semibold bg-mintRise text-slate-950 hover:brightness-110 rounded-2xl transition cursor-pointer"
               >
-                {isAllCompleted ? "Selesai & Tutup" : "Simpan & Lanjutkan Nanti"}
+                {isAllCompleted ? "Selesai & tutup" : "Simpan & lanjutkan nanti"}
               </button>
             </div>
           </div>

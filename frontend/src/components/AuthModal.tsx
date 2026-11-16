@@ -426,7 +426,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   type="text"
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
-                  placeholder="Nama Lengkap Anda"
+                  placeholder="Nama lengkap"
                   className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-amberGold transition"
                   required
                 />

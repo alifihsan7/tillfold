@@ -19,8 +19,8 @@ interface StrataAllocationBarProps {
 const ALLOCATION_COLORS = Array.from({ length: 8 }, (_, index) => `var(--allocation-${index + 1})`);
 
 const DEFAULT_BUCKETS: BucketAllocationItem[] = [
-  { account: "Rekening Utama", percentage: 50.0, purpose: "Belanja & Operasional" },
-  { account: "Tabungan", percentage: 30.0, purpose: "Simpanan & Cadangan" },
+  { account: "Rekening Utama", percentage: 50.0, purpose: "Belanja & operasional" },
+  { account: "Tabungan", percentage: 30.0, purpose: "Simpanan & cadangan" },
   { account: "Investasi", percentage: 20.0, purpose: "Pertumbuhan aset" },
 ];
 
@@ -68,7 +68,7 @@ export function StrataAllocationBar({
     : cycleDays === 7 || cycleType === "weekly"
     ? "Formula Mingguan (7 Hari)"
     : cycleDays === 14 || cycleType === "biweekly"
-    ? "Formula 2-Mingguan (14 Hari)"
+    ? "Formula 2 mingguan (14 hari)"
     : `Formula Anggaran (${cycleDays} Hari)`;
 
   const activeBuckets = buckets && buckets.length > 0 ? buckets : DEFAULT_BUCKETS;
@@ -125,7 +125,7 @@ export function StrataAllocationBar({
           const allocatedAmt = Math.round((b.percentage / 100) * effectiveSalary);
           const shortPurpose = b.purpose
             ? b.purpose.split("(")[0].trim()
-            : "Alokasi Pos";
+            : "Alokasi pos";
 
           return (
             <div

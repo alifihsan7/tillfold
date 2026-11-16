@@ -169,7 +169,7 @@ export function TransferPocketModal({
       onClose={() => {
         if (!loading) onClose();
       }}
-      title="Pindah Saldo Kas"
+      title="Pindah saldo kas"
       subtitle={
         accountName
           ? `Alokasikan saldo kas fisik antar-kantong di ${accountName}`
@@ -357,7 +357,7 @@ export function TransferPocketModal({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
-                <span>Pindah Saldo</span>
+                <span>Pindah saldo</span>
               </>
             )}
           </button>

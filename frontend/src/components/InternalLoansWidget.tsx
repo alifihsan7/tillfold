@@ -328,7 +328,7 @@ export function InternalLoansWidget({
                   {/* Remaining Amount & Progress */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline gap-2">
-                      <span className="text-xs text-luma-smoke">Sisa Kewajiban</span>
+                      <span className="text-xs text-luma-smoke">Sisa pinjaman</span>
                       <span className="text-base sm:text-lg font-mono font-bold text-luma-ivory tabular-nums">
                         {formatRupiah(loan.remaining_amount)}
                       </span>

@@ -570,7 +570,7 @@ export function CategoryGrid({
         <form onSubmit={handleAddCategory} className="space-y-4">
           {/* Tipe Selector: Expense vs Income */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Tipe Kategori</label>
+            <label className="text-xs font-semibold text-zinc-300">Tipe kategori</label>
             <div className="grid grid-cols-2 gap-2 bg-obsidian-card p-1 rounded-xl border border-luma-smokeline">
               <button
                 type="button"
@@ -612,7 +612,7 @@ export function CategoryGrid({
 
           {/* Pilihan Warna */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Warna Aksen</label>
+            <label className="text-xs font-semibold text-zinc-300">Warna aksen</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((col) => {
                 const isSelected = addColor === col.id;
@@ -657,7 +657,7 @@ export function CategoryGrid({
               className="px-4 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               {addLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>Simpan Kategori</span>
+              <span>Simpan kategori</span>
             </button>
           </div>
         </form>
@@ -681,7 +681,7 @@ export function CategoryGrid({
         <form onSubmit={handleUpdateCategory} className="space-y-4">
           {/* Tipe Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Tipe Kategori</label>
+            <label className="text-xs font-semibold text-zinc-300">Tipe kategori</label>
             <div className="grid grid-cols-2 gap-2 bg-obsidian-card p-1 rounded-xl border border-luma-smokeline">
               <button
                 type="button"
@@ -722,7 +722,7 @@ export function CategoryGrid({
 
           {/* Pilihan Warna */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Warna Aksen</label>
+            <label className="text-xs font-semibold text-zinc-300">Warna aksen</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((col) => {
                 const isSelected = editColor === col.id;
@@ -791,7 +791,7 @@ export function CategoryGrid({
         <div className="space-y-4">
           <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline flex items-center justify-between">
             <div>
-              <div className="text-xs text-zinc-400">Kategori Target</div>
+              <div className="text-xs text-zinc-400">Kategori tujuan</div>
               <div className="text-sm font-semibold text-white mt-0.5">{deletingCat?.name}</div>
             </div>
             <span
@@ -815,7 +815,7 @@ export function CategoryGrid({
                 </span>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Pindahkan Transaksi Ke</label>
+                <label className="text-xs font-semibold text-zinc-300">Pindahkan transaksi ke</label>
                 <CustomSelect
                   value={fallbackCategory}
                   onChange={(val) => setFallbackCategory(val)}

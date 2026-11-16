@@ -86,7 +86,7 @@ export function CreateInternalLoanModal({
     const opts: SelectOption[] = [
       {
         value: "",
-        label: "Tanpa Kantong (Saldo Rekening Langsung)",
+        label: "Tanpa kantong (saldo rekening langsung)",
         description: "Gunakan saldo umum rekening",
       },
     ];
@@ -111,7 +111,7 @@ export function CreateInternalLoanModal({
     const opts: SelectOption[] = [
       {
         value: "",
-        label: "Tanpa Kantong (Saldo Rekening Langsung)",
+        label: "Tanpa kantong (saldo rekening langsung)",
         description: "Masuk ke saldo umum rekening",
       },
     ];

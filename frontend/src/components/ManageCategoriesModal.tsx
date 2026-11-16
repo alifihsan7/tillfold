@@ -305,7 +305,7 @@ export function ManageCategoriesModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Kelola Kategori Transaksi"
+      title="Kelola kategori transaksi"
       subtitle="Kustomisasi kategori pengeluaran & pemasukan. Perubahan nama kategori otomatis diperbarui ke seluruh transaksi terkait."
       icon={<Tag className="w-5 h-5" />}
       accent={activeTab === "expense" ? "coral" : "mint"}
@@ -707,7 +707,7 @@ export function ManageCategoriesModal({
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>
-                      {getTxCount(deletingCat.name) > 0 ? "Pindahkan & Hapus" : "Hapus kategori"}
+                      {getTxCount(deletingCat.name) > 0 ? "Pindahkan & hapus" : "Hapus kategori"}
                     </span>
                   </>
                 )}

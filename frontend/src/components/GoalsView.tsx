@@ -234,29 +234,11 @@ export function GoalsView({
         </div>
       </div>
 
-      {/* Action Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-1">
-        <div>
-          <h2 className="ai7-type-section text-luma-ivory tracking-tight flex items-center gap-2.5">
-            <Target className="w-5 h-5 text-luma-ember" aria-hidden="true" />
-            Milestone Tracker Tabungan &amp; Investasi
-          </h2>
-          <p className="text-xs sm:text-sm text-luma-smoke mt-1">
-            Pantau progres tabungan dan investasi
-          </p>
-        </div>
+      <h2 className="ai7-type-section text-luma-ivory tracking-tight">
+        Progres tabungan &amp; investasi
+      </h2>
 
-        <button
-          type="button"
-          onClick={onOpenAddModal}
-          className="luma-touch flex items-center gap-2 px-5 py-2.5 bg-luma-ivory text-luma-charcoal font-semibold rounded-full hover:brightness-95 transition text-xs sm:text-sm shrink-0 whitespace-nowrap cursor-pointer active:scale-95"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>Tambah target</span>
-        </button>
-      </div>
-
-      {/* Milestone Cards Grid — Luma smoked glass, Ember/Sage/Gold/Coral bars */}
+      {/* Goal cards */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-7 lg:gap-8">
           {[1, 2, 3].map((i) => (
@@ -359,7 +341,7 @@ export function GoalsView({
                         onClick={() => onEdit(goal)}
                         aria-label={`Ubah target ${goal.name}`}
                         className="luma-touch min-w-[44px] inline-flex items-center justify-center text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.06] rounded-full transition-colors border border-transparent hover:border-white/[0.08] cursor-pointer"
-                        title="Ubah Target"
+                        title="Ubah target"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>

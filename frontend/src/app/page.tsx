@@ -1455,9 +1455,10 @@ export default function FinanceDashboard() {
                     setIsMobileDrawerOpen(false);
                     setIsTransferModalOpen(true);
                   }}
-                  className="luma-touch w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold rounded-full bg-luma-gold/15 text-luma-gold border border-luma-gold/30 hover:bg-luma-gold/25 transition"
+                  type="button"
+                  className="luma-action-secondary w-full !justify-start"
                 >
-                  <ArrowLeftRight className="w-4 h-4 shrink-0" />
+                  <ArrowLeftRight className="w-4 h-4 shrink-0" aria-hidden="true" />
                   <span>Transfer antar rekening</span>
                 </button>
                 <button
@@ -2200,10 +2201,9 @@ export default function FinanceDashboard() {
                     setPlanSubTab("tagihan");
                     window.location.hash = "#/tagihan";
                   }}
-                  className="luma-touch text-xs text-amberGold hover:underline font-medium shrink-0 whitespace-nowrap inline-flex items-center gap-1 group cursor-pointer min-h-[44px]"
+                  className="luma-text-action shrink-0 whitespace-nowrap"
                 >
-                  <span>Lihat tagihan ({subsData.items.length})</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  Lihat tagihan ({subsData.items.length})
                 </button>
               </div>
 
@@ -2802,10 +2802,9 @@ export default function FinanceDashboard() {
                   setActiveNav("Transaksi");
                   window.location.hash = "#/transactions";
                 }}
-                className="luma-touch text-xs font-semibold text-amberGold hover:underline flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                className="luma-text-action"
               >
-                <span>Buka transaksi</span>
-                <span aria-hidden="true">→</span>
+                Buka transaksi
               </button>
             </div>
           </div>

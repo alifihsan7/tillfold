@@ -242,7 +242,7 @@ export function CreateInternalLoanModal({
     <CustomModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Pinjam Dana Talangan Internal"
+      title="Pinjam dana talangan"
       subtitle="Pinjam saldo antar-rekening atau antar-kantong sendiri tanpa mengubah kekayaan bersih."
       icon={<HandCoins className="w-5 h-5 text-luma-gold" />}
       accent="gold"
@@ -433,21 +433,21 @@ export function CreateInternalLoanModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="luma-touch px-4 py-2.5 rounded-2xl border border-luma-smokeline text-xs sm:text-sm font-medium text-luma-smoke hover:text-luma-ivory hover:border-white/[0.16] transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading || !!validationError}
-            className="luma-touch px-5 py-2.5 rounded-2xl bg-luma-gold hover:bg-luma-gold/90 text-luma-charcoal text-xs sm:text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-2 shadow-sm"
+            className="luma-action-primary disabled:cursor-not-allowed"
           >
             {loading ? (
               <span>Memproses...</span>
             ) : (
               <>
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Buat Pinjaman Talangan</span>
+                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                <span>Buat pinjaman</span>
               </>
             )}
           </button>

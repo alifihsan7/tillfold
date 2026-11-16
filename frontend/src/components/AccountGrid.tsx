@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CreditCard, Trash2, AlertTriangle, X, Edit2 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
+import { SegmentedControl } from "./ui/controls";
 import { authFetch } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 import { ReconcileAccountModal } from "./ReconcileAccountModal";
@@ -306,10 +307,11 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Status rekening">
-        <button type="button" aria-pressed={!showArchived} onClick={() => setShowArchived(false)} className={showArchived ? "luma-action-secondary" : "luma-action-primary"}>Aktif ({allDisplayAccounts.filter((account) => !account.is_archived).length})</button>
-        <button type="button" aria-pressed={showArchived} onClick={() => setShowArchived(true)} className={showArchived ? "luma-action-primary" : "luma-action-secondary"}>Arsip ({allDisplayAccounts.filter((account) => account.is_archived).length})</button>
-      </div>
+      <SegmentedControl label="Status rekening" value={showArchived ? "archived" : "active"}
+        onChange={(value) => setShowArchived(value === "archived")} options={[
+          { value: "active", label: `Aktif (${allDisplayAccounts.filter((account) => !account.is_archived).length})` },
+          { value: "archived", label: `Arsip (${allDisplayAccounts.filter((account) => account.is_archived).length})` },
+        ]} />
       {showArchived && <p className="text-sm text-luma-smoke">Saldo dan riwayat rekening arsip tetap tersimpan.</p>}
       {showArchived && !allDisplayAccounts.some((account) => account.is_archived) && <p className="luma-matte p-4 text-sm text-luma-smoke">Belum ada rekening yang diarsipkan.</p>}
       <div className="ai7-account-grid">

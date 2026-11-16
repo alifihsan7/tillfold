@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
+import { Button, Chip } from "./ui/controls";
 import {
   PocketItem,
   PocketsSummaryResponse,
@@ -290,26 +291,13 @@ export function Pockets({
         {/* Action Controls */}
         {showActions && (
           <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
-            <button
-              type="button"
-              onClick={() => openTransferModal()}
-              disabled={!!error || pockets.length < 2}
-              title="Pindah saldo kas fisik antar-kantong"
-              className="luma-action-primary cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <ArrowLeftRight className="w-4 h-4 shrink-0" aria-hidden="true" />
-              <span>Pindah Saldo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditOpen(true)}
-              disabled={!!error || pockets.length === 0}
-              title="Atur target komitmen sinking fund kantong"
-              className="luma-action-secondary cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <Pencil className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span>Atur Target</span>
-            </button>
+            <Button variant="primary" onClick={() => openTransferModal()} disabled={!!error || pockets.length < 2}
+              aria-describedby={pockets.length < 2 ? "pocket-transfer-hint" : undefined} icon={<ArrowLeftRight />}>
+              Pindah saldo
+            </Button>
+            <Button variant="secondary" onClick={() => setIsEditOpen(true)} disabled={!!error || pockets.length === 0} icon={<Pencil />}>
+              Atur target
+            </Button>
             <button
               type="button"
               onClick={() => {
@@ -334,6 +322,11 @@ export function Pockets({
                 <Plus className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span>Tambah</span>
               </button>
+            )}
+            {pockets.length < 2 && !error && (
+              <p id="pocket-transfer-hint" className="basis-full text-xs text-luma-smoke">
+                Pindah saldo butuh minimal dua kantong. Tambah kantong dulu.
+              </p>
             )}
           </div>
         )}
@@ -617,19 +610,9 @@ export function AccountPockets({
           </legend>
           <div className="flex flex-wrap gap-2">
             {available.map((account) => (
-              <button
-                key={account.id}
-                type="button"
-                aria-pressed={account.id === selected.id}
-                onClick={() => setSelectedId(account.id)}
-                className={`min-w-0 max-w-full px-4 py-2 text-left font-medium [overflow-wrap:anywhere] rounded-2xl border transition-colors cursor-pointer ${
-                  account.id === selected.id
-                    ? "bg-luma-ivory text-luma-charcoal border-transparent font-semibold"
-                    : "bg-white/[0.04] text-luma-smoke border-luma-smokeline hover:bg-white/[0.08] hover:text-luma-ivory"
-                }`}
-              >
+              <Chip key={account.id} selected={account.id === selected.id} onClick={() => setSelectedId(account.id)}>
                 {account.name}
-              </button>
+              </Chip>
             ))}
           </div>
         </fieldset>

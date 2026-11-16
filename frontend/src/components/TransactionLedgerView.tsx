@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";
 import { Skeleton } from "./ui/Skeleton";
+import { Chip, ChipRow, SegmentedControl } from "./ui/controls";
 import { TransactionTable, Transaction } from "./TransactionTable";
 import { CategoryItem } from "./ManageCategoriesModal";
 
@@ -209,10 +210,10 @@ export function TransactionLedgerView({
 
   return (
     <div className="space-y-5">
-      <div className="ai7-view-selection flex flex-wrap gap-2" role="group" aria-label="Tampilan transaksi">
-        <button type="button" aria-pressed={viewMode === "list"} className={viewMode === "list" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("list")}><Receipt className="h-4 w-4" aria-hidden="true" /> Daftar</button>
-        <button type="button" aria-pressed={viewMode === "calendar"} className={viewMode === "calendar" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("calendar")}><Calendar className="h-4 w-4" aria-hidden="true" /> Kalender</button>
-      </div>
+      <SegmentedControl label="Tampilan transaksi" value={viewMode} onChange={setViewMode} options={[
+        { value: "list", label: "Daftar", icon: <Receipt /> },
+        { value: "calendar", label: "Kalender", icon: <Calendar /> },
+      ]} />
       {viewMode === "calendar" ? <TransactionCalendar accounts={accounts} account={activeAccount} onAccountChange={(value) => { setActiveAccount(value); setCurrentPage(1); }}
         refreshSignal={transactions} formatRupiah={formatRupiah} onEdit={onEdit} onDelete={onDelete} /> : <>
       <p className="text-sm text-luma-smoke">“Semua waktu” mencakup seluruh riwayat, di luar periode dashboard.</p>
@@ -319,26 +320,14 @@ export function TransactionLedgerView({
         {/* Top Control Bar: Search & Account Pills */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
           {/* Account Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 w-full lg:w-auto max-w-full">
+          <ChipRow label="Filter rekening" className="w-full lg:w-auto lg:max-w-[60%]">
             {accounts.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={activeAccount === tab.id}
-                onClick={() => {
-                  setActiveAccount(tab.id);
-                  setCurrentPage(1);
-                }}
-                className={`ai7-account-selection text-xs px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                  activeAccount === tab.id
-                    ? "text-slate-950 bg-amberGold font-semibold shadow-sm"
-                    : "text-zinc-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-luma-smokeline"
-                }`}
-              >
+              <Chip key={tab.id} selected={activeAccount === tab.id}
+                onClick={() => { setActiveAccount(tab.id); setCurrentPage(1); }}>
                 {tab.label}
-              </button>
+              </Chip>
             ))}
-          </div>
+          </ChipRow>
 
           {/* Search Bar & Quick Add */}
           <div className="flex items-center gap-2 w-full lg:w-auto shrink-0 justify-end">

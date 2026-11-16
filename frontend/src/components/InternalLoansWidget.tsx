@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import { AccountItem } from "./AccountGrid";
 import { Skeleton } from "./ui/Skeleton";
+import { Badge, Button, SegmentedControl } from "./ui/controls";
 import { ConfirmModal } from "./ui/ConfirmModal";
 import { CreateInternalLoanModal } from "./CreateInternalLoanModal";
 import { SettleInternalLoanModal } from "./SettleInternalLoanModal";
@@ -153,86 +154,39 @@ export function InternalLoansWidget({
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-luma-gold/10 border border-luma-gold/30 flex items-center justify-center text-luma-gold shrink-0">
-            <HandCoins className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-[10px] bg-luma-coal border border-luma-smokeline flex items-center justify-center text-luma-smoke shrink-0">
+            <HandCoins className="w-5 h-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 id="internal-loans-title" className="ai7-type-section text-luma-ivory tracking-tight truncate">
-                Dana Talangan Internal
+              <h2 id="internal-loans-title" className="ai7-type-section text-luma-ivory tracking-tight">
+                Dana talangan internal
               </h2>
-              {totalActiveAmount > 0 ? (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-luma-gold/15 text-luma-gold border border-luma-gold/30 tabular-nums">
-                  Kewajiban: {formatRupiah(totalActiveAmount)}
-                </span>
-              ) : (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-luma-sage/15 text-luma-sage border border-luma-sage/30 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Semua Kas Utuh</span>
-                </span>
+              {totalActiveAmount > 0 && (
+                <Badge tone="warning">Belum kembali {formatRupiah(totalActiveAmount)}</Badge>
               )}
             </div>
-            <p className="text-xs text-luma-smoke mt-0.5 truncate">
-              {totalActiveAmount > 0
-                ? `Total kas sedang dipinjam: ${formatRupiah(totalActiveAmount)}`
-                : "Semua dana dingin utuh. Tidak ada pinjaman internal yang berjalan."}
+            <p className="text-sm text-luma-smoke mt-1">
+              Pinjaman sementara antar-rekening Anda, dicatat sampai dikembalikan.
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => fetchLoans(true)}
-            disabled={loading || refreshing}
-            title="Muat ulang daftar talangan"
-            aria-label="Muat ulang daftar talangan"
-            className="luma-touch p-2.5 rounded-2xl border border-luma-smokeline text-luma-smoke hover:text-luma-ivory hover:border-white/[0.16] bg-white/[0.02] transition cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-luma-gold" : ""}`} />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="luma-touch flex-1 sm:flex-initial px-4 py-2.5 rounded-2xl bg-luma-gold hover:bg-luma-gold/90 text-luma-charcoal text-xs sm:text-sm font-semibold transition inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Pinjam Dana</span>
-          </button>
+          <Button variant="secondary" onClick={() => fetchLoans(true)} disabled={loading || refreshing}
+            title="Muat ulang daftar talangan" aria-label="Muat ulang daftar talangan" className="!px-3"
+            icon={<RefreshCw className={refreshing ? "animate-spin" : undefined} />} />
+          <Button variant="secondary" onClick={() => setIsCreateOpen(true)} icon={<Plus />} className="flex-1 sm:flex-initial">
+            Pinjam dana
+          </Button>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-black/25 border border-luma-smokeline/60 w-fit">
-        {[
-          { key: "active", label: "Aktif" },
-          { key: "settled", label: "Lunas" },
-          { key: "all", label: "Semua" },
-        ].map((tab) => {
-          const isActive = statusFilter === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setStatusFilter(tab.key as "active" | "settled" | "all")}
-              className={`luma-touch px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer select-none ${
-                isActive
-                  ? "bg-white/[0.1] text-luma-ivory border border-white/[0.15] shadow-sm"
-                  : "text-luma-smoke hover:text-luma-ivory border border-transparent"
-              }`}
-            >
-              {tab.label}
-              {tab.key === "active" && totalActiveAmount > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-luma-gold/20 text-luma-gold font-mono">
-                  {activeLoansCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl label="Status pinjaman" value={statusFilter} onChange={setStatusFilter} options={[
+        { value: "active", label: activeLoansCount > 0 ? `Aktif (${activeLoansCount})` : "Aktif" },
+        { value: "settled", label: "Lunas" },
+        { value: "all", label: "Semua" },
+      ]} />
 
       {/* Main Content Area */}
       {loading ? (
@@ -260,7 +214,7 @@ export function InternalLoansWidget({
             onClick={() => fetchLoans()}
             className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-xs font-semibold text-luma-ivory transition cursor-pointer"
           >
-            Coba Lagi
+            Coba lagi
           </button>
         </div>
       ) : loans.length === 0 ? (
@@ -271,27 +225,17 @@ export function InternalLoansWidget({
           <div>
             <h3 className="text-sm font-semibold text-luma-ivory">
               {statusFilter === "active"
-                ? "Semua Dana Dingin Utuh"
+                ? "Tidak ada pinjaman berjalan"
                 : statusFilter === "settled"
-                ? "Belum Ada Riwayat Pelunasan"
-                : "Belum Ada Catatan Talangan"}
+                ? "Belum ada pinjaman yang lunas"
+                : "Belum ada catatan talangan"}
             </h3>
-            <p className="text-xs text-luma-smoke max-w-md mx-auto mt-1 leading-relaxed">
-              {statusFilter === "active"
-                ? "Semua dana dingin utuh. Tidak ada pinjaman internal yang berjalan."
-                : "Setiap transaksi pinjam-meminjam antar-rekening Anda akan tercatat rapi di sini."}
+            <p className="text-sm text-luma-smoke max-w-md mx-auto mt-1 leading-relaxed">
+              {statusFilter === "settled"
+                ? "Pinjaman yang sudah dikembalikan akan muncul di sini."
+                : "Saat rekening harian kurang, pakai Pinjam dana untuk meminjam dari rekening simpanan."}
             </p>
           </div>
-          {statusFilter === "active" && (
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="mt-2 px-4 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-luma-smokeline text-xs font-semibold text-luma-ivory transition cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5 text-luma-gold" />
-              <span>Pinjam Dana</span>
-            </button>
-          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">

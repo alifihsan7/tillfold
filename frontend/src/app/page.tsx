@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { useLatest } from "@/lib/useLatest";
 import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
 import { todayWib } from "@/lib/transactionCalendar";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -852,11 +853,12 @@ export default function FinanceDashboard() {
     setLoansRefreshSignal((s) => s + 1);
   };
 
+  const fetchDataRef = useLatest(fetchData);
   useEffect(() => {
     if (currentUser) {
-      fetchData();
+      fetchDataRef.current();
     }
-  }, [selectedPeriod, currentUser]);
+  }, [selectedPeriod, currentUser, fetchDataRef]);
 
   const externalRefreshRef = useRef(() => {});
   externalRefreshRef.current = () => { if (currentUser) void fetchDashboard(true); };

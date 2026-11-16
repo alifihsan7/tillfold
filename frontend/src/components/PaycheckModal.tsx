@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { useLatest } from "@/lib/useLatest";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   ArrowDownLeft,
@@ -187,11 +188,12 @@ export default function PaycheckModal({
     setCustomAmounts(calculated);
   };
 
+  const fetchConfigAndSessionRef = useLatest(fetchConfigAndSession);
   useEffect(() => {
     if (isOpen) {
-      fetchConfigAndSession();
+      fetchConfigAndSessionRef.current();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchConfigAndSessionRef]);
 
   // Recalculate amounts when totalAmountStr changes in setup
   const numTotal = useMemo(() => {

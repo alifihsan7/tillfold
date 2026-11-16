@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useLatest } from "@/lib/useLatest";
 import { LogIn, UserPlus, Shield, AlertCircle, KeyRound, AtSign, User, Info } from "lucide-react";
 import { CustomModal } from "./ui/CustomModal";
 import { setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
@@ -80,6 +81,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     }
   };
 
+  const handleGoogleCredentialRef = useLatest(handleGoogleCredential);
   useEffect(() => {
     if (!isOpen || !googleConfig.client_id) return;
 
@@ -92,7 +94,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             client_id: googleConfig.client_id,
             callback: (res: { credential?: string }) => {
               if (res.credential) {
-                handleGoogleCredential(res.credential);
+                handleGoogleCredentialRef.current(res.credential);
               }
             },
           });
@@ -130,7 +132,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     }
 
     return () => clearTimeout(timer);
-  }, [isOpen, googleConfig.client_id]);
+  }, [isOpen, googleConfig.client_id, handleGoogleCredentialRef]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

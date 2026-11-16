@@ -1,4 +1,5 @@
 import { DateField } from "@/components/ui/DateField";
+import { useLatest } from "@/lib/useLatest";
 import { formatShortDate } from "@/lib/format";
 import React, { useState, useEffect, useRef, useId } from "react";
 import { Calendar, ChevronDown, Check, Clock, CalendarDays, SlidersHorizontal } from "lucide-react";
@@ -39,6 +40,8 @@ export function PeriodSelector({
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const currentPeriodIdRef = useLatest(currentPeriod.id);
+  const onSelectPeriodRef = useLatest(onSelectPeriod);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupId = useId();
 
@@ -56,13 +59,15 @@ export function PeriodSelector({
 
           // Auto-sync initial active cycle if placeholder was passed
           const activeCycle = cycles.find((c) => c.is_current) || cycles[0];
-          if (activeCycle && (currentPeriod.id === "cycle_current" || !currentPeriod.id)) {
-            onSelectPeriod(activeCycle);
+          const selectedId = currentPeriodIdRef.current;
+          if (activeCycle && (selectedId === "cycle_current" || !selectedId)) {
+            onSelectPeriodRef.current(activeCycle);
           }
         }
       })
       .catch((err) => console.error("Error fetching periods:", err));
-  }, []);
+    // Load the period list once; the refs read the selection at response time.
+  }, [currentPeriodIdRef, onSelectPeriodRef]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

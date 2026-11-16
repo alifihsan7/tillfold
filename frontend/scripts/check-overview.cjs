@@ -69,12 +69,15 @@ console.log("PASS: real zero values stay zero; loading is announced without fixt
 
 const { getPocketStatus } = loadComponent(path.resolve(__dirname, "../src/lib/pocketStatus.ts"));
 assert.deepEqual(getPocketStatus(0, 100, -100), { label: "Saldo negatif", tone: "danger", percentage: null });
-assert.equal(getPocketStatus(0, 0, 0).label, "Tanpa plafon");
-assert.equal(getPocketStatus(100, 101, -1).tone, "danger");
-assert.equal(getPocketStatus(100, 100, 0).label, "Batas tercapai");
-assert.equal(getPocketStatus(100, 80, 20).label, "Mendekati batas");
-assert.equal(getPocketStatus(100, 20, 80).label, "Dalam batas");
-console.log("PASS: negative, unset, exhausted and near-limit pockets have distinct, honest statuses.");
+assert.deepEqual(getPocketStatus(-1, 100, false), { label: "Saldo negatif", tone: "danger", percentage: null });
+assert.deepEqual(getPocketStatus(0, 0, true), { label: "Saldo kosong", tone: "neutral", percentage: null });
+assert.deepEqual(getPocketStatus(500, 0, true), { label: "Kas siap pakai", tone: "safe", percentage: null });
+assert.deepEqual(getPocketStatus(500, 0, false), { label: "Kas siap pakai", tone: "safe", percentage: null });
+assert.deepEqual(getPocketStatus(100, 100, false), { label: "Target terpenuhi", tone: "safe", percentage: 100 });
+assert.deepEqual(getPocketStatus(150, 100, false), { label: "Target terpenuhi", tone: "safe", percentage: 100 });
+assert.deepEqual(getPocketStatus(40, 100, false), { label: "Mengisi", tone: "warning", percentage: 40 });
+assert.deepEqual(getPocketStatus(0, 100, false), { label: "Belum terisi", tone: "neutral", percentage: 0 });
+console.log("PASS: negative, empty, free, funded, filling and unfunded pockets have distinct, honest statuses.");
 
 const { CategoryGrid } = loadComponent(path.resolve(__dirname, "../src/components/CategoryGrid.tsx"));
 const categoryMarkup = renderToStaticMarkup(React.createElement(CategoryGrid, {

@@ -39,6 +39,8 @@ export interface GoalItem {
   estimated_cycles: number | null;
   estimated_months: number | null;
   estimated_finish_date: string | null;
+  is_behind_schedule?: boolean;
+  required_per_cycle?: number | null;
   created_at: string;
   updated_at: string;
 }

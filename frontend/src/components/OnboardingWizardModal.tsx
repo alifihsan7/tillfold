@@ -290,7 +290,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
     <CustomModal
       isOpen={isOpen}
       onClose={onClose || (() => {})}
-      title="Setup Awal Finansial Anda"
+      title="Pengaturan awal keuangan"
       subtitle={`Selamat datang ${user?.full_name || ""}! Mari konfigurasi fondasi keuangan Anda`}
       icon={<Layers className="w-4 h-4 text-amber-400" />}
       accent="amber"
@@ -457,7 +457,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {[
                   { id: "biweekly", label: "2-Mingguan", desc: "14 Hari (Bi-Weekly)" },
-                  { id: "monthly_date", label: "Tgl Gajian", desc: `Rutin Tiap Tgl ${paycheckDay}` },
+                  { id: "monthly_date", label: "Tanggal gajian", desc: `Rutin Tiap Tgl ${paycheckDay}` },
                   { id: "monthly", label: "Bulanan", desc: "30 Hari Kalender" },
                   { id: "weekly", label: "Mingguan", desc: "7 Hari (Cepat)" },
                   { id: "custom", label: "Kustom", desc: "Fleksibel N-Hari" },
@@ -682,7 +682,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline space-y-1">
-                <span className="text-xs text-zinc-400 font-medium">Siklus Anggaran</span>
+                <span className="text-xs text-zinc-400 font-medium">Siklus anggaran</span>
                 <p className="font-semibold text-white">
                   {getEffectiveCycleDays()} Hari ({getCycleTypeLabel()})
                 </p>
@@ -701,7 +701,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
               </div>
 
               <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline space-y-1 col-span-2">
-                <span className="text-xs text-zinc-400 font-medium">Alur Gajian & Gate</span>
+                <span className="text-xs text-zinc-400 font-medium">Alur gajian</span>
                 <p className="font-medium text-white">
                   Sumber: <span className="text-amberGold">{sourceAccount}</span> • Gerbang:{" "}
                   <span className="text-mintRise">{useGate ? "Lewat perantara" : "Transfer langsung"}</span>

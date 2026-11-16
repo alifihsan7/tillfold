@@ -1,4 +1,6 @@
 import { DateField } from "@/components/ui/DateField";
+import { useLatest } from "@/lib/useLatest";
+import { formatShortDate } from "@/lib/format";
 import React, { useState, useEffect, useRef, useId } from "react";
 import { Calendar, ChevronDown, Check, Clock, CalendarDays, SlidersHorizontal } from "lucide-react";
 import { authFetch } from "@/lib/api";
@@ -38,6 +40,8 @@ export function PeriodSelector({
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const currentPeriodIdRef = useLatest(currentPeriod.id);
+  const onSelectPeriodRef = useLatest(onSelectPeriod);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupId = useId();
 
@@ -55,13 +59,15 @@ export function PeriodSelector({
 
           // Auto-sync initial active cycle if placeholder was passed
           const activeCycle = cycles.find((c) => c.is_current) || cycles[0];
-          if (activeCycle && (currentPeriod.id === "cycle_current" || !currentPeriod.id)) {
-            onSelectPeriod(activeCycle);
+          const selectedId = currentPeriodIdRef.current;
+          if (activeCycle && (selectedId === "cycle_current" || !selectedId)) {
+            onSelectPeriodRef.current(activeCycle);
           }
         }
       })
       .catch((err) => console.error("Error fetching periods:", err));
-  }, []);
+    // Load the period list once; the refs read the selection at response time.
+  }, [currentPeriodIdRef, onSelectPeriodRef]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -93,7 +99,7 @@ export function PeriodSelector({
     const customOpt: PeriodOption = {
       id: `custom_${customStart}_${customEnd}`,
       type: "custom",
-      label: `Kustom (${customStart} – ${customEnd})`,
+      label: `Kustom · ${formatShortDate(customStart)} – ${formatShortDate(customEnd)}`,
       start: customStart,
       end: customEnd,
     };
@@ -116,7 +122,7 @@ export function PeriodSelector({
       >
         <Calendar className="w-3.5 h-3.5 text-luma-ivory shrink-0" />
         <span className="min-w-0 flex-1 text-left truncate">
-          {currentPeriod.label || "Pilih Periode"}
+          {currentPeriod.label || "Pilih periode"}
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-slateText-muted shrink-0 transition-transform duration-200 ${
@@ -297,7 +303,7 @@ export function PeriodSelector({
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <label htmlFor={`${popupId}-start`} className="block text-xs text-slateText-muted mb-1">Tanggal Mulai</label>
+                    <label htmlFor={`${popupId}-start`} className="block text-xs text-slateText-muted mb-1">Tanggal mulai</label>
                     <DateField
                       id={`${popupId}-start`}
                       required
@@ -306,7 +312,7 @@ export function PeriodSelector({
                     />
                   </div>
                   <div>
-                    <label htmlFor={`${popupId}-end`} className="block text-xs text-slateText-muted mb-1">Tanggal Selesai</label>
+                    <label htmlFor={`${popupId}-end`} className="block text-xs text-slateText-muted mb-1">Tanggal selesai</label>
                     <DateField
                       id={`${popupId}-end`}
                       required

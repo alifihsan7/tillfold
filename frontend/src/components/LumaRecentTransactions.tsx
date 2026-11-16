@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { formatShortDate, formatSignedRupiah } from "@/lib/format";
 import { ArrowRight, Receipt, ArrowUpRight, ArrowDownRight, ArrowLeftRight } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 
@@ -120,13 +121,13 @@ export function LumaRecentTransactions({
                       {tx.description}
                     </p>
                     <p className="text-xs font-sans text-luma-smoke truncate mt-0.5">
-                      {tx.date} · {tx.category} · {tx.account}
+                      {formatShortDate(tx.date)} · {tx.category} · {tx.account}
                     </p>
                   </div>
                   <div
                     className={`text-sm sm:text-base font-semibold font-sans tabular-nums whitespace-nowrap shrink-0 ${amountClass}`}
                   >
-                    {isPositive ? "+" : "-"} {formatRupiah(tx.amount)}
+                    {formatSignedRupiah(tx.amount, isPositive, formatRupiah)}
                   </div>
                   {(onEdit || onDelete) && !isAdjustment && (
                     <div className="flex items-center gap-1 shrink-0 ml-auto">

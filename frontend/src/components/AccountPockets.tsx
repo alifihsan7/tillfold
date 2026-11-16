@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
+import { Button, Chip } from "./ui/controls";
 import {
   PocketItem,
   PocketsSummaryResponse,
@@ -262,25 +263,25 @@ export function Pockets({
           {/* Real Cash Metric Grid */}
           <dl className="mt-3.5 grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
             <div className="min-w-0">
-              <dt className="text-xs text-luma-smoke">Total Saldo Kas</dt>
+              <dt className="text-xs text-luma-smoke">Total saldo</dt>
               <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(totalAccountBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">Saldo kas rekening</span>
+              <span className="text-xs text-luma-smoke block">Saldo kas rekening</span>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-luma-smoke">Kas Bebas (Utama)</dt>
-              <dd className="text-sm font-semibold text-luma-gold tabular-nums [overflow-wrap:anywhere]">
+              <dt className="text-xs text-luma-smoke">Kas bebas</dt>
+              <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(utamaBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">Unallocated cash pool</span>
+              <span className="text-xs text-luma-smoke block">Belum dialokasikan ke kantong</span>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-luma-smoke">Saldo Sub-Kantong</dt>
-              <dd className="text-sm font-semibold text-luma-sage tabular-nums [overflow-wrap:anywhere]">
+              <dt className="text-xs text-luma-smoke">Saldo sub-kantong</dt>
+              <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(subPocketsBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">
+              <span className="text-xs text-luma-smoke block">
                 {subPockets.length} kantong teralokasi
               </span>
             </div>
@@ -290,26 +291,13 @@ export function Pockets({
         {/* Action Controls */}
         {showActions && (
           <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
-            <button
-              type="button"
-              onClick={() => openTransferModal()}
-              disabled={!!error || pockets.length < 2}
-              title="Pindah saldo kas fisik antar-kantong"
-              className="luma-action-primary cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <ArrowLeftRight className="w-4 h-4 shrink-0" aria-hidden="true" />
-              <span>Pindah Saldo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditOpen(true)}
-              disabled={!!error || pockets.length === 0}
-              title="Atur target komitmen sinking fund kantong"
-              className="luma-action-secondary cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              <Pencil className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span>Atur Target</span>
-            </button>
+            <Button variant="primary" onClick={() => openTransferModal()} disabled={!!error || pockets.length < 2}
+              aria-describedby={pockets.length < 2 ? "pocket-transfer-hint" : undefined} icon={<ArrowLeftRight />}>
+              Pindah saldo
+            </Button>
+            <Button variant="secondary" onClick={() => setIsEditOpen(true)} disabled={!!error || pockets.length === 0} icon={<Pencil />}>
+              Atur target
+            </Button>
             <button
               type="button"
               onClick={() => {
@@ -338,6 +326,11 @@ export function Pockets({
           </div>
         )}
       </div>
+      {showActions && pockets.length < 2 && !error && (
+        <p id="pocket-transfer-hint" className="text-xs text-luma-smoke">
+          Pindah saldo butuh minimal dua kantong. Tambah kantong dulu.
+        </p>
+      )}
 
       {/* Error Banner */}
       {error && (
@@ -395,8 +388,8 @@ export function Pockets({
                         <span className="text-luma-ivory font-semibold text-sm block truncate leading-snug">
                           {pocket.name}
                         </span>
-                        <span className="text-[10px] text-luma-smoke capitalize block">
-                          {isUtama ? "Kas Utama Bebas" : pocket.role || "Sub-Akun"}
+                        <span className="text-xs text-luma-smoke capitalize block">
+                          {isUtama ? "Kas utama bebas" : pocket.role || "Sub-Akun"}
                         </span>
                       </div>
                     </div>
@@ -454,7 +447,7 @@ export function Pockets({
                           className={`h-full transition-all duration-500 rounded-full ${status.bar}`}
                         />
                       </div>
-                      <div className="text-[11px] text-zinc-400 tabular-nums">
+                      <div className="text-xs text-zinc-400 tabular-nums">
                         {balance >= target ? (
                           <span className="text-luma-sage font-medium">
                             Target terpenuhi penuh
@@ -482,7 +475,7 @@ export function Pockets({
                       className="inline-flex items-center gap-1.5 text-luma-gold hover:text-amber-300 font-medium transition cursor-pointer"
                     >
                       <ArrowLeftRight className="w-3.5 h-3.5" aria-hidden="true" />
-                      <span>Alokasikan ke Kantong Lain</span>
+                      <span>Alokasikan ke kantong lain</span>
                     </button>
                   ) : (
                     <button
@@ -497,7 +490,7 @@ export function Pockets({
                       className="inline-flex items-center gap-1.5 text-luma-smoke hover:text-luma-ivory transition cursor-pointer"
                     >
                       <ArrowLeftRight className="w-3.5 h-3.5" aria-hidden="true" />
-                      <span>{balance > 0 ? "Pindah Dana" : "Isi dari Kas Utama"}</span>
+                      <span>{balance > 0 ? "Pindah dana" : "Isi dari Kas Utama"}</span>
                     </button>
                   )}
 
@@ -617,19 +610,9 @@ export function AccountPockets({
           </legend>
           <div className="flex flex-wrap gap-2">
             {available.map((account) => (
-              <button
-                key={account.id}
-                type="button"
-                aria-pressed={account.id === selected.id}
-                onClick={() => setSelectedId(account.id)}
-                className={`min-w-0 max-w-full px-4 py-2 text-left font-medium [overflow-wrap:anywhere] rounded-2xl border transition-colors cursor-pointer ${
-                  account.id === selected.id
-                    ? "bg-luma-ivory text-luma-charcoal border-transparent font-semibold"
-                    : "bg-white/[0.04] text-luma-smoke border-luma-smokeline hover:bg-white/[0.08] hover:text-luma-ivory"
-                }`}
-              >
+              <Chip key={account.id} selected={account.id === selected.id} onClick={() => setSelectedId(account.id)}>
                 {account.name}
-              </button>
+              </Chip>
             ))}
           </div>
         </fieldset>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CreditCard, Trash2, AlertTriangle, X, Edit2 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
+import { SegmentedControl } from "./ui/controls";
 import { authFetch } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 import { ReconcileAccountModal } from "./ReconcileAccountModal";
@@ -43,48 +44,52 @@ const ACCOUNT_COLOR_DOTS: Record<string, string> = {
   ember: "bg-luma-ember", sage: "bg-luma-sage", mintRise: "bg-emerald-500",
 };
 
+// Account role is a category, not a financial status: one neutral badge style,
+// so green, coral and transfer blue keep their meaning elsewhere.
+const ROLE_BADGE_CLASS = "bg-transparent text-luma-smoke border-luma-smokeline";
+
 export function getAccountRoleBadge(type?: string): { label: string; className: string } {
   const t = (type || "").toLowerCase().trim();
   switch (t) {
     case "gajian":
       return {
         label: "Gajian",
-        className: "bg-mintRise/15 text-mintRise border-mintRise/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "operasional":
       return {
         label: "Operasional",
-        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "tagihan":
       return {
         label: "Tagihan",
-        className: "bg-luma-gold/15 text-luma-gold border-luma-gold/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "darurat":
       return {
         label: "Dana darurat",
-        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "tabungan":
       return {
         label: "Tabungan",
-        className: "bg-luma-sage/15 text-luma-sage border-luma-sage/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "investasi":
       return {
         label: "Investasi",
-        className: "bg-luma-sage/15 text-luma-sage border-luma-sage/30",
+        className: ROLE_BADGE_CLASS,
       };
     case "ewallet":
       return {
         label: "E-wallet",
-        className: "bg-luma-transfer/15 text-luma-transfer border-luma-transfer/30",
+        className: ROLE_BADGE_CLASS,
       };
     default:
       return {
         label: type || "Akun",
-        className: "bg-white/[0.06] text-luma-smoke border-luma-smokeline",
+        className: ROLE_BADGE_CLASS,
       };
   }
 }
@@ -93,21 +98,21 @@ export function getDefaultTagForType(type?: string): string {
   const t = (type || "").toLowerCase().trim();
   switch (t) {
     case "operasional":
-      return "Pos Operasional & Saku Harian";
+      return "Operasional & saku harian";
     case "tagihan":
-      return "Pos Tagihan & Autodebet";
+      return "Tagihan & autodebet";
     case "gajian":
-      return "Rekening Pemasukan Utama";
+      return "Rekening pemasukan utama";
     case "tabungan":
-      return "Pos Tabungan & Simpanan";
+      return "Tabungan & simpanan";
     case "investasi":
-      return "Pos Investasi Portofolio";
+      return "Investasi";
     case "darurat":
-      return "Cadangan Proteksi Darurat";
+      return "Dana darurat";
     case "ewallet":
-      return "Dompet Digital / E-Wallet";
+      return "Dompet digital";
     default:
-      return "Rekening Kas Aktif";
+      return "Rekening aktif";
   }
 }
 
@@ -185,7 +190,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Rekening Utama",
-      tag: "Pos Operasional & Saku Harian",
+      tag: "Operasional & saku harian",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -198,7 +203,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Tabungan",
-      tag: "Pos Tabungan & Simpanan",
+      tag: "Tabungan & simpanan",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -211,7 +216,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Investasi",
-      tag: "Pos Investasi Portofolio",
+      tag: "Investasi",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -224,7 +229,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     {
       id: undefined,
       name: "Dana Darurat",
-      tag: "Cadangan Proteksi Darurat",
+      tag: "Dana darurat",
       balance: 0,
       spent: 0,
       allocated: 0,
@@ -306,10 +311,11 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Status rekening">
-        <button type="button" aria-pressed={!showArchived} onClick={() => setShowArchived(false)} className={showArchived ? "luma-action-secondary" : "luma-action-primary"}>Aktif ({allDisplayAccounts.filter((account) => !account.is_archived).length})</button>
-        <button type="button" aria-pressed={showArchived} onClick={() => setShowArchived(true)} className={showArchived ? "luma-action-primary" : "luma-action-secondary"}>Arsip ({allDisplayAccounts.filter((account) => account.is_archived).length})</button>
-      </div>
+      <SegmentedControl label="Status rekening" value={showArchived ? "archived" : "active"}
+        onChange={(value) => setShowArchived(value === "archived")} options={[
+          { value: "active", label: `Aktif (${allDisplayAccounts.filter((account) => !account.is_archived).length})` },
+          { value: "archived", label: `Arsip (${allDisplayAccounts.filter((account) => account.is_archived).length})` },
+        ]} />
       {showArchived && <p className="text-sm text-luma-smoke">Saldo dan riwayat rekening arsip tetap tersimpan.</p>}
       {showArchived && !allDisplayAccounts.some((account) => account.is_archived) && <p className="luma-matte p-4 text-sm text-luma-smoke">Belum ada rekening yang diarsipkan.</p>}
       <div className="ai7-account-grid">
@@ -412,7 +418,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
               {acc.is_archived ? <p className="text-xs text-luma-smoke">Diarsipkan · tersedia di riwayat</p> : isInvest ? (
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-0.5 text-xs text-luma-sage font-sans">
-                    <span className="whitespace-nowrap">Target Portofolio</span>
+                    <span className="whitespace-nowrap">Target portofolio</span>
                     <span className="whitespace-nowrap font-semibold tabular-nums">+{formatRupiah(acc.allocated)}/siklus</span>
                   </div>
                   <div className="h-1.5 bg-black/25 rounded-full overflow-hidden">

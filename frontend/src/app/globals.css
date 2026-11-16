@@ -514,11 +514,12 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-recent li > div:first-child { border: 0; border-radius: var(--ai7-radius-control); background: rgba(0,0,0,.14); width: 38px; height: 38px; }
 .luma-recent .font-semibold { font-weight: 500; }
 .luma-app .luma-recent li[data-new-transaction="true"],
-.luma-app .ai7-ledger-table tbody tr[data-new-transaction="true"] {
+.luma-app .ai7-ledger-table tbody tr[data-new-transaction="true"],
+.luma-app .ai7-ledger-table li[data-new-transaction="true"] {
   background: rgb(var(--luma-transfer-rgb) / .14);
 }
 @media (prefers-reduced-motion: reduce) {
-  .luma-recent li, .ai7-ledger-table tbody tr { transition: none; }
+  .luma-recent li, .ai7-ledger-table tbody tr, .ai7-ledger-table li { transition: none; }
 }
 .light {
   --luma-charcoal-rgb: 233 238 243; --luma-coal-rgb: 224 231 239;
@@ -644,7 +645,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   --ai7-primary: #2d4159;
   --ai7-primary-hover: #202f42;
   --ai7-primary-ink: #fbfcfe;
-  --ai7-field-border: #7b899a;
+  --ai7-field-border: #687688; /* 3.7:1 on #e0e7ef buttons, 4.5:1 on panels */
   --ai7-selected: #dbe5f0;
 }
 :is(.luma-app, .luma-dialog-panel) button.bg-amberGold,
@@ -846,23 +847,8 @@ textarea:focus-visible,
   .transaction-finance-calendar .calendar-value-full { display: block; }
 }
 
-/* Semantic accents: selections share the transfer blue; surfaces stay neutral. */
-.luma-sidebar nav button[aria-current] {
-  color: var(--luma-transfer);
-  background: rgb(var(--luma-transfer-rgb) / .10);
-  border-color: rgb(var(--luma-transfer-rgb) / .4);
-}
-.luma-app .ai7-filters button[aria-pressed="true"],
-.luma-app .ai7-filters button.bg-amberGold:hover {
-  color: var(--luma-transfer);
-  background: rgb(var(--luma-transfer-rgb) / .10);
-  box-shadow: inset 0 -2px var(--luma-transfer);
-}
-.ai7-select-menu button.bg-amberGold\/10 {
-  color: var(--luma-transfer);
-  background: rgb(var(--luma-transfer-rgb) / .10);
-  box-shadow: none;
-}
+/* Semantic accents: transfer blue marks money moving between accounts only.
+   Selections use the shared silver state defined under "Shared controls". */
 .luma-app .luma-flow-line:has(.luma-flow-income) strong { color: var(--luma-sage); }
 .luma-app .luma-flow-line:has(.luma-flow-expense) strong { color: var(--luma-coral); }
 .luma-app .luma-balance-stats > div:first-child svg { color: var(--luma-sage); }
@@ -872,19 +858,6 @@ textarea:focus-visible,
 .luma-app .luma-daily-panel[data-pace="warning"] .luma-daily-amount { color: var(--luma-gold); }
 .luma-app .luma-daily-panel[data-pace="warning"] .luma-quota-track > div { background: var(--luma-gold); }
 
-.luma-app .ai7-account-selection[aria-pressed="true"],
-.luma-app .ai7-view-selection button[aria-pressed="true"],
-.luma-app .ai7-tab-group [role="tab"][aria-selected="true"] {
-  color: var(--luma-transfer);
-  background: rgb(var(--luma-transfer-rgb) / .10);
-  border: 1px solid rgb(var(--luma-transfer-rgb) / .4);
-  box-shadow: none;
-}
-.luma-app .ai7-account-selection[aria-pressed="true"]:hover,
-.luma-app .ai7-view-selection button[aria-pressed="true"]:hover,
-.luma-app .ai7-tab-group [role="tab"][aria-selected="true"]:hover {
-  background: rgb(var(--luma-transfer-rgb) / .16);
-}
 
 /* Categorical colors identify allocations; they do not indicate financial status. */
 .allocation-panel {
@@ -972,3 +945,82 @@ textarea:focus-visible,
     padding: 8px;
   }
 }
+
+/* Shared controls (components/ui/controls.tsx).
+   Buttons act, chips filter, segments switch views, badges label a state.
+   Every selected state, including the sidebar's current page, uses one silver
+   treatment: brighter text, heavier weight and an outline, so it never relies
+   on color alone and never borrows the income/expense/transfer colors. */
+:root {
+  --ui-selected-ink: #f3f3f5;
+  --ui-selected-bg: rgb(212 213 220 / .14);
+  --ui-selected-border: rgb(212 213 220 / .6);
+}
+.light {
+  --ui-selected-ink: #202a37;
+  --ui-selected-bg: rgb(32 42 55 / .07);
+  --ui-selected-border: rgb(32 42 55 / .55);
+}
+
+.ui-btn, .ui-chip, .ui-segment {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; border: 1px solid transparent; border-radius: var(--ai7-radius-control);
+  font: 500 var(--ai7-text-body)/1.2 var(--ai7-font-ui); white-space: nowrap; cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.ui-btn { padding: 0 16px; }
+.ui-btn-icon { display: inline-flex; flex-shrink: 0; }
+.ui-btn-icon svg { width: 16px; height: 16px; }
+:is(.ui-btn, .ui-chip, .ui-segment):focus-visible { outline: 2px solid var(--luma-ember); outline-offset: 2px; }
+:is(.ui-btn, .ui-chip, .ui-segment):disabled { cursor: not-allowed; opacity: .5; }
+
+:is(.luma-app, .luma-dialog-panel) .ui-btn--primary { color: var(--ai7-primary-ink); background: var(--ai7-primary); }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--primary:hover:not(:disabled) { background: var(--ai7-primary-hover); }
+/* Secondary must read as available: full-strength text and the field border. */
+:is(.luma-app, .luma-dialog-panel) .ui-btn--secondary { color: var(--luma-ivory); background: var(--luma-coal); border-color: var(--ai7-field-border); }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--secondary:hover:not(:disabled) { background: var(--ai7-selected); }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--ghost { color: var(--luma-ivory); background: transparent; }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--ghost:hover:not(:disabled) { background: var(--luma-coal); }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--danger { color: var(--luma-coral); background: transparent; border-color: rgb(var(--luma-coral-rgb) / .5); }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--danger:hover:not(:disabled) { background: rgb(var(--luma-coral-rgb) / .1); }
+:is(.ui-btn, .luma-action-primary, .luma-action-secondary):active:not(:disabled) { transform: translateY(1px); }
+
+.ui-chip { padding: 0 14px; color: var(--luma-smoke); background: transparent; border-color: var(--luma-smokeline); }
+.ui-chip:hover:not(:disabled) { color: var(--luma-ivory); background: var(--luma-coal); }
+.ui-chip-row { display: flex; gap: 8px; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scroll-padding-inline: 16px; }
+.ui-chip-row > * { flex-shrink: 0; }
+.ui-chip-row[data-fade-end] { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+.ui-chip-row[data-fade-start] { mask-image: linear-gradient(to right, transparent, #000 40px); }
+.ui-chip-row[data-fade-start][data-fade-end] { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+
+.ui-segmented, .luma-app .ai7-tab-group {
+  display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; max-width: 100%;
+  border: 1px solid var(--luma-smokeline); background: var(--luma-charcoal);
+  border-radius: calc(var(--ai7-radius-control) + 5px);
+}
+.ui-segment, .luma-app .ai7-tab-group [role="tab"] { padding: 0 14px; color: var(--luma-smoke); background: transparent; border: 1px solid transparent; box-shadow: none; }
+.ui-segment:hover:not(:disabled), .luma-app .ai7-tab-group [role="tab"]:hover { color: var(--luma-ivory); background: var(--luma-coal); }
+
+.ui-chip[aria-pressed="true"],
+.ui-segment[aria-pressed="true"],
+.luma-app .ai7-tab-group [role="tab"][aria-selected="true"],
+.luma-sidebar nav button[aria-current] {
+  color: var(--ui-selected-ink); background: var(--ui-selected-bg);
+  border: 1px solid var(--ui-selected-border); font-weight: 600; box-shadow: none;
+}
+.ui-chip[aria-pressed="true"]:hover,
+.ui-segment[aria-pressed="true"]:hover,
+.luma-app .ai7-tab-group [role="tab"][aria-selected="true"]:hover { background: var(--ui-selected-bg); color: var(--ui-selected-ink); }
+.luma-app .ai7-filters button[aria-pressed="true"] { color: var(--ui-selected-ink); background: var(--ui-selected-bg); box-shadow: inset 0 -2px var(--ui-selected-border); font-weight: 600; }
+.ai7-select-menu button.bg-amberGold\/10 { color: var(--ui-selected-ink); background: var(--ui-selected-bg); box-shadow: none; }
+
+.ui-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+  border: 1px solid; border-radius: var(--ai7-radius-badge);
+  font: 500 var(--ai7-text-meta)/1.4 var(--ai7-font-ui); white-space: nowrap;
+}
+.ui-badge--neutral { color: var(--luma-smoke); border-color: var(--luma-smokeline); background: transparent; }
+.ui-badge--positive { color: var(--luma-sage); border-color: rgb(var(--luma-sage-rgb) / .45); background: rgb(var(--luma-sage-rgb) / .1); }
+.ui-badge--negative { color: var(--luma-coral); border-color: rgb(var(--luma-coral-rgb) / .45); background: rgb(var(--luma-coral-rgb) / .1); }
+.ui-badge--warning { color: var(--luma-gold); border-color: rgb(var(--luma-gold-rgb) / .45); background: rgb(var(--luma-gold-rgb) / .1); }
+.ui-badge--transfer { color: var(--luma-transfer); border-color: rgb(var(--luma-transfer-rgb) / .45); background: rgb(var(--luma-transfer-rgb) / .1); }

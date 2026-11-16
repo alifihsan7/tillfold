@@ -35,7 +35,7 @@ export function getPocketStatus(
   // 1. Saldo negatif (anomali kas)
   if (actualBalance < 0) {
     return {
-      label: "Saldo Negatif",
+      label: "Saldo negatif",
       tone: "danger",
       percentage: null,
     };
@@ -45,13 +45,13 @@ export function getPocketStatus(
   if (isFree) {
     if (actualBalance > 0) {
       return {
-        label: "Kas Siap Pakai",
+        label: "Kas siap pakai",
         tone: "safe",
         percentage: null,
       };
     }
     return {
-      label: "Saldo Kosong",
+      label: "Saldo kosong",
       tone: "neutral",
       percentage: null,
     };
@@ -62,7 +62,7 @@ export function getPocketStatus(
 
   if (actualBalance >= actualTarget) {
     return {
-      label: "Target Terpenuhi",
+      label: "Target terpenuhi",
       tone: "safe",
       percentage,
     };
@@ -77,7 +77,7 @@ export function getPocketStatus(
   }
 
   return {
-    label: "Belum Terisi",
+    label: "Belum terisi",
     tone: "neutral",
     percentage: 0,
   };

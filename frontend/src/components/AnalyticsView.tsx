@@ -48,6 +48,7 @@ export interface AnalyticsSummary {
   year: number;
   month_num: number;
   income: number;
+  opening_balance?: number;
   expense: number;
   net: number;
   savings_rate: number;
@@ -107,6 +108,9 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
         </dl>
         {!loading && summary.income > 0 && (
           <p className="mt-4 text-xs text-luma-smoke">Selisih dari pemasukan: {summary.savings_rate.toFixed(1)}%</p>
+        )}
+        {!loading && (summary.opening_balance ?? 0) > 0 && (
+          <p className="mt-1 text-xs text-luma-smoke">Saldo awal {formatRupiah(summary.opening_balance ?? 0)} dicatat terpisah, tidak termasuk pemasukan.</p>
         )}
       </section>
 
@@ -185,7 +189,7 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
               </p>
               <p className="text-sm tabular-nums">
                 {safe.days_remaining > 0
-                  ? <><strong>{money(safe.safe_daily)} per hari</strong> <span className="text-luma-smoke">· {safe.days_remaining} hari tersisa</span></>
+                  ? <><span className="text-luma-smoke">Sisa anggaran dibagi {safe.days_remaining} hari:</span> <strong>{money(safe.safe_daily)} per hari</strong></>
                   : "Siklus selesai"}
               </p>
             </div>

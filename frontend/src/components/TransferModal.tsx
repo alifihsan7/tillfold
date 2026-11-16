@@ -40,7 +40,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
         setToAccount(options[1]?.value || options[0].value);
       }
     }
-  }, [options]);
+  }, [options, fromAccount, toAccount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

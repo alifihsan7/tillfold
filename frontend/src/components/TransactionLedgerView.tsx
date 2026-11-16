@@ -1,4 +1,5 @@
 import { TransactionCalendar } from "./TransactionCalendar";
+import { formatSignedRupiah } from "@/lib/format";
 import { authFetch } from "@/lib/api";
 import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
 import { DateField } from "@/components/ui/DateField";
@@ -12,13 +13,13 @@ import {
   ArrowLeftRight,
   Calendar,
   Filter,
-  Plus,
   ChevronLeft,
   ChevronRight,
   Receipt,
 } from "lucide-react";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";
 import { Skeleton } from "./ui/Skeleton";
+import { Chip, ChipRow, SegmentedControl } from "./ui/controls";
 import { TransactionTable, Transaction } from "./TransactionTable";
 import { CategoryItem } from "./ManageCategoriesModal";
 
@@ -39,7 +40,6 @@ interface TransactionLedgerViewProps {
   formatRupiah: (val: number) => string;
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
-  onOpenAddModal: () => void;
   loading?: boolean;
 }
 
@@ -51,7 +51,6 @@ export function TransactionLedgerView({
   formatRupiah,
   onEdit,
   onDelete,
-  onOpenAddModal,
 }: TransactionLedgerViewProps) {
   // Filter States
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -67,7 +66,7 @@ export function TransactionLedgerView({
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
-  const [history, setHistory] = useState<{ items: Transaction[]; total: number; income: number; expense: number; net: number }>({ items: [], total: 0, income: 0, expense: 0, net: 0 });
+  const [history, setHistory] = useState<{ items: Transaction[]; total: number; income: number; opening_balance?: number; expense: number; net: number }>({ items: [], total: 0, income: 0, opening_balance: 0, expense: 0, net: 0 });
   const [loading, setLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
   const [retry, setRetry] = useState(0);
@@ -180,7 +179,7 @@ export function TransactionLedgerView({
 
   const totalPages = Math.max(1, Math.ceil(history.total / pageSize));
   const paginatedTransactions = history.items;
-  const stats = { count: history.total, income: history.income, expense: history.expense, net: history.net };
+  const stats = { count: history.total, income: history.income, opening: history.opening_balance ?? 0, expense: history.expense, net: history.net };
 
   // Active filters count
   const activeFiltersCount = useMemo(() => {
@@ -209,10 +208,10 @@ export function TransactionLedgerView({
 
   return (
     <div className="space-y-5">
-      <div className="ai7-view-selection flex flex-wrap gap-2" role="group" aria-label="Tampilan transaksi">
-        <button type="button" aria-pressed={viewMode === "list"} className={viewMode === "list" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("list")}><Receipt className="h-4 w-4" aria-hidden="true" /> Daftar</button>
-        <button type="button" aria-pressed={viewMode === "calendar"} className={viewMode === "calendar" ? "luma-action-primary" : "luma-action-secondary"} onClick={() => setViewMode("calendar")}><Calendar className="h-4 w-4" aria-hidden="true" /> Kalender</button>
-      </div>
+      <SegmentedControl label="Tampilan transaksi" value={viewMode} onChange={setViewMode} options={[
+        { value: "list", label: "Daftar", icon: <Receipt /> },
+        { value: "calendar", label: "Kalender", icon: <Calendar /> },
+      ]} />
       {viewMode === "calendar" ? <TransactionCalendar accounts={accounts} account={activeAccount} onAccountChange={(value) => { setActiveAccount(value); setCurrentPage(1); }}
         refreshSignal={transactions} formatRupiah={formatRupiah} onEdit={onEdit} onDelete={onDelete} /> : <>
       <p className="text-sm text-luma-smoke">“Semua waktu” mencakup seluruh riwayat, di luar periode dashboard.</p>
@@ -259,7 +258,7 @@ export function TransactionLedgerView({
               </div>
             )}
             <p className="text-xs text-zinc-400 mt-0.5 truncate">
-              Pemasukan sesuai filter
+              {stats.opening > 0 ? `Tanpa saldo awal ${formatRupiah(stats.opening)}` : "Pemasukan sesuai filter"}
             </p>
           </div>
         </div>
@@ -303,8 +302,7 @@ export function TransactionLedgerView({
                   stats.net >= 0 ? "text-mintRise" : "text-coralFall"
                 }`}
               >
-                {stats.net >= 0 ? "+" : "-"}
-                {formatRupiah(Math.abs(stats.net))}
+                {formatSignedRupiah(stats.net, stats.net >= 0, formatRupiah)}
               </div>
             )}
             <p className="text-xs text-zinc-400 mt-0.5 truncate">
@@ -319,26 +317,14 @@ export function TransactionLedgerView({
         {/* Top Control Bar: Search & Account Pills */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
           {/* Account Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 w-full lg:w-auto max-w-full">
+          <ChipRow label="Filter rekening" className="w-full lg:w-auto lg:max-w-[60%]">
             {accounts.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={activeAccount === tab.id}
-                onClick={() => {
-                  setActiveAccount(tab.id);
-                  setCurrentPage(1);
-                }}
-                className={`ai7-account-selection text-xs px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                  activeAccount === tab.id
-                    ? "text-slate-950 bg-amberGold font-semibold shadow-sm"
-                    : "text-zinc-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-luma-smokeline"
-                }`}
-              >
+              <Chip key={tab.id} selected={activeAccount === tab.id}
+                onClick={() => { setActiveAccount(tab.id); setCurrentPage(1); }}>
                 {tab.label}
-              </button>
+              </Chip>
             ))}
-          </div>
+          </ChipRow>
 
           {/* Search Bar & Quick Add */}
           <div className="flex items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
@@ -365,14 +351,6 @@ export function TransactionLedgerView({
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={onOpenAddModal}
-              className="px-4 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 font-semibold text-xs sm:text-sm rounded-2xl transition shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span className="hidden sm:inline">Catat transaksi</span>
-            </button>
           </div>
         </div>
 

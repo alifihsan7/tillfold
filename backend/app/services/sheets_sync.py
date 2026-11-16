@@ -10,7 +10,7 @@ from sqlalchemy import func, case, desc
 
 from app.core.config import settings
 from app.models.transaction import Transaction
-from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
+from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
 from app.models.account import Account
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
 from app.models.user import User
@@ -90,22 +90,17 @@ def sync_cycle_snapshot(
     sheet_title = f"Siklus {format_date_short_id(cycle_start_date)} - {format_date_id(cycle_end_date)}"
 
     # 2. Ambil data ringkasan siklus
-    totals = db.query(
-        Transaction.type,
-        func.coalesce(func.sum(Transaction.amount), 0).label("total")
+    income_sum, opening_sum, expense_sum = db.query(
+        func.coalesce(func.sum(case((is_earned_income(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((is_opening_balance(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)), 0),
     ).filter(
         Transaction.user_id == user_id,
         Transaction.date >= cycle_start_date,
         Transaction.date < query_end_date
-    ).group_by(Transaction.type).all()
-
-    income_total = 0
-    expense_total = 0
-    for r in totals:
-        if r.type == "income":
-            income_total = int(r.total)
-        elif r.type == "expense":
-            expense_total = int(r.total)
+    ).one()
+    income_total = int(income_sum)
+    expense_total = int(expense_sum)
 
     # Mandiri Safe to Spend
     total_days = cycle_days

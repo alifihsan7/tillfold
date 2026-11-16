@@ -56,6 +56,7 @@ def compute_goal_metrics(goal: Goal, user_id: int, db: Session) -> dict:
     est_months = None
     est_finish_date = None
 
+    cycle_days = 14
     if remaining == 0:
         est_cycles = 0
         est_months = 0.0
@@ -69,6 +70,19 @@ def compute_goal_metrics(goal: Goal, user_id: int, db: Session) -> dict:
             days = est_cycles * cycle_days
             est_finish_date = today + timedelta(days=days)
             est_months = round(days / 30.417, 1)
+
+    # Deadline check: flag goals whose estimate lands after the target date and
+    # say how much each cycle must set aside to finish on time.
+    is_behind_schedule = False
+    required_per_cycle = None
+    if remaining > 0 and goal.target_date:
+        if goal.target_date <= today:
+            is_behind_schedule = True
+            required_per_cycle = remaining
+        else:
+            cycles_left = max(1, math.ceil((goal.target_date - today).days / cycle_days))
+            required_per_cycle = math.ceil(remaining / cycles_left)
+            is_behind_schedule = est_finish_date is not None and est_finish_date > goal.target_date
 
     return {
         "id": goal.id,
@@ -89,7 +103,9 @@ def compute_goal_metrics(goal: Goal, user_id: int, db: Session) -> dict:
         "remaining_amount": remaining,
         "estimated_cycles": est_cycles,
         "estimated_months": est_months,
-        "estimated_finish_date": est_finish_date
+        "estimated_finish_date": est_finish_date,
+        "is_behind_schedule": is_behind_schedule,
+        "required_per_cycle": required_per_cycle,
     }
 
 @router.get("", response_model=List[GoalResponse])

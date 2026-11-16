@@ -8,6 +8,8 @@ import { HiddenAmount } from "./ui/HiddenAmount";
 interface LumaOverviewProps {
   totalBalance: number;
   income: number;
+  /** Opening balances recorded in the period; shown apart, never added to income. */
+  openingBalance?: number;
   expense: number;
   accountCount: number;
   safeDaily: number;
@@ -31,7 +33,7 @@ interface LumaOverviewProps {
   onToggleBalance?: () => void;
 }
 
-export function LumaOverview({ totalBalance, income, expense, accountCount, safeDaily,
+export function LumaOverview({ totalBalance, income, openingBalance = 0, expense, accountCount, safeDaily,
   pocketAccount, pocketRemaining, pocketBudget, dayOfCycle, cycleDays, daysRemaining,
   paceStatus, periodEnded, formatRupiah, loading, isGuest, error, onRetry, onSignIn,
   onAddTransaction, onOpenPaycheck, hideBalance = false, onToggleBalance }: LumaOverviewProps) {
@@ -95,6 +97,7 @@ export function LumaOverview({ totalBalance, income, expense, accountCount, safe
         <div className="luma-flow-line"><span>Masuk</span><div className="luma-flow-track"><div style={{ width: `${Math.max(0, income) / flowMax * 100}%` }} className="luma-flow-income" /></div><strong>{privateAmount(income)}</strong></div>
         <div className="luma-flow-line"><span>Keluar</span><div className="luma-flow-track"><div style={{ width: `${Math.max(0, expense) / flowMax * 100}%` }} className="luma-flow-expense" /></div><strong>{privateAmount(expense)}</strong></div>
         <div className="luma-flow-net"><span>Selisih</span><span className={income - expense < 0 ? "text-luma-coral" : "text-luma-ivory"}>{privateAmount(income - expense)}</span></div>
+        {openingBalance > 0 && <p className="mt-3 text-xs text-luma-smoke">Saldo awal {privateAmount(openingBalance)} dicatat terpisah, tidak termasuk pemasukan.</p>}
       </section>
       <section className="luma-matte luma-daily-panel" data-pace={paceStatus} aria-label="Batas belanja harian">
         <div className="luma-section-heading"><h2>Batas belanja harian</h2></div>

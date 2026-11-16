@@ -68,7 +68,7 @@ cd tillfold
 # Buat dan aktifkan virtual environment
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt   # pakai requirements-dev.txt untuk menjalankan test
 
 # Buat berkas konfigurasi
 cp .env.example backend/.env

@@ -35,6 +35,7 @@ from app.schemas.transaction import (
 from app.services.receipt_service import record_receipt_mutation
 from app.core.config import settings
 from app.core.transfer import find_paired_transfer
+from app.core.ledger import is_earned_income, is_opening_balance
 from app.services.paycheck_cycles import receipt_allocations
 
 router = APIRouter()
@@ -115,16 +116,18 @@ def transaction_history(
     query = filtered_transactions(db, current_user.id, start_date=str(start_date) if start_date else None,
                                   end_date=str(end_date) if end_date else None, category=category,
                                   account=account, type=type, search=search)
-    count, income, expense = query.with_entities(
+    count, income, opening, expense = query.with_entities(
         func.count(Transaction.id),
-        func.coalesce(func.sum(case((Transaction.type == "income", Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((is_earned_income(), Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((is_opening_balance(), Transaction.amount), else_=0)), 0),
         func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)), 0),
     ).one()
     column = Transaction.amount if sort.startswith("amount") else Transaction.date
     order = column.asc() if sort.endswith("asc") else column.desc()
     items = query.order_by(order, Transaction.id.desc()).offset(skip).limit(limit).all()
     return {"items": [TransactionOut.model_validate(item) for item in items], "total": count,
-            "income": int(income), "expense": int(expense), "net": int(income - expense)}
+            "income": int(income), "opening_balance": int(opening), "expense": int(expense),
+            "net": int(income - expense)}
 
 
 @router.get("/calendar")
@@ -136,10 +139,12 @@ def transaction_calendar(
     start = date(year, month, 1)
     end = date(year, month, monthrange(year, month)[1])
     query = filtered_transactions(db, current_user.id, start_date=str(start), end_date=str(end), account=account)
-    kinds = ("income", "expense", "transfer_in", "transfer_out", "adjustment_in", "adjustment_out")
+    kinds = ("income", "opening_balance", "expense", "transfer_in", "transfer_out", "adjustment_in", "adjustment_out")
+    kind_filter = {"income": is_earned_income(), "opening_balance": is_opening_balance()}
     rows = query.with_entities(
         Transaction.date, func.count(Transaction.id),
-        *(func.coalesce(func.sum(case((Transaction.type == kind, Transaction.amount), else_=0)), 0) for kind in kinds),
+        *(func.coalesce(func.sum(case((kind_filter.get(kind, Transaction.type == kind), Transaction.amount), else_=0)), 0)
+          for kind in kinds),
         func.coalesce(func.sum(case((Transaction.type.in_(("transfer_in", "transfer_out")), 1), else_=0)), 0),
         func.coalesce(func.sum(case((Transaction.type.in_(("adjustment_in", "adjustment_out")), 1), else_=0)), 0),
     ).group_by(Transaction.date).order_by(Transaction.date).all()

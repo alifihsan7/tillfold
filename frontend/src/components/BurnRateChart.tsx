@@ -132,7 +132,7 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
                   </div>
                   <div className="space-y-1.5 tabular-nums">
                     <div className="flex items-center justify-between">
-                      <span className="text-luma-smoke">Hari Ini:</span>
+                      <span className="text-luma-smoke">Hari ini:</span>
                       <span className={`font-semibold ${b.spent > idealDailyRate * 1.25 ? "text-luma-coral font-semibold" : "text-luma-ivory"}`}>
                         {formatRupiah(b.spent)}
                       </span>
@@ -144,7 +144,7 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-luma-smoke">Target Ideal:</span>
+                      <span className="text-luma-smoke">Batas ideal:</span>
                       <span className="text-luma-ivory font-medium">
                         {formatRupiah(b.ideal_pace)}
                       </span>
@@ -185,17 +185,17 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-luma-smokeline text-xs font-sans text-luma-smoke tabular-nums">
         <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-          <span>Kecepatan Target:</span>
+          <span>Laju ideal (anggaran dibagi {cycleDays} hari):</span>
           <strong className="text-luma-ivory">{formatRupiah(idealDailyRate)} / hari</strong>
         </div>
         <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-          <span>Kumulatif Target Hari Ini:</span>
+          <span>Batas ideal sampai hari ini:</span>
           <strong className="text-luma-ivory">
             {formatRupiah(summary.safe_to_spend?.ideal_pace_today || 0)}
           </strong>
         </div>
         <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-          <span>Realisasi Saat Ini:</span>
+          <span>Terpakai sampai hari ini:</span>
           <strong
             className={
               (summary.safe_to_spend?.pocket_spent || 0) >

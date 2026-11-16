@@ -84,6 +84,8 @@ class MonthlySummary(BaseModel):
     year: int
     month_num: int
     income: int
+    # Opening balances recorded in the period; never part of income or net.
+    opening_balance: int = 0
     expense: int
     net: int
     savings_rate: float

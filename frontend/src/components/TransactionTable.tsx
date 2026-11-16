@@ -24,6 +24,15 @@ interface TransactionTableProps {
   loading?: boolean;
 }
 
+function rowInfo(tx: Transaction) {
+  const isIncome = tx.type === "income";
+  const isTransfer = tx.type === "transfer_in" || tx.type === "transfer_out";
+  const isAdjustment = tx.type === "adjustment_in" || tx.type === "adjustment_out";
+  const isPositive = isIncome || tx.type === "transfer_in" || tx.type === "adjustment_in";
+  const amountClass = isAdjustment ? "text-luma-ivory" : isTransfer ? "text-luma-transfer" : isIncome ? "text-luma-sage" : "text-luma-coral";
+  return { isTransfer, isAdjustment, isPositive, amountClass };
+}
+
 export function TransactionTable({
   newTransactionIds,
   transactions,
@@ -37,7 +46,40 @@ export function TransactionTable({
   return (
     <div className="ai7-ledger-table luma-glass overflow-hidden">
       <p className="sr-only" role="status">{transactions.some((tx) => newTransactionIds?.has(tx.id)) ? "Transaksi baru ditampilkan." : ""}</p>
-      <div className="overflow-x-auto">
+      {/* Phones: one card per transaction, same pattern as Ringkasan, so nothing scrolls sideways. */}
+      <ul className="md:hidden divide-y divide-luma-smokeline" aria-busy={loading || undefined}>
+        {loading ? [1, 2, 3, 4, 5].map((i) => (
+          <li key={i} className="px-4 py-4 space-y-2"><Skeleton className="w-40 h-4 rounded-full" /><Skeleton className="w-56 h-3 rounded-full" /></li>
+        )) : transactions.length === 0 ? (
+          <li className="px-4 py-12 text-center text-luma-smoke">Tidak ada transaksi yang cocok dengan filter pencarian.</li>
+        ) : transactions.map((tx) => {
+          const { isAdjustment, isPositive, amountClass } = rowInfo(tx);
+          return (
+            <li key={tx.id} data-new-transaction={newTransactionIds?.has(tx.id) || undefined} className="px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-luma-ivory leading-snug break-words">{tx.description}</p>
+                  <p className="text-xs text-luma-smoke mt-0.5 break-words">{formatShortDate(tx.date)} · {tx.category} · {tx.account}</p>
+                </div>
+                <p className={`ai7-type-amount font-semibold whitespace-nowrap shrink-0 ${amountClass}`}>
+                  {formatSignedRupiah(tx.amount, isPositive, formatRupiah)}
+                </p>
+              </div>
+              {showActions && (isAdjustment ? (
+                <p className="text-xs text-luma-smoke mt-1">Rekonsiliasi</p>
+              ) : (
+                <div className="flex justify-end gap-1 -mr-2">
+                  {onEdit && <button type="button" onClick={() => onEdit(tx)} aria-label={`Ubah transaksi ${tx.description}`}
+                    className="luma-touch min-w-[44px] px-2 text-xs font-semibold text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal transition cursor-pointer">Ubah</button>}
+                  {onDelete && <button type="button" onClick={() => onDelete(tx)} aria-label={`Hapus transaksi ${tx.description}`}
+                    className="luma-touch min-w-[44px] px-2 text-xs font-semibold text-luma-coral hover:bg-luma-coral/10 transition cursor-pointer">Hapus</button>}
+                </div>
+              ))}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full min-w-[700px] text-left text-sm border-collapse tabular-nums">
           <thead>
             <tr className="border-b border-luma-smokeline text-luma-smoke font-medium text-xs">
@@ -83,12 +125,7 @@ export function TransactionTable({
               </tr>
             ) : (
               transactions.map((tx) => {
-                const isIncome = tx.type === "income";
-                const isTransferIn = tx.type === "transfer_in";
-                const isTransferOut = tx.type === "transfer_out";
-                const isAdjustment = tx.type === "adjustment_in" || tx.type === "adjustment_out";
-                const isPositive = isIncome || isTransferIn || tx.type === "adjustment_in";
-                const isTransfer = isTransferIn || isTransferOut;
+                const { isTransfer, isAdjustment, isPositive, amountClass } = rowInfo(tx);
 
                 return (
                   <tr key={tx.id} data-new-transaction={newTransactionIds?.has(tx.id) || undefined} className="hover:bg-white/[0.04] transition group">
@@ -113,9 +150,7 @@ export function TransactionTable({
                       {tx.account}
                     </td>
                     <td
-                      className={`ai7-type-amount py-4 px-4 sm:px-6 text-right whitespace-nowrap ${
-                        isAdjustment ? "text-luma-ivory" : isTransfer ? "text-luma-transfer" : isIncome ? "text-luma-sage" : "text-luma-coral"
-                      }`}
+                      className={`ai7-type-amount py-4 px-4 sm:px-6 text-right whitespace-nowrap ${amountClass}`}
                     >
                       {formatSignedRupiah(tx.amount, isPositive, formatRupiah)}
                     </td>

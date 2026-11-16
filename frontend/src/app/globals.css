@@ -514,11 +514,12 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-recent li > div:first-child { border: 0; border-radius: var(--ai7-radius-control); background: rgba(0,0,0,.14); width: 38px; height: 38px; }
 .luma-recent .font-semibold { font-weight: 500; }
 .luma-app .luma-recent li[data-new-transaction="true"],
-.luma-app .ai7-ledger-table tbody tr[data-new-transaction="true"] {
+.luma-app .ai7-ledger-table tbody tr[data-new-transaction="true"],
+.luma-app .ai7-ledger-table li[data-new-transaction="true"] {
   background: rgb(var(--luma-transfer-rgb) / .14);
 }
 @media (prefers-reduced-motion: reduce) {
-  .luma-recent li, .ai7-ledger-table tbody tr { transition: none; }
+  .luma-recent li, .ai7-ledger-table tbody tr, .ai7-ledger-table li { transition: none; }
 }
 .light {
   --luma-charcoal-rgb: 233 238 243; --luma-coal-rgb: 224 231 239;

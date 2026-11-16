@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { SegmentedControl } from "./ui/controls";
 import { todayWib } from "@/lib/transactionCalendar";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, Loader2 } from "lucide-react";
@@ -179,31 +180,10 @@ export function AddTransactionModal({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Type toggle */}
-        <div className="grid grid-cols-2 gap-2 bg-obsidian-panel p-1 rounded-2xl border border-luma-smokeline">
-          <button
-            type="button"
-            onClick={() => setFormType("expense")}
-            className={`min-h-[44px] py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center ${
-              formType === "expense"
-                ? "bg-coralFall text-slate-950 font-semibold shadow-xs"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Pengeluaran
-          </button>
-          <button
-            type="button"
-            onClick={() => setFormType("income")}
-            className={`min-h-[44px] py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center ${
-              formType === "income"
-                ? "bg-mintRise text-slate-950 font-semibold shadow-xs"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Pemasukan
-          </button>
-        </div>
+        <SegmentedControl fill label="Jenis transaksi" value={formType} onChange={setFormType} options={[
+          { value: "expense", label: "Pengeluaran", tone: "expense" },
+          { value: "income", label: "Pemasukan", tone: "income" },
+        ]} />
 
         {/* Amount */}
         <div>
@@ -235,7 +215,7 @@ export function AddTransactionModal({
             placeholder="Contoh: Nasi Padang + Es Teh"
             value={formDesc}
             onChange={(e) => setFormDesc(e.target.value)}
-            className="w-full min-h-[44px] bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition placeholder:text-zinc-400"
+            className="w-full min-h-[44px] bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-zinc-400"
           />
         </div>
 
@@ -283,26 +263,15 @@ export function AddTransactionModal({
         )}
 
         {/* Actions */}
-        <div className="pt-3 flex justify-end gap-3 border-t border-luma-smokeline mt-5">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="min-h-[44px] px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+        <div className="ui-dialog-actions mt-5">
+          <button type="button" onClick={onClose} disabled={loading} className="luma-action-secondary">
             Batal
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className={`min-h-[44px] px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-950 hover:brightness-110 rounded-2xl transition inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              formType === "expense" ? "bg-coralFall" : "bg-mintRise"
-            }`}
-          >
+          <button type="submit" disabled={loading} className="luma-action-primary disabled:cursor-not-allowed">
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Menyimpan...</span>
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <span>Menyimpan…</span>
               </>
             ) : (
               "Simpan transaksi"

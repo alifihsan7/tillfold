@@ -44,7 +44,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
+            className="luma-action-secondary"
           >
             {cancelText}
           </button>
@@ -52,13 +52,11 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-2xl transition inline-flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50 ${
-              danger
-                ? "bg-coralFall text-slate-950 hover:brightness-110"
-                : "bg-amberGold text-slate-950 hover:bg-amber-300"
-            }`}
+            className={danger
+              ? "luma-action-primary !bg-[var(--luma-coral)] !text-luma-charcoal hover:!brightness-110 disabled:cursor-not-allowed"
+              : "luma-action-primary disabled:cursor-not-allowed"}
           >
-            {loading ? "Memproses..." : confirmText}
+            {loading ? "Memproses…" : confirmText}
           </button>
         </div>
       </div>

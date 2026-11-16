@@ -372,7 +372,7 @@ export function ManageCategoriesModal({
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5 text-amberGold" />
+              <Plus className="w-3.5 h-3.5 text-luma-smoke" aria-hidden="true" />
               Tambah kategori {activeTab === "expense" ? "Pengeluaran" : "Pemasukan"}
             </span>
             <span className="text-xs text-zinc-400 font-sans">
@@ -394,7 +394,7 @@ export function ManageCategoriesModal({
                   ? "Contoh: Jajanan Sore, Skincare, Alat Kantor..."
                   : "Contoh: Gaji Tambahan, Dividen, Freelance..."
               }
-              className="w-full bg-obsidian-card border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-amberGold transition"
+              className="w-full bg-obsidian-card border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-luma-ember transition"
             />
           </div>
 
@@ -413,7 +413,7 @@ export function ManageCategoriesModal({
                     onClick={() => setNewColor(c.id)}
                     className={`py-1.5 px-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition cursor-pointer ${
                       isSelected
-                        ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-1 ring-amberGold/50 font-semibold shadow-xs`
+                        ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-2 ring-luma-ember/60 font-semibold shadow-xs`
                         : "bg-obsidian-card/60 border-luma-smokeline text-zinc-400 hover:text-white hover:border-white/[0.12]"
                     }`}
                   >
@@ -439,7 +439,7 @@ export function ManageCategoriesModal({
             <button
               type="submit"
               disabled={createLoading || !newName.trim()}
-              className="px-4 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 disabled:opacity-50 font-semibold text-xs sm:text-sm rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed active:scale-95"
+              className="luma-action-primary disabled:cursor-not-allowed"
             >
               {createLoading ? (
                 <>
@@ -465,7 +465,7 @@ export function ManageCategoriesModal({
             </h4>
             {loading && (
               <span className="text-xs text-zinc-400 font-sans flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin text-amberGold" /> Memuat...
+                <Loader2 className="w-3 h-3 animate-spin text-luma-smoke" /> Memuat...
               </span>
             )}
           </div>
@@ -493,9 +493,9 @@ export function ManageCategoriesModal({
                   return (
                     <div
                       key={cat.id}
-                      className="p-3 bg-obsidian-panel border border-amberGold/40 rounded-2xl space-y-3 animate-fadeIn"
+                      className="p-3 bg-obsidian-panel border border-luma-smokeline rounded-2xl space-y-3 animate-fadeIn"
                     >
-                      <div className="text-xs font-semibold text-amberGold flex items-center gap-1">
+                      <div className="text-xs font-semibold text-luma-ivory flex items-center gap-1">
                         <Edit2 className="w-3 h-3" /> Edit kategori
                       </div>
 
@@ -504,7 +504,7 @@ export function ManageCategoriesModal({
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full bg-obsidian-card border border-luma-smokeline rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+                        className="w-full bg-obsidian-card border border-luma-smokeline rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
                         placeholder="Nama kategori"
                         autoFocus
                       />
@@ -520,7 +520,7 @@ export function ManageCategoriesModal({
                               onClick={() => setEditColor(c.id)}
                               className={`py-1 px-1.5 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition cursor-pointer ${
                                 isSel
-                                  ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-1 ring-amberGold/50 font-semibold`
+                                  ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-2 ring-luma-ember/60 font-semibold`
                                   : "bg-obsidian-card/70 border-luma-smokeline text-zinc-400 hover:text-white"
                               }`}
                             >
@@ -542,7 +542,7 @@ export function ManageCategoriesModal({
                           type="button"
                           onClick={cancelEdit}
                           disabled={editLoading}
-                          className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-luma-smokeline rounded-xl transition cursor-pointer"
+                          className="luma-action-secondary"
                         >
                           Batal
                         </button>
@@ -550,7 +550,7 @@ export function ManageCategoriesModal({
                           type="button"
                           onClick={() => handleUpdateCategory(cat.id)}
                           disabled={editLoading || !editName.trim()}
-                          className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amberGold hover:bg-amber-300 rounded-xl transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                          className="luma-action-primary"
                         >
                           {editLoading ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -592,7 +592,7 @@ export function ManageCategoriesModal({
                         type="button"
                         onClick={() => startEdit(cat)}
                         title="Edit kategori"
-                        className="p-1.5 rounded-xl text-zinc-400 hover:text-amberGold hover:bg-amberGold/10 border border-transparent hover:border-amberGold/20 transition cursor-pointer"
+                        className="p-1.5 rounded-xl text-zinc-400 hover:text-luma-ivory hover:bg-luma-coal border border-transparent transition cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -641,7 +641,7 @@ export function ManageCategoriesModal({
                   {getTxCount(deletingCat.name) > 0 ? (
                     <span>
                       Kategori ini digunakan oleh{" "}
-                      <strong className="text-amberGold font-sans">
+                      <strong className="text-luma-ivory font-sans">
                         {getTxCount(deletingCat.name)} transaksi
                       </strong>
                       . Tentukan kategori tujuan untuk memindahkan transaksi terkait.
@@ -657,7 +657,7 @@ export function ManageCategoriesModal({
             {getTxCount(deletingCat.name) > 0 && (
               <div className="space-y-2 bg-obsidian-panel p-3.5 rounded-2xl border border-luma-smokeline">
                 <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                  <ArrowRight className="w-3.5 h-3.5 text-amberGold" />
+                  <ArrowRight className="w-3.5 h-3.5 text-luma-smoke" aria-hidden="true" />
                   Pindahkan transaksi ke kategori
                 </label>
                 <CustomSelect
@@ -688,7 +688,7 @@ export function ManageCategoriesModal({
                 type="button"
                 onClick={() => setDeletingCat(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white border border-luma-smokeline rounded-xl transition cursor-pointer"
+                className="luma-action-secondary"
               >
                 Batal
               </button>

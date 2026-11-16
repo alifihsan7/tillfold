@@ -172,7 +172,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: Tr
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>

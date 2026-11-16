@@ -244,7 +244,7 @@ export function CreateInternalLoanModal({
       onClose={onClose}
       title="Pinjam dana talangan"
       subtitle="Pinjam saldo antar-rekening atau antar-kantong sendiri tanpa mengubah kekayaan bersih."
-      icon={<HandCoins className="w-5 h-5 text-luma-gold" />}
+      icon={<HandCoins className="w-5 h-5 text-luma-smoke" />}
       accent="gold"
       maxWidth="lg"
     >
@@ -263,10 +263,10 @@ export function CreateInternalLoanModal({
         {/* Source Account & Pocket Card */}
         <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-luma-ivory tracking-wide uppercase">
-              1. Sumber Dana (Pemberi Pinjaman)
+            <span className="text-sm font-semibold text-luma-ivory">
+              Dari rekening (pemberi pinjaman)
             </span>
-            <span className="text-xs font-mono text-luma-smoke tabular-nums">
+            <span className="text-xs text-luma-smoke tabular-nums">
               Tersedia: {formatRupiah(sourceAvailableBalance)}
             </span>
           </div>
@@ -316,7 +316,7 @@ export function CreateInternalLoanModal({
             onClick={handleSwap}
             title="Tukar arah sumber dan peminjam"
             aria-label="Tukar arah sumber dan peminjam"
-            className="luma-touch relative z-10 w-9 h-9 rounded-full bg-luma-coal border border-luma-smokeline hover:border-luma-gold/50 text-luma-smoke hover:text-luma-ivory flex items-center justify-center transition shadow-sm active:scale-95 cursor-pointer"
+            className="luma-touch relative z-10 w-9 h-9 rounded-full bg-luma-coal border border-luma-smokeline hover:border-luma-ember/60 text-luma-smoke hover:text-luma-ivory flex items-center justify-center transition shadow-sm active:scale-95 cursor-pointer"
           >
             <ArrowLeftRight className="w-4 h-4" />
           </button>
@@ -325,11 +325,11 @@ export function CreateInternalLoanModal({
         {/* Target Account & Pocket Card */}
         <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-luma-ivory tracking-wide uppercase">
-              2. Tujuan Talangan (Peminjam / Berutang)
+            <span className="text-sm font-semibold text-luma-ivory">
+              Ke rekening (peminjam)
             </span>
             {selectedTargetAccount && (
-              <span className="text-xs font-mono text-luma-smoke tabular-nums">
+              <span className="text-xs text-luma-smoke tabular-nums">
                 Saldo saat ini: {formatRupiah(
                   selectedTargetPocket
                     ? (selectedTargetPocket.balance ?? selectedTargetPocket.remaining_amount ?? 0)
@@ -384,7 +384,7 @@ export function CreateInternalLoanModal({
               <button
                 type="button"
                 onClick={handleSetMax}
-                className="text-xs font-semibold text-luma-gold hover:underline cursor-pointer"
+                className="luma-text-action !min-h-0 !py-0"
               >
                 Pakai maksimal
               </button>
@@ -415,7 +415,7 @@ export function CreateInternalLoanModal({
             onChange={(e) => setNote(e.target.value)}
             placeholder="Contoh: Talangi makan siang tim, Beli bensin, Tiket konser..."
             maxLength={255}
-            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-gold/60 focus:ring-1 focus:ring-luma-gold/50 rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-zinc-500 outline-none transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-ember rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-zinc-500 outline-none transition"
           />
         </div>
 

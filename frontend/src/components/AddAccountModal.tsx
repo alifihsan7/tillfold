@@ -109,7 +109,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
             placeholder="Misal: BCA, SeaBank, GoPay, OVO"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -145,7 +145,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
             placeholder="Misal: Saku Tambahan, Tabungan Pribadi, Rekening Bisnis"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -167,14 +167,14 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white hover:bg-white/[0.06] transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center gap-2 bg-amberGold text-slate-950 px-5 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm hover:bg-amber-300 transition shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="luma-action-primary"
           >
             {loading ? (
               <span>Menyimpan...</span>

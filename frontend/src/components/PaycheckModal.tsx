@@ -567,7 +567,7 @@ export default function PaycheckModal({
                             {b.percentage}%
                           </span>
                           {config.use_gate && b.via_gate && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium text-amberGold bg-amberGold/10 border border-amberGold/20">
+                            <span className="ui-badge ui-badge--neutral">
                               Lewat perantara
                             </span>
                           )}
@@ -642,7 +642,7 @@ export default function PaycheckModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
+                className="luma-action-secondary"
               >
                 Batal
               </button>
@@ -737,10 +737,10 @@ export default function PaycheckModal({
 
               const phaseColor =
                 phaseNum === 1
-                  ? "border-cyanHub/30 text-cyanHub bg-cyanHub/5"
+                  ? "border-luma-smokeline text-luma-ivory bg-white/[0.03]"
                   : phaseNum === 2
-                  ? "border-amberGold/30 text-amberGold bg-amberGold/5"
-                  : "border-mintRise/30 text-mintRise bg-mintRise/5";
+                  ? "border-luma-smokeline text-luma-ivory bg-white/[0.03]"
+                  : "border-luma-smokeline text-luma-ivory bg-white/[0.03]";
 
               return (
                 <div key={phaseNum} className="space-y-2">
@@ -1041,7 +1041,7 @@ export default function PaycheckModal({
             <button
               type="button"
               onClick={() => settingsOnly ? onClose() : setView("setup")}
-              className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline rounded-2xl transition cursor-pointer"
+              className="luma-action-secondary"
             >
               Batal
             </button>

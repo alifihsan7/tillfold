@@ -115,10 +115,10 @@ export function SettleInternalLoanModal({
         {/* Loan Overview Card */}
         <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
           <div className="flex items-center justify-between gap-2 border-b border-luma-smokeline/60 pb-3">
-            <span className="text-xs font-semibold text-luma-smoke uppercase tracking-wider">
-              Detail Kewajiban #{loan.id}
+            <span className="text-sm font-semibold text-luma-ivory">
+              Pinjaman #{loan.id}
             </span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-luma-gold/15 text-luma-gold border border-luma-gold/30 font-medium">
+            <span className="ui-badge ui-badge--warning">
               Belum lunas
             </span>
           </div>
@@ -169,8 +169,8 @@ export function SettleInternalLoanModal({
               </p>
             </div>
             <div className="p-2.5 rounded-xl bg-luma-gold/5 border border-luma-gold/20">
-              <span className="text-[11px] text-luma-gold font-medium block">Sisa pinjaman</span>
-              <p className="text-xs sm:text-sm font-mono font-bold text-luma-gold mt-0.5 tabular-nums">
+              <span className="text-xs text-luma-gold font-medium block">Sisa pinjaman</span>
+              <p className="text-xs sm:text-sm font-semibold text-luma-gold mt-0.5 tabular-nums">
                 {formatRupiah(loan.remaining_amount)}
               </p>
             </div>
@@ -215,7 +215,7 @@ export function SettleInternalLoanModal({
               }}
               className={`luma-touch min-h-[44px] py-2.5 px-3 rounded-2xl border text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
                 settleMode === "partial"
-                  ? "bg-luma-gold/20 border-luma-gold text-luma-gold shadow-sm"
+                  ? "ui-selected"
                   : "bg-white/[0.03] border-luma-smokeline text-luma-smoke hover:text-luma-ivory hover:border-white/[0.16]"
               }`}
             >
@@ -238,9 +238,9 @@ export function SettleInternalLoanModal({
                   setAmount(String(maxRemaining));
                   setError(null);
                 }}
-                className="text-xs font-semibold text-luma-gold hover:underline cursor-pointer"
+                className="luma-text-action !min-h-0 !py-0"
               >
-                Lunasi Semua ({formatRupiah(maxRemaining)})
+                Lunasi semua ({formatRupiah(maxRemaining)})
               </button>
             </div>
             <CurrencyInput
@@ -286,7 +286,7 @@ export function SettleInternalLoanModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="luma-touch px-4 py-2.5 rounded-2xl border border-luma-smokeline text-xs sm:text-sm font-medium text-luma-smoke hover:text-luma-ivory hover:border-white/[0.16] transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>

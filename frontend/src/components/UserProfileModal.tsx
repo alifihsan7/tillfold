@@ -296,7 +296,7 @@ export function UserProfileModal({
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Pengaturan akun">
+        <div className="ui-segmented" role="tablist" aria-label="Pengaturan akun">
           <button
             type="button"
             role="tab"
@@ -304,7 +304,7 @@ export function UserProfileModal({
             aria-controls="profile-panel"
             id="profile-tab"
             onClick={() => { setActiveTab("profile"); setMsg(null); }}
-            className={`cursor-pointer ${activeTab === "profile" ? "luma-action-primary" : "luma-action-secondary"}`}
+            className="ui-segment"
           >
             Profil
           </button>
@@ -315,7 +315,7 @@ export function UserProfileModal({
             aria-controls="telegram-panel"
             id="telegram-tab"
             onClick={() => { setActiveTab("telegram"); setMsg(null); }}
-            className={`cursor-pointer ${activeTab === "telegram" ? "luma-action-primary" : "luma-action-secondary"}`}
+            className="ui-segment"
           >
             <Send className="h-4 w-4" />Integrasi Telegram
           </button>
@@ -326,7 +326,7 @@ export function UserProfileModal({
             aria-controls="sheets-panel"
             id="sheets-tab"
             onClick={() => { setActiveTab("sheets"); setMsg(null); }}
-            className={`cursor-pointer ${activeTab === "sheets" ? "luma-action-primary" : "luma-action-secondary"}`}
+            className="ui-segment"
           >
             <FileSpreadsheet className="h-4 w-4" />Google Sheets
           </button>

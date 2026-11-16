@@ -144,7 +144,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
       onClose={onClose}
       title="Tambah target"
       subtitle="Target tabungan atau investasi yang dipantau tiap siklus."
-      icon={<Target className="w-5 h-5 text-amberGold" />}
+      icon={<Target className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
       maxWidth="lg"
     >
@@ -158,7 +158,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
         {/* Nama Target */}
         <div>
           <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-            Nama target / milestone <span className="text-coralFall">*</span>
+            Nama target <span className="text-coralFall">*</span>
           </label>
           <input
             type="text"
@@ -166,7 +166,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
             placeholder="Contoh: Dana Dingin BRI 2, Laptop M3 Pro..."
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition placeholder:text-zinc-400"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-zinc-400"
           />
         </div>
 
@@ -238,13 +238,13 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
                 onClick={() => setColor(c.value)}
                 className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-2xl border text-xs font-medium transition cursor-pointer ${
                   color === c.value
-                    ? "bg-obsidian-card border-amberGold text-white shadow-xs"
+                    ? "ui-selected"
                     : "bg-obsidian-panel border-luma-smokeline text-zinc-400 hover:text-white hover:border-white/[0.16]"
                 }`}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${c.dot} shrink-0`} />
                 <span className="truncate">{c.label}</span>
-                {color === c.value && <Check className="w-3.5 h-3.5 text-amberGold shrink-0" />}
+                {color === c.value && <Check className="w-3.5 h-3.5 text-luma-ivory shrink-0" aria-hidden="true" />}
               </button>
             ))}
           </div>
@@ -267,7 +267,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
                   title={item.label}
                   className={`h-11 rounded-2xl flex items-center justify-center transition cursor-pointer ${
                     isSelected
-                      ? "bg-amberGold/15 border-2 border-amberGold text-amberGold shadow-xs scale-105"
+                      ? "ui-selected"
                       : "bg-obsidian-panel border border-luma-smokeline text-zinc-400 hover:text-white hover:border-white/[0.16]"
                   }`}
                 >
@@ -299,7 +299,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
               placeholder="Strategi alokasi atau tujuan..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition placeholder:text-zinc-400"
+              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-zinc-400"
             />
           </div>
         </div>
@@ -309,14 +309,14 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] transition cursor-pointer"
+            className="luma-action-secondary"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 rounded-2xl text-xs sm:text-sm bg-amberGold text-slate-950 font-semibold hover:bg-amber-300 transition flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+            className="luma-action-primary"
           >
             {loading ? "Menyimpan..." : (
               <>

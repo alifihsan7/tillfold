@@ -175,7 +175,7 @@ export function TransferPocketModal({
           ? `Alokasikan saldo kas fisik antar-kantong di ${accountName}`
           : "Pindah dana kas riil antar sub-kantong"
       }
-      icon={<ArrowLeftRight className="w-5 h-5 text-luma-gold" />}
+      icon={<ArrowLeftRight className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
       maxWidth="md"
     >
@@ -274,9 +274,9 @@ export function TransferPocketModal({
                 type="button"
                 onClick={handleSetMax}
                 disabled={loading}
-                className="text-xs text-luma-gold hover:underline cursor-pointer font-medium"
+                className="luma-text-action !min-h-0 !py-0"
               >
-                Pindah Semua ({formatRupiah(sourceBalance)})
+                Pindah semua ({formatRupiah(sourceBalance)})
               </button>
             )}
           </div>
@@ -333,7 +333,7 @@ export function TransferPocketModal({
             onChange={(e) => setNote(e.target.value)}
             disabled={loading}
             placeholder="Contoh: Alokasi iuran bulanan gym"
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-luma-ivory placeholder-zinc-500 focus:outline-none focus:border-luma-gold transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-luma-ivory placeholder-zinc-500 focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 
@@ -343,7 +343,7 @@ export function TransferPocketModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2.5 rounded-full border border-luma-smokeline text-xs font-semibold text-luma-smoke hover:bg-white/[0.04] hover:text-luma-ivory transition cursor-pointer disabled:opacity-50 min-h-[44px]"
+            className="luma-action-secondary"
           >
             Batal
           </button>

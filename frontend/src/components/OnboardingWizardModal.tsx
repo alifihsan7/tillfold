@@ -292,7 +292,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
       onClose={onClose || (() => {})}
       title="Pengaturan awal keuangan"
       subtitle={`Selamat datang ${user?.full_name || ""}! Mari konfigurasi fondasi keuangan Anda`}
-      icon={<Layers className="w-4 h-4 text-amber-400" />}
+      icon={<Layers className="w-4 h-4 text-luma-smoke" />}
       accent="amber"
       maxWidth="lg"
     >
@@ -312,7 +312,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
                 key={s.num}
                 className={`flex items-center gap-2 p-2 rounded-2xl border transition ${
                   isActive
-                    ? "bg-amberGold/10 border-amberGold/40 text-amberGold"
+                    ? "ui-selected"
                     : isDone
                     ? "bg-mintRise/10 border-mintRise/30 text-mintRise"
                     : "bg-obsidian-panel border-luma-smokeline text-zinc-400"
@@ -321,7 +321,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
                 <div
                   className={`w-5 h-5 rounded-lg flex items-center justify-center text-xs font-semibold ${
                     isActive
-                      ? "bg-amberGold text-slate-950"
+                      ? "bg-luma-ivory text-luma-charcoal"
                       : isDone
                       ? "bg-mintRise text-slate-950"
                       : "bg-white/[0.08] text-zinc-400"
@@ -349,7 +349,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
           <div className="space-y-4 animate-fadeIn">
             <div className="bg-obsidian-card p-4 rounded-2xl border border-luma-smokeline">
               <h4 className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-amberGold" />
+                <Wallet className="w-4 h-4 text-luma-smoke" aria-hidden="true" />
                 Rekening dan saldo saat ini
               </h4>
               <p className="text-xs text-zinc-400">
@@ -364,7 +364,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
                   className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amberGold shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-luma-smoke shrink-0" aria-hidden="true" />
                     <div>
                       <p className="text-xs font-semibold text-white truncate">{acc.name}</p>
                       <p className="text-xs text-zinc-400 capitalize">{acc.type} • {acc.tag}</p>
@@ -402,7 +402,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
                 value={newAccName}
                 onChange={(e) => setNewAccName(e.target.value)}
                 placeholder="Nama rekening"
-                className="flex-1 bg-obsidian-card border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-amberGold"
+                className="flex-1 bg-obsidian-card border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-luma-ember"
               />
               <div className="w-full sm:w-[150px]">
                 <CustomSelect
@@ -423,7 +423,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
               <button
                 type="button"
                 onClick={handleAddAccount}
-                className="w-full sm:w-auto px-4 py-2 rounded-2xl bg-amberGold/15 hover:bg-amberGold/25 border border-amberGold/30 text-amberGold text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="luma-action-secondary w-full sm:w-auto"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Tambah
@@ -703,7 +703,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
               <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline space-y-1 col-span-2">
                 <span className="text-xs text-zinc-400 font-medium">Alur gajian</span>
                 <p className="font-medium text-white">
-                  Sumber: <span className="text-amberGold">{sourceAccount}</span> • Gerbang:{" "}
+                  Sumber: <span className="text-luma-ivory">{sourceAccount}</span> • Gerbang:{" "}
                   <span className="text-mintRise">{useGate ? "Lewat perantara" : "Transfer langsung"}</span>
                 </p>
               </div>
@@ -730,7 +730,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
             <button
               type="button"
               onClick={() => { setError(null); setStep((prev) => (Math.min(4, prev + 1) as 1 | 2 | 3 | 4)); }}
-              className="px-5 py-2.5 rounded-2xl bg-amberGold hover:bg-amber-300 text-slate-950 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              className="luma-action-primary"
             >
               Lanjutkan
               <ArrowRight className="w-3.5 h-3.5" />
@@ -740,7 +740,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
               type="button"
               disabled={loading}
               onClick={handleFinishOnboarding}
-              className="px-6 py-2.5 rounded-2xl bg-amberGold hover:bg-amber-300 text-slate-950 text-xs font-semibold flex items-center gap-2 shadow-sm transition cursor-pointer disabled:opacity-50"
+              className="luma-action-primary"
             >
               {loading ? (
                 <span className="flex items-center gap-2">

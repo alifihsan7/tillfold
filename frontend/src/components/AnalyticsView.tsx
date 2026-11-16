@@ -189,7 +189,7 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
               </p>
               <p className="text-sm tabular-nums">
                 {safe.days_remaining > 0
-                  ? <><strong>{money(safe.safe_daily)} per hari</strong> <span className="text-luma-smoke">· {safe.days_remaining} hari tersisa</span></>
+                  ? <><span className="text-luma-smoke">Sisa anggaran dibagi {safe.days_remaining} hari:</span> <strong>{money(safe.safe_daily)} per hari</strong></>
                   : "Siklus selesai"}
               </p>
             </div>

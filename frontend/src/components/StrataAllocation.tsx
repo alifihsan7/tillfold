@@ -64,12 +64,12 @@ export function StrataAllocationBar({
 
   // Determine friendly formula badge
   const formulaLabel = cycleDays === 30 || cycleType === "monthly" || cycleType === "monthly_date"
-    ? `Formula Bulanan (${cycleDays} Hari)`
+    ? `Formula bulanan (${cycleDays} hari)`
     : cycleDays === 7 || cycleType === "weekly"
-    ? "Formula Mingguan (7 Hari)"
+    ? "Formula mingguan (7 hari)"
     : cycleDays === 14 || cycleType === "biweekly"
     ? "Formula 2 mingguan (14 hari)"
-    : `Formula Anggaran (${cycleDays} Hari)`;
+    : `Formula anggaran (${cycleDays} hari)`;
 
   const activeBuckets = buckets && buckets.length > 0 ? buckets : DEFAULT_BUCKETS;
 
@@ -86,7 +86,7 @@ export function StrataAllocationBar({
               : `Proporsi alokasi dipecah ke ${activeBuckets.length} pos rekening sesuai rasio alur gajian`}
           </p>
         </div>
-        <span className="text-xs font-sans font-semibold text-luma-gold px-3 py-1.5 rounded-full bg-luma-gold/10 border border-luma-gold/30 shrink-0 self-start sm:self-center whitespace-nowrap">
+        <span className="ui-badge ui-badge--neutral shrink-0 self-start sm:self-center">
           {formulaLabel}
         </span>
       </div>

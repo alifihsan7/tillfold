@@ -2170,9 +2170,6 @@ export default function FinanceDashboard() {
                     <h3 className="ai7-type-card text-slateText-primary">
                       Komitmen tagihan dan simpanan
                     </h3>
-                    <span className="text-xs font-sans font-semibold px-2.5 py-0.5 rounded-full border bg-coralFall/15 text-coralFall border-coralFall/30">
-                      Tagihan
-                    </span>
                   </div>
                   <p className="text-xs text-slateText-secondary mt-0.5">
                     Alokasi autodebet tagihan berkala, langganan digital, dan komitmen bulanan

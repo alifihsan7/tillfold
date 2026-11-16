@@ -267,21 +267,21 @@ export function Pockets({
               <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(totalAccountBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">Saldo kas rekening</span>
+              <span className="text-xs text-luma-smoke block">Saldo kas rekening</span>
             </div>
             <div className="min-w-0">
               <dt className="text-xs text-luma-smoke">Kas bebas</dt>
-              <dd className="text-sm font-semibold text-luma-gold tabular-nums [overflow-wrap:anywhere]">
+              <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(utamaBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">Belum dialokasikan ke kantong</span>
+              <span className="text-xs text-luma-smoke block">Belum dialokasikan ke kantong</span>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-luma-smoke">Saldo Sub-Kantong</dt>
-              <dd className="text-sm font-semibold text-luma-sage tabular-nums [overflow-wrap:anywhere]">
+              <dt className="text-xs text-luma-smoke">Saldo sub-kantong</dt>
+              <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(subPocketsBalance)}
               </dd>
-              <span className="text-[10px] text-zinc-500 block">
+              <span className="text-xs text-luma-smoke block">
                 {subPockets.length} kantong teralokasi
               </span>
             </div>
@@ -388,7 +388,7 @@ export function Pockets({
                         <span className="text-luma-ivory font-semibold text-sm block truncate leading-snug">
                           {pocket.name}
                         </span>
-                        <span className="text-[10px] text-luma-smoke capitalize block">
+                        <span className="text-xs text-luma-smoke capitalize block">
                           {isUtama ? "Kas utama bebas" : pocket.role || "Sub-Akun"}
                         </span>
                       </div>
@@ -447,7 +447,7 @@ export function Pockets({
                           className={`h-full transition-all duration-500 rounded-full ${status.bar}`}
                         />
                       </div>
-                      <div className="text-[11px] text-zinc-400 tabular-nums">
+                      <div className="text-xs text-zinc-400 tabular-nums">
                         {balance >= target ? (
                           <span className="text-luma-sage font-medium">
                             Target terpenuhi penuh

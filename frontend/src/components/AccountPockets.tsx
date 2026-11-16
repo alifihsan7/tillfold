@@ -323,14 +323,14 @@ export function Pockets({
                 <span>Tambah</span>
               </button>
             )}
-            {pockets.length < 2 && !error && (
-              <p id="pocket-transfer-hint" className="basis-full text-xs text-luma-smoke">
-                Pindah saldo butuh minimal dua kantong. Tambah kantong dulu.
-              </p>
-            )}
           </div>
         )}
       </div>
+      {showActions && pockets.length < 2 && !error && (
+        <p id="pocket-transfer-hint" className="text-xs text-luma-smoke">
+          Pindah saldo butuh minimal dua kantong. Tambah kantong dulu.
+        </p>
+      )}
 
       {/* Error Banner */}
       {error && (

@@ -122,24 +122,25 @@ def compute_safe_to_spend_metrics(
 
     pocket_account = resolve_pocket_account(db, user_id, user_accs=accounts_list, cfg=cfg)
 
-    pocket_income, pocket_entries = db.query(
-        func.coalesce(func.sum(case(
-            (Transaction.type == "transfer_out", -Transaction.amount),
-            else_=Transaction.amount,
-        )), 0),
-        func.count(Transaction.id),
+    # Budget = money that came into the pocket account this cycle, minus every
+    # transfer that left it (paycheck splits, savings deposits, loans out), so
+    # the remaining budget never exceeds what the account can actually spend.
+    funded_in = (Transaction.type == "income") | (
+        (Transaction.type == "transfer_in") & Transaction.raw_text.contains("[paycheck_receipt:")
+    )
+    pocket_income, pocket_entries, pocket_transfers_out = db.query(
+        func.coalesce(func.sum(case((funded_in, Transaction.amount), else_=0)), 0),
+        func.coalesce(func.sum(case((funded_in, 1), else_=0)), 0),
+        func.coalesce(func.sum(case((Transaction.type == "transfer_out", Transaction.amount), else_=0)), 0),
     ).filter(
         Transaction.user_id == user_id,
         Transaction.account == pocket_account,
-        (Transaction.type == "income") | (
-            Transaction.type.in_(["transfer_in", "transfer_out"])
-            & Transaction.raw_text.contains("[paycheck_receipt:")
-        ),
         Transaction.date >= cycle_start,
         Transaction.date <= cycle_end
     ).one()
+    pocket_transfers_out = int(pocket_transfers_out or 0)
 
-    base_pocket_budget = max(0, int(pocket_income))
+    base_pocket_budget = max(0, int(pocket_income) - pocket_transfers_out)
     if int(pocket_entries or 0) == 0 and cfg:
         p_bucket = db.query(PaycheckBucket).filter(
             PaycheckBucket.config_id == cfg.id,
@@ -173,6 +174,7 @@ def compute_safe_to_spend_metrics(
                 ).scalar() or 0
                 if all_inc > 0:
                     base_pocket_budget = int(round(float(all_inc) * float(pct)))
+        base_pocket_budget = max(0, base_pocket_budget - pocket_transfers_out)
 
     pocket_budget = base_pocket_budget if period_type == "cycle" else int(base_pocket_budget / cycle_days * total_days)
 

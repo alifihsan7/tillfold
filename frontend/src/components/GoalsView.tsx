@@ -103,45 +103,55 @@ function formatDateIndo(dateStr: string | null): string {
   }
 }
 
-function renderGoalIcon(icon: string, name: string, category: string) {
-  const lower = (name + " " + category).toLowerCase();
-  if (lower.includes("dingin") || lower.includes("tabungan") || icon === "🛡️") {
-    return <ShieldCheck className="w-5 h-5 text-luma-sage" />;
+const GOAL_ICON_GLYPHS: Record<string, React.ReactNode> = {
+  "🛡️": <ShieldCheck className="w-5 h-5 text-luma-sage" />,
+  "📈": <TrendingUp className="w-5 h-5 text-luma-gold" />,
+  "🚨": <AlertTriangle className="w-5 h-5 text-luma-gold" />,
+  "💻": <Laptop className="w-5 h-5 text-luma-ember" />,
+  "✨": <Sparkles className="w-5 h-5 text-luma-ember" />,
+  "✈️": <Plane className="w-5 h-5 text-luma-gold" />,
+  "🚗": <Car className="w-5 h-5 text-luma-ember" />,
+  "🏠": <Home className="w-5 h-5 text-luma-sage" />,
+  "🪙": <Coins className="w-5 h-5 text-luma-gold" />,
+  "🎓": <GraduationCap className="w-5 h-5 text-luma-ember" />,
+  "❤️": <Heart className="w-5 h-5 text-luma-coral" />,
+};
+
+const DEFAULT_GOAL_ICON = "🎯";
+
+// The icon the user picked always wins. Name/category keywords only fill in
+// when the goal still carries the default icon. Category alone is not used:
+// every goal defaults to the "Tabungan" category, which would match everything.
+export function renderGoalIcon(icon: string, name: string) {
+  const picked = (icon || "").trim();
+  if (picked && picked !== DEFAULT_GOAL_ICON) {
+    if (GOAL_ICON_GLYPHS[picked]) return GOAL_ICON_GLYPHS[picked];
+    if (Array.from(picked).length <= 3 && !picked.startsWith("http")) {
+      return <span className="text-xl leading-none select-none" aria-hidden="true">{picked}</span>;
+    }
   }
-  if (lower.includes("investasi") || lower.includes("bibit") || lower.includes("reksadana") || icon === "📈") {
-    return <TrendingUp className="w-5 h-5 text-luma-gold" />;
-  }
-  if (lower.includes("darurat") || icon === "🚨") {
-    return <AlertTriangle className="w-5 h-5 text-luma-gold" />;
-  }
-  if (lower.includes("laptop") || lower.includes("gadget") || icon === "💻") {
-    return <Laptop className="w-5 h-5 text-luma-ember" />;
-  }
-  if (icon === "✨") {
-    return <Sparkles className="w-5 h-5 text-luma-ember" />;
-  }
-  if (icon === "✈️") {
-    return <Plane className="w-5 h-5 text-luma-gold" />;
-  }
-  if (icon === "🚗") {
-    return <Car className="w-5 h-5 text-luma-ember" />;
-  }
-  if (icon === "🏠") {
-    return <Home className="w-5 h-5 text-luma-sage" />;
-  }
-  if (icon === "🪙") {
-    return <Coins className="w-5 h-5 text-luma-gold" />;
-  }
-  if (icon === "🎓") {
-    return <GraduationCap className="w-5 h-5 text-luma-ember" />;
-  }
-  if (icon === "❤️") {
-    return <Heart className="w-5 h-5 text-luma-coral" />;
-  }
-  if (icon && icon.length <= 4 && !icon.startsWith("http") && icon !== "🎯") {
-    return <span className="text-xl leading-none select-none">{icon}</span>;
-  }
+  const lower = name.toLowerCase();
+  if (lower.includes("dingin") || lower.includes("tabungan")) return GOAL_ICON_GLYPHS["🛡️"];
+  if (lower.includes("darurat")) return GOAL_ICON_GLYPHS["🚨"];
+  if (lower.includes("investasi") || lower.includes("bibit") || lower.includes("reksadana")) return GOAL_ICON_GLYPHS["📈"];
+  if (lower.includes("laptop") || lower.includes("gadget")) return GOAL_ICON_GLYPHS["💻"];
   return <Target className="w-5 h-5 text-luma-ember" />;
+}
+
+// Money above a goal's target does not count toward other goals, so the
+// collected total is capped per goal and any excess is reported apart.
+export function summarizeGoals(goals: { target_amount: number; current_amount: number }[]) {
+  let target = 0, collected = 0, surplus = 0, pctSum = 0;
+  for (const g of goals) {
+    const goalTarget = Math.max(0, g.target_amount);
+    const current = Math.max(0, g.current_amount);
+    target += goalTarget;
+    collected += Math.min(current, goalTarget);
+    surplus += Math.max(0, current - goalTarget);
+    pctSum += goalTarget > 0 ? Math.min(100, (current / goalTarget) * 100) : 0;
+  }
+  const averagePercentage = goals.length ? Math.round((pctSum / goals.length) * 10) / 10 : 0;
+  return { target, collected, surplus, remaining: target - collected, averagePercentage };
 }
 
 export function GoalsView({
@@ -152,9 +162,7 @@ export function GoalsView({
   onDelete,
   loading,
 }: GoalsViewProps) {
-  const totalTarget = goals.reduce((acc, g) => acc + g.target_amount, 0);
-  const totalCurrent = goals.reduce((acc, g) => acc + g.current_amount, 0);
-  const overallPercentage = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 1000) / 10 : 0;
+  const totals = summarizeGoals(goals);
 
   return (
     <div className="space-y-8 sm:space-y-10">
@@ -168,7 +176,7 @@ export function GoalsView({
             <Skeleton className="h-8 w-36 rounded-full" />
           ) : (
             <div className="ai7-type-metric text-luma-ivory tracking-tight truncate tabular-nums">
-              {formatRupiah(totalTarget)}
+              {formatRupiah(totals.target)}
             </div>
           )}
           <div className="text-xs text-luma-smoke font-sans">
@@ -184,11 +192,11 @@ export function GoalsView({
             <Skeleton className="h-8 w-36 rounded-full" />
           ) : (
             <div className="ai7-type-metric text-luma-sage tracking-tight truncate tabular-nums">
-              {formatRupiah(totalCurrent)}
+              {formatRupiah(totals.collected)}
             </div>
           )}
-          <div className="text-xs text-luma-smoke font-sans">
-            Progres all-time tersinkronisasi
+          <div className="text-xs text-luma-smoke font-sans truncate tabular-nums">
+            {totals.surplus > 0 ? `Lebih ${formatRupiah(totals.surplus)} di atas target` : "Dihitung sampai batas tiap target"}
           </div>
         </div>
 
@@ -200,11 +208,11 @@ export function GoalsView({
             <Skeleton className="h-8 w-24 rounded-full" />
           ) : (
             <div className="ai7-type-metric text-luma-gold tracking-tight truncate tabular-nums">
-              {overallPercentage}%
+              {totals.averagePercentage}%
             </div>
           )}
           <div className="text-xs text-luma-smoke font-sans truncate tabular-nums">
-            Sisa {formatRupiah(Math.max(0, totalTarget - totalCurrent))}
+            Sisa {formatRupiah(totals.remaining)}
           </div>
         </div>
 
@@ -316,7 +324,7 @@ export function GoalsView({
                     <div className="flex items-center gap-3.5 min-w-0">
                       {/* Circular icon well */}
                       <div className="ai7-account-icon w-12 h-12 rounded-xl border flex items-center justify-center shrink-0">
-                        {renderGoalIcon(goal.icon, goal.name, goal.category)}
+                        {renderGoalIcon(goal.icon, goal.name)}
                       </div>
 
                       <div className="min-w-0 space-y-1">

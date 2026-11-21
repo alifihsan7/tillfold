@@ -1,5 +1,3 @@
-import io
-import csv
 import json
 import re
 from calendar import monthrange
@@ -8,7 +6,6 @@ from datetime import datetime, date, timedelta
 import zoneinfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, case, extract
 
@@ -499,54 +496,6 @@ def delete_transaction(
     db.delete(tx)
     db.commit()
     return {"success": True, "deleted_id": tx_id, "deleted_ids": deleted_ids}
-
-@router.get("/export")
-def export_csv(
-    month: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
-    if month:
-        yr, mo = map(int, month.split("-"))
-        start_date = date(yr, mo, 1)
-        end_date = date(yr + 1, 1, 1) if mo == 12 else date(yr, mo + 1, 1)
-        query = query.filter(Transaction.date >= start_date, Transaction.date < end_date)
-        filename = f"finance_{month}.csv"
-    else:
-        filename = "finance_all.csv"
-
-    rows = query.order_by(desc(Transaction.date), desc(Transaction.id)).all()
-
-    def _sanitize(val):
-        if val is None:
-            return ""
-        s = str(val)
-        if s and s[0] in ("=", "+", "-", "@", "\t"):
-            return f"'{s}"
-        return s
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["ID", "Tanggal", "Tipe", "Kategori", "Rekening", "Nominal", "Keterangan", "Waktu"])
-    for r in rows:
-        writer.writerow([
-            r.id,
-            r.date,
-            r.type,
-            _sanitize(r.category),
-            _sanitize(r.account),
-            r.amount,
-            _sanitize(r.description),
-            r.created_at
-        ])
-
-    output.seek(0)
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
 
 @router.post("/receipts/record", response_model=ReceiptRecordResponse)
 def record_receipt(

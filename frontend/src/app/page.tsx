@@ -415,9 +415,8 @@ export default function FinanceDashboard() {
   }, [showToast]);
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-  const [isExportingCSV, setIsExportingCSV] = useState(false);
-  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [isUtilitiesMenuOpen, setIsUtilitiesMenuOpen] = useState(false);
+  const utilitiesMenuRef = useRef<HTMLDivElement>(null);
   const [customAccounts, setCustomAccounts] = useState<AccountItem[]>([]);
   const activeAccounts = useMemo(() => customAccounts.filter((account) => !account.is_archived), [customAccounts]);
   const availableAccountNames = useMemo(() => {
@@ -673,17 +672,17 @@ export default function FinanceDashboard() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
-        setIsExportMenuOpen(false);
+      if (utilitiesMenuRef.current && !utilitiesMenuRef.current.contains(event.target as Node)) {
+        setIsUtilitiesMenuOpen(false);
       }
     };
-    if (isExportMenuOpen) {
+    if (isUtilitiesMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isExportMenuOpen]);
+  }, [isUtilitiesMenuOpen]);
 
   // Mobile drawer keyboard accessibility & scroll lock
   useEffect(() => {
@@ -890,7 +889,7 @@ export default function FinanceDashboard() {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k" || event.repeat ||
         target?.closest("input, textarea, select, [contenteditable=true]") || document.querySelector('[role="dialog"]')) return;
       event.preventDefault();
-      setIsExportMenuOpen(false);
+      setIsUtilitiesMenuOpen(false);
       setIsGlobalSearchOpen(true);
     };
     window.addEventListener("keydown", openSearch);
@@ -1141,52 +1140,6 @@ export default function FinanceDashboard() {
       fetchData();
     } catch (err) {
       console.error("Toggle subscription error:", err);
-    }
-  };
-
-  const handleExportCSV = async () => {
-    if (isExportingCSV) return;
-    setIsExportingCSV(true);
-    try {
-      const token = getAuthToken();
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      const res = await fetch("/api/v1/transactions/export", {
-        headers,
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          setIsAuthModalOpen(true);
-        }
-        throw new Error(`Export failed with status: ${res.status}`);
-      }
-
-      let filename = "finance_export.csv";
-      const disposition = res.headers.get("Content-Disposition");
-      if (disposition && disposition.includes("filename=")) {
-        const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (match && match[1]) {
-          filename = match[1].replace(/['"]/g, "").trim();
-        }
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Gagal mengunduh CSV:", err);
-    } finally {
-      setIsExportingCSV(false);
-      setIsExportMenuOpen(false);
     }
   };
 
@@ -1476,19 +1429,6 @@ export default function FinanceDashboard() {
                   <ArrowLeftRight className="w-4 h-4 shrink-0" aria-hidden="true" />
                   <span>Transfer antar rekening</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleExportCSV}
-                  disabled={isExportingCSV}
-                  className="luma-touch w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium rounded-full bg-white/[0.05] border border-luma-smokeline text-luma-ivory hover:bg-white/[0.08] transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {isExportingCSV ? (
-                    <RefreshCw className="w-4 h-4 shrink-0 animate-spin text-luma-ember" />
-                  ) : (
-                    <Download className="w-4 h-4 shrink-0" />
-                  )}
-                  <span>{isExportingCSV ? "Mengunduh CSV..." : "Ekspor CSV Transaksi"}</span>
-                </button>
                 {currentUser && (
                   currentUser.google_spreadsheet_id ? (
                     <div className="space-y-1.5 pt-1">
@@ -1632,31 +1572,31 @@ export default function FinanceDashboard() {
             <div className="luma-toolbar flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
               {currentUser && <button type="button" className="luma-action-secondary inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-3"
-                aria-label="Cari di Tillfold" title="Cari (Ctrl+K atau ⌘K)" onClick={() => { setIsExportMenuOpen(false); setIsGlobalSearchOpen(true); }}>
+                aria-label="Cari di Tillfold" title="Cari (Ctrl+K atau ⌘K)" onClick={() => { setIsUtilitiesMenuOpen(false); setIsGlobalSearchOpen(true); }}>
                 <Search className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Cari</span>
               </button>}
-              {/* Consolidated utilities menu (refresh, export, paycheck checklist) */}
-              <div className="relative" ref={exportMenuRef}>
+              {/* Utilities menu */}
+              <div className="relative" ref={utilitiesMenuRef}>
                 <button
                   type="button"
-                  onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                  onClick={() => setIsUtilitiesMenuOpen((prev) => !prev)}
                   aria-haspopup="menu"
-                  aria-expanded={isExportMenuOpen}
+                  aria-expanded={isUtilitiesMenuOpen}
                   aria-label="Utilitas"
                   className="luma-touch py-2 px-3 sm:px-3.5 text-xs rounded-full font-semibold border border-luma-smokeline bg-white/[0.06] text-luma-ivory hover:bg-white/[0.1] hover:border-white/[0.2] transition inline-flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95"
                 >
                   <Download className="w-3.5 h-3.5 text-luma-smoke shrink-0" />
                   <span className="font-semibold hidden sm:inline">Utilitas</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-luma-smoke shrink-0 transition-transform duration-200 ${isExportMenuOpen ? "rotate-180 text-luma-ember" : ""}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-luma-smoke shrink-0 transition-transform duration-200 ${isUtilitiesMenuOpen ? "rotate-180 text-luma-ember" : ""}`} />
                 </button>
 
-                {isExportMenuOpen && (
+                {isUtilitiesMenuOpen && (
                   <div role="menu" className="absolute right-0 mt-2 w-60 p-2 bg-luma-coal/95 backdrop-blur-md border border-luma-smokeline rounded-3xl shadow-luma-glass z-50 text-xs space-y-1 animate-fadeIn">
                     <button
                       type="button"
                       onClick={() => {
                         fetchData();
-                        setIsExportMenuOpen(false);
+                        setIsUtilitiesMenuOpen(false);
                       }}
                       role="menuitem"
                       className="luma-touch w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-ivory hover:bg-white/[0.06] transition text-left cursor-pointer"
@@ -1673,7 +1613,7 @@ export default function FinanceDashboard() {
                       type="button"
                       onClick={() => {
                         setIsPaycheckModalOpen(true);
-                        setIsExportMenuOpen(false);
+                        setIsUtilitiesMenuOpen(false);
                       }}
                       role="menuitem"
                       className="luma-touch w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-sage hover:bg-luma-sage/10 transition text-left cursor-pointer"
@@ -1686,29 +1626,10 @@ export default function FinanceDashboard() {
                         <div className="text-xs text-luma-smoke">Catat pemasukan gaji</div>
                       </div>
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleExportCSV}
-                      disabled={isExportingCSV}
-                      role="menuitem"
-                      className="luma-touch w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-ivory hover:bg-white/[0.06] transition disabled:opacity-50 disabled:cursor-not-allowed text-left cursor-pointer"
-                    >
-                      {isExportingCSV ? (
-                        <RefreshCw className="w-4 h-4 text-luma-ember shrink-0 animate-spin" />
-                      ) : (
-                        <Download className="w-4 h-4 text-luma-smoke shrink-0" />
-                      )}
-                      <div className="text-left">
-                        <div className="font-semibold text-xs text-luma-ivory">
-                          {isExportingCSV ? "Sedang Mengunduh..." : "Unduh CSV Transaksi"}
-                        </div>
-                        <div className="text-xs text-luma-smoke">Seluruh histori ledger</div>
-                      </div>
-                    </button>
 
                     {currentUser && <button type="button" role="menuitem" onClick={() => {
                       setIsBackupModalOpen(true);
-                      setIsExportMenuOpen(false);
+                      setIsUtilitiesMenuOpen(false);
                     }} className="luma-touch w-full flex items-center gap-2.5 rounded-[var(--ai7-radius-control)] px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer">
                       <Download className="h-4 w-4 shrink-0" />
                       <span className="text-xs font-semibold">Backup &amp; restore</span>
@@ -1722,7 +1643,7 @@ export default function FinanceDashboard() {
                             role="menuitem"
                             disabled={isSyncingSheets}
                             onClick={() => {
-                              setIsExportMenuOpen(false);
+                              setIsUtilitiesMenuOpen(false);
                               handleSyncSheets();
                             }}
                             className="luma-touch w-full flex items-center gap-2.5 rounded-[var(--ai7-radius-control)] px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer disabled:opacity-50 border-t border-luma-smokeline"
@@ -1732,14 +1653,14 @@ export default function FinanceDashboard() {
                               <div className="font-semibold text-xs text-luma-ivory">
                                 {isSyncingSheets ? "Menyinkronkan..." : "Sync Google Sheets"}
                               </div>
-                              <div className="text-xs text-luma-smoke">Kirim snapshot data terbaru</div>
+                              <div className="text-xs text-luma-smoke">Kirim laporan siklus aktif</div>
                             </div>
                           </button>
                           <a
                             href={`https://docs.google.com/spreadsheets/d/${currentUser.google_spreadsheet_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => setIsExportMenuOpen(false)}
+                            onClick={() => setIsUtilitiesMenuOpen(false)}
                             role="menuitem"
                             className="luma-touch flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-sage hover:bg-luma-sage/10 transition"
                           >
@@ -1758,7 +1679,7 @@ export default function FinanceDashboard() {
                           type="button"
                           role="menuitem"
                           onClick={() => {
-                            setIsExportMenuOpen(false);
+                            setIsUtilitiesMenuOpen(false);
                             setProfileModalTab("sheets");
                             setIsProfileModalOpen(true);
                           }}
@@ -1797,7 +1718,7 @@ export default function FinanceDashboard() {
             </h1>
             <p className="text-sm text-luma-smoke mt-1 tabular-nums">
               {activeNav === "Ringkasan" && "Saldo kas dan batas belanja harian."}
-              {activeNav === "Transaksi" && "Cari, filter, dan ekspor transaksi."}
+              {activeNav === "Transaksi" && "Cari dan filter riwayat transaksi."}
               {activeNav === "Anggaran" && "Atur batas belanja dan alokasi pemasukan."}
               {activeNav === "Rencana" && "Target tabungan dan tagihan rutin."}
               {activeNav === "Laporan" && "Arus kas, kategori pengeluaran, dan laju belanja."}
@@ -2698,7 +2619,7 @@ export default function FinanceDashboard() {
                             <div className="text-xs text-luma-smoke mt-0.5 truncate">
                               {currentUser?.google_spreadsheet_id
                                 ? `ID: ${currentUser.google_spreadsheet_id}`
-                                : "Cadangkan mutasi kas dan sinkronkan snapshot laporan siklus ke spreadsheet pribadi."}
+                                : "Kirim laporan siklus dan transaksinya ke spreadsheet pribadi."}
                             </div>
                           </div>
                         </div>

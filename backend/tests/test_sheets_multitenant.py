@@ -135,6 +135,46 @@ def test_sync_cycle_snapshot_multi_tenant_isolation(db_session):
         mock_client.open_by_key.assert_called_with("sheet_bbb")
 
 
+def test_snapshot_keeps_personal_tab_and_writes_cycle_transactions_as_values(db_session, test_user):
+    start = date(2026, 2, 25)
+    test_user.google_spreadsheet_id = "test-sheet"
+    db_session.add(PaycheckConfig(
+        user_id=test_user.id, cycle_type="monthly_date", paycheck_day=25,
+        cycle_days=14, pocket_account="Bank Uji",
+    ))
+    db_session.add_all([
+        Transaction(user_id=test_user.id, type="expense", amount=50_000, account="Bank Uji",
+                    category="Makan", description="=1+1", date=date(2026, 3, 24)),
+        Transaction(user_id=test_user.id, type="expense", amount=90_000, account="Bank Uji",
+                    category="Makan", description="Di luar siklus", date=date(2026, 3, 25)),
+    ])
+    db_session.commit()
+    personal = MagicMock(title="Sheet1")
+    report = MagicMock(id=2, row_count=100)
+    google = MagicMock()
+    doc = google.open_by_key.return_value
+    doc.worksheets.return_value = [personal]
+    doc.add_worksheet.return_value = report
+
+    with patch("app.services.sheets_sync.get_google_sheets_client", return_value=google):
+        result = sync_cycle_snapshot(db_session, test_user.id, start)
+        doc.add_worksheet.assert_called_once_with(title=result["sheet_title"], rows=100, cols=10)
+        assert personal.mock_calls == []
+        assert result["transaction_count"] == 1
+        assert result["pocket_spent"] == 50_000
+        upload = report.update.call_args.kwargs
+        assert upload["value_input_option"] == "RAW"
+        assert ["", "2026-03-24", "=1+1", "Makan", "Bank Uji", "EXPENSE", -50_000] in upload["values"]
+
+        report.title = result["sheet_title"]
+        doc.worksheets.return_value = [personal, report]
+        sync_cycle_snapshot(db_session, test_user.id, start)
+        assert doc.add_worksheet.call_count == 1
+        report.unmerge_cells.assert_called_once_with("A1:G100")
+        report.batch_clear.assert_called_once_with(["A1:G100"])
+        assert personal.mock_calls == []
+
+
 # ============================================================================
 # 4. Telegram Bot Command Tests
 # ============================================================================
@@ -202,6 +242,13 @@ def test_api_auth_me_update_google_sheet(db_session, test_user):
     get_resp = client.get("/api/v1/auth/me")
     assert get_resp.status_code == 200
     assert get_resp.json()["google_spreadsheet_id"] == "api_sheet_test_id"
+
+    unrelated = client.put("/api/v1/auth/me", json={"full_name": "Nama Baru"})
+    assert unrelated.json()["google_spreadsheet_id"] == "api_sheet_test_id"
+    disconnected = client.put("/api/v1/auth/me", json={"google_spreadsheet_id": None})
+    assert disconnected.status_code == 200
+    assert disconnected.json()["google_spreadsheet_id"] is None
+    assert client.get("/api/v1/auth/me").json()["google_spreadsheet_id"] is None
 
     app.dependency_overrides.clear()
 

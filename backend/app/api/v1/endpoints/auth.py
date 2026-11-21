@@ -136,7 +136,7 @@ def update_profile(
         user.email = payload.email.strip()
     if payload.password:
         user.hashed_password = hash_password(payload.password)
-    if payload.google_spreadsheet_id is not None or payload.google_sheet_url is not None:
+    if payload.model_fields_set.intersection({"google_spreadsheet_id", "google_sheet_url"}):
         raw_sheet = payload.google_spreadsheet_id if payload.google_spreadsheet_id is not None else payload.google_sheet_url
         if raw_sheet and raw_sheet.strip():
             user.google_spreadsheet_id = extract_spreadsheet_id(raw_sheet)

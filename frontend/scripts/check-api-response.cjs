@@ -32,11 +32,7 @@ const originalFetch = global.fetch;
     const conflict = await authFetch("/api/v1/accounts/1/reconciliation");
     assert.equal(conflict.status, 409);
     assert.equal((await conflict.json()).detail, "Saldo berubah");
-    global.fetch = async () => new Response("date,amount\n2026-11-07,100", {
-      headers: { "Content-Type": "text/csv" },
-    });
-    assert.equal(await (await authFetch("/api/v1/transactions/export")).text(), "date,amount\n2026-11-07,100");
-    console.log("PASS: HTML fallbacks produce a readable error; JSON errors and CSV downloads retain their response bodies.");
+    console.log("PASS: HTML fallbacks produce a readable error; JSON responses retain their bodies.");
   } finally {
     global.fetch = originalFetch;
   }

@@ -14,7 +14,7 @@ from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is
 from app.models.account import Account
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
 from app.models.user import User
-from app.core.helpers import extract_spreadsheet_id
+from app.services.paycheck_cycles import recorded_cycle_ends
 
 WIB = zoneinfo.ZoneInfo(settings.TIMEZONE)
 
@@ -73,18 +73,24 @@ def sync_cycle_snapshot(
 
     # 1. Tentukan tanggal siklus
     cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
-    cycle_days = cfg.cycle_days if cfg and cfg.cycle_days > 0 else 14
-    pocket_account = cfg.pocket_account if cfg and cfg.pocket_account else "Mandiri"
+    from app.api.v1.endpoints.pockets import get_current_cycle_bounds
 
-    if not cycle_start_date:
-        paycheck = db.query(Transaction).filter(
-            Transaction.user_id == user_id,
-            Transaction.type == "income",
-            (Transaction.category.in_(["Gajian", "Gaji", "Pemasukan", "Uang Saku Ortu", "Income"])) | (Transaction.description.ilike("%gajian%")) | (Transaction.description.ilike("%pemasukan%"))
-        ).order_by(desc(Transaction.date), desc(Transaction.id)).first()
-        cycle_start_date = paycheck.date if paycheck else today_wib
+    if cycle_start_date is None:
+        cycle_start_date, cycle_end_date = get_current_cycle_bounds(db, user_id, today_wib)
+    else:
+        cycle_end_date = recorded_cycle_ends(db, user_id).get(cycle_start_date)
+        if cycle_end_date is None:
+            start, end = get_current_cycle_bounds(db, user_id, cycle_start_date)
+            cycle_days = cfg.cycle_days if cfg and cfg.cycle_days and cfg.cycle_days > 0 else 14
+            cycle_end_date = end if start == cycle_start_date else cycle_start_date + timedelta(days=cycle_days - 1)
+    cycle_days = (cycle_end_date - cycle_start_date).days + 1
 
-    cycle_end_date = cycle_start_date + timedelta(days=cycle_days - 1)
+    user_accounts = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id).all()
+    pocket_account = cfg.pocket_account if cfg and cfg.pocket_account else next(
+        (account.name for account in user_accounts if account.type == "operasional" and not account.is_archived),
+        "",
+    )
+    spending_label = pocket_account or "Rekening belanja"
     query_end_date = cycle_end_date + timedelta(days=1)
     
     sheet_title = f"Siklus {format_date_short_id(cycle_start_date)} - {format_date_id(cycle_end_date)}"
@@ -162,7 +168,7 @@ def sync_cycle_snapshot(
             func.coalesce(func.sum(Transaction.amount), 0).label("spent")
         ).filter(
             Transaction.user_id == user_id,
-            Transaction.account == "Mandiri",
+            Transaction.account == pocket_account,
             Transaction.type == "expense",
             Transaction.date >= cycle_start_date,
             Transaction.date <= cycle_end_date,
@@ -210,7 +216,6 @@ def sync_cycle_snapshot(
             )
         ).desc()
     ).all()
-    user_accounts = db.query(Account).filter(Account.user_id == user_id).all()
     account_tags = {acc.name: (acc.tag or ACCOUNT_FUNCTIONS.get(acc.name, "Pos Finansial")) for acc in user_accounts}
 
     balance_map = {a.account: int(a.balance or 0) for a in acc_rows}
@@ -237,32 +242,12 @@ def sync_cycle_snapshot(
     client = get_google_sheets_client()
     doc = client.open_by_key(spreadsheet_id)
 
-    # Cek apakah worksheet sudah ada
-    ws = None
-    for existing_ws in doc.worksheets():
-        if existing_ws.title == sheet_title:
-            ws = existing_ws
-            ws.clear()
-            break
-        elif existing_ws.title == "Sheet1" and len(doc.worksheets()) == 1:
-            ws = existing_ws
-            ws.update_title(sheet_title)
-            ws.clear()
-            break
-
-    total_rows_needed = max(100, len(tx_rows) + 70)
-    if ws is None:
-        ws = doc.add_worksheet(title=sheet_title, rows=total_rows_needed, cols=10)
-    else:
-        if ws.row_count < total_rows_needed:
-            ws.add_rows(total_rows_needed - ws.row_count)
-
     # Siapkan baris data menggunakan NILAI NUMERIK RIIL (Mencegah Formula Syntax #ERROR!)
     rows = []
     # R1: kosong (index 0)
     rows.append(["", "", "", "", "", "", ""])
     # R2: Header Judul (index 1)
-    rows.append(["", f"AI7 FINANCE — RAPOR SIKLUS {cycle_days}-HARI (SNAPSHOT)", "", "", "", "", ""])
+    rows.append(["", f"TILLFOLD — LAPORAN SIKLUS {cycle_days} HARI", "", "", "", "", ""])
     # R3: Sub Header (index 2)
     rows.append(["", f"Periode: {format_date_id(cycle_start_date)} – {format_date_id(cycle_end_date)}  •  Status Pacing: {pace_status}  •  Sinkronisasi: {now_wib.strftime('%d %b %Y %H:%M')} WIB", "", "", "", "", ""])
     # R4: Kosong (index 3)
@@ -277,8 +262,8 @@ def sync_cycle_snapshot(
     # Data Seksi 1 (Numerik Riil)
     sec1_data_start = len(rows)
     rows.append(["", "Total Pemasukan Siklus", "", income_total, "", f"Gajian ({cycle_days} Hari) & Alokasi Pos", ""])
-    rows.append(["", f"Plafon Belanja {pocket_account}", "", pocket_budget, "", f"Pos Saku Operasional {cycle_days} Hari", ""])
-    rows.append(["", f"Realisasi Belanja {pocket_account}", "", pocket_spent, "", f"Hari ke-{day_of_cycle} dari {total_days} hari", ""])
+    rows.append(["", f"Plafon Belanja · {spending_label}", "", pocket_budget, "", f"Pos Saku Operasional {cycle_days} Hari", ""])
+    rows.append(["", f"Realisasi Belanja · {spending_label}", "", pocket_spent, "", f"Hari ke-{day_of_cycle} dari {total_days} hari", ""])
     rows.append(["", "Sisa Saldo Aman Belanja", "", pocket_remaining, "", f"Batas aman: Rp {safe_daily:,.0f}/hari".replace(",", "."), ""])
     sec1_end_idx = len(rows) - 1
 
@@ -288,7 +273,7 @@ def sync_cycle_snapshot(
     # Seksi 2: Neraca Amplop Mandiri (Dinamis N Pos)
     num_envelopes = len(envelope_results)
     sec2_title_idx = len(rows)
-    rows.append(["", f"2. NERACA AMPLOP BELANJA MANDIRI ({num_envelopes} POS)", "", "", "", "", ""])
+    rows.append(["", f"2. ALOKASI BELANJA · {spending_label} ({num_envelopes} POS)", "", "", "", "", ""])
     sec2_hdr_idx = len(rows)
     rows.append(["", "Nama Amplop", "Plafon Standar", "Realisasi Belanja", "Sisa Saldo", "% Terpakai", "Evaluasi"])
     sec2_data_start = len(rows)
@@ -350,8 +335,17 @@ def sync_cycle_snapshot(
         ])
     sec4_end_idx = len(rows) - 1
 
-    # Kirim semua data sel dalam satu batch request
-    ws.update(range_name="A1", values=rows, value_input_option="USER_ENTERED")
+    ws = next((sheet for sheet in doc.worksheets() if sheet.title == sheet_title), None)
+    if ws is None:
+        ws = doc.add_worksheet(title=sheet_title, rows=max(100, len(rows)), cols=10)
+    else:
+        if ws.row_count < len(rows):
+            ws.add_rows(len(rows) - ws.row_count)
+        report_range = f"A1:G{ws.row_count}"
+        ws.unmerge_cells(report_range)
+        ws.batch_clear([report_range])
+
+    ws.update(range_name="A1", values=rows, value_input_option="RAW")
 
     # Konfigurasi Dimensi & Margin Kolom
     col_widths = {

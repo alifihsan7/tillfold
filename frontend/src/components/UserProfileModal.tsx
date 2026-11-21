@@ -466,7 +466,7 @@ export function UserProfileModal({
                 <div>
                   <h3 className="font-medium text-luma-ivory">Laporan di Google Sheets</h3>
                   <p className="text-luma-smoke text-xs mt-1">
-                    Hubungkan Google Spreadsheet pribadi untuk cadangan otomatis dan laporan tiap siklus gajian.
+                    Kirim laporan siklus dan transaksinya dari Tillfold ke Google Sheets.
                   </p>
                 </div>
                 {user.google_spreadsheet_id ? (

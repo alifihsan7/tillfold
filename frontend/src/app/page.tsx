@@ -900,6 +900,11 @@ export default function FinanceDashboard() {
   const chooseSearchResult = (result: SearchResult) => {
     setIsGlobalSearchOpen(false);
     if (result.kind === "transaction") {
+      if (result.data.is_internal_loan_transfer) {
+        setActiveNav("Anggaran");
+        window.location.hash = "#/budget";
+        return;
+      }
       setActiveNav("Transaksi"); window.location.hash = "#/transactions"; setTxToEdit(result.data);
     } else if (result.kind === "account") {
       setActiveNav("Pengaturan"); setSettingsSubTab("rekening"); window.location.hash = "#/accounts"; setAccountToEdit(result.data);

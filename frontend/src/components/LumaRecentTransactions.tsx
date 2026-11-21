@@ -13,6 +13,7 @@ export interface LumaTransaction {
   category: string;
   description: string;
   date: string;
+  is_internal_loan_transfer?: boolean;
 }
 
 interface LumaRecentTransactionsProps {
@@ -129,7 +130,8 @@ export function LumaRecentTransactions({
                   >
                     {formatSignedRupiah(tx.amount, isPositive, formatRupiah)}
                   </div>
-                  {(onEdit || onDelete) && !isAdjustment && (
+                  {tx.is_internal_loan_transfer && <span className="text-xs text-luma-smoke">Dana talangan</span>}
+                  {(onEdit || onDelete) && !isAdjustment && !tx.is_internal_loan_transfer && (
                     <div className="flex items-center gap-1 shrink-0 ml-auto">
                       {onEdit && (
                         <button

@@ -395,6 +395,7 @@ def update_transaction(
     
     if tx.type in ("adjustment_in", "adjustment_out"):
         raise HTTPException(409, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru untuk koreksi.")
+    reject_internal_loan_transfer(tx)
     update_data = payload.model_dump(exclude_unset=True)
     if update_data.get("account") is not None and update_data["account"] != tx.account:
         require_owned_accounts(db, current_user.id, update_data["account"])
@@ -436,6 +437,7 @@ def update_transaction(
         pair = find_paired_transfer(db, tx)
         if not pair:
             raise HTTPException(status_code=400, detail="Pasangan transfer tidak ditemukan; transfer belum dapat diedit")
+        reject_internal_loan_transfer(pair)
         if (update_data.get("account") or tx.account) == pair.account:
             raise HTTPException(status_code=400, detail="Rekening asal dan tujuan tidak boleh sama")
         if update_data.get("category") not in (None, "Transfer"):
@@ -453,6 +455,11 @@ def update_transaction(
     db.refresh(tx)
     return tx
 
+def reject_internal_loan_transfer(tx: Transaction) -> None:
+    if tx.is_internal_loan_transfer:
+        raise HTTPException(409, "Transaksi dana talangan hanya bisa dikelola melalui Dana talangan internal.")
+
+
 @router.delete("/{tx_id}")
 def delete_transaction(
     tx_id: int,
@@ -465,6 +472,7 @@ def delete_transaction(
 
     if tx.type in ("adjustment_in", "adjustment_out"):
         raise HTTPException(409, "Catatan penyesuaian disimpan sebagai riwayat. Gunakan rekonsiliasi baru untuk koreksi.")
+    reject_internal_loan_transfer(tx)
     receipt = lock_paycheck_receipt(db, tx)
     if receipt and receipt.transaction_id == tx.id:
         if any(item["transfer_id"] for item in receipt_allocations(db, receipt)):
@@ -479,6 +487,7 @@ def delete_transaction(
         allocations = receipt_allocations(db, receipt) if receipt else []
         pair = find_paired_transfer(db, tx)
         if pair:
+            reject_internal_loan_transfer(pair)
             db.delete(pair)
             deleted_ids.append(pair.id)
         if receipt:

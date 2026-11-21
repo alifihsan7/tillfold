@@ -304,6 +304,33 @@ def test_settle_partial_and_full_internal_loan(client, db_session, test_user):
     assert balances_final["BRI 2"] == 1_000_000
 
 
+def test_loan_ledger_rows_are_read_only(client, db_session, test_user):
+    source = seed_account_with_balance(db_session, test_user.id, "Sumber", type="darurat", balance=1_000_000)
+    target = seed_account_with_balance(db_session, test_user.id, "Tujuan", type="operasional", balance=100_000)
+    created = client.post("/api/v1/internal-loans", json={
+        "source_account_id": source.id, "target_account_id": target.id, "amount": 150_000,
+    })
+    assert created.status_code == 201, created.text
+    loan_id = created.json()["id"]
+    settled = client.post(f"/api/v1/internal-loans/{loan_id}/settle", json={})
+    assert settled.status_code == 200, settled.text
+
+    history = client.get("/api/v1/transactions/history").json()["items"]
+    transfers = [row for row in history if row["type"] in ("transfer_in", "transfer_out")]
+    assert len(transfers) == 4
+    for row in transfers:
+        assert row["is_internal_loan_transfer"] is True
+        path = f"/api/v1/transactions/{row['id']}"
+        assert client.put(path, json={"amount": 1}).status_code == 409
+        assert client.delete(path).status_code == 409
+
+    assert db_session.query(Transaction).filter(Transaction.type.in_(("transfer_in", "transfer_out"))).count() == 4
+    balances = {account["name"]: account["current_balance"] for account in client.get("/api/v1/accounts").json()}
+    assert balances == {"Sumber": 1_000_000, "Tujuan": 100_000}
+    loan = db_session.get(InternalLoan, loan_id)
+    assert (loan.status, loan.remaining_amount) == ("settled", 0)
+
+
 def test_settle_insufficient_debtor_balance(client, db_session, test_user):
     bri = seed_account_with_balance(db_session, test_user.id, "BRI 2", type="darurat", balance=500_000)
     mandiri = seed_account_with_balance(db_session, test_user.id, "Mandiri", type="operasional", balance=0)

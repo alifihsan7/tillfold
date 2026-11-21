@@ -29,6 +29,7 @@ class TransactionOut(TransactionBase):
     amount: int = Field(..., ge=0, le=9_000_000_000_000_000)
     id: int
     raw_text: Optional[str] = None
+    is_internal_loan_transfer: bool = False
     pocket_id: Optional[int] = None
     pocket_name: Optional[str] = None
     created_at: dt_datetime

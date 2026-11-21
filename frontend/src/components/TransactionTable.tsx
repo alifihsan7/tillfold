@@ -12,6 +12,7 @@ export interface Transaction {
   category: string;
   description: string;
   raw_text?: string;
+  is_internal_loan_transfer?: boolean;
   date: string;
 }
 
@@ -65,8 +66,8 @@ export function TransactionTable({
                   {formatSignedRupiah(tx.amount, isPositive, formatRupiah)}
                 </p>
               </div>
-              {showActions && (isAdjustment ? (
-                <p className="text-xs text-luma-smoke mt-1">Rekonsiliasi</p>
+              {showActions && (isAdjustment || tx.is_internal_loan_transfer ? (
+                <p className="text-xs text-luma-smoke mt-1">{isAdjustment ? "Rekonsiliasi" : "Dana talangan"}</p>
               ) : (
                 <div className="flex justify-end gap-1 -mr-2">
                   {onEdit && <button type="button" onClick={() => onEdit(tx)} aria-label={`Ubah transaksi ${tx.description}`}
@@ -158,7 +159,8 @@ export function TransactionTable({
                       <td className="py-4 px-4 sm:px-6 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100 transition">
                           {isAdjustment && <span className="text-xs text-luma-smoke">Rekonsiliasi</span>}
-                          {onEdit && !isAdjustment && (
+                          {tx.is_internal_loan_transfer && <span className="text-xs text-luma-smoke">Dana talangan</span>}
+                          {onEdit && !isAdjustment && !tx.is_internal_loan_transfer && (
                             <button
                               type="button"
                               onClick={() => onEdit(tx)}
@@ -169,7 +171,7 @@ export function TransactionTable({
                               <Edit2 size={16} aria-hidden="true" />
                             </button>
                           )}
-                          {onDelete && !isAdjustment && (
+                          {onDelete && !isAdjustment && !tx.is_internal_loan_transfer && (
                             <button
                               type="button"
                               onClick={() => onDelete(tx)}

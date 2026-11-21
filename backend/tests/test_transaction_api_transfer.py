@@ -176,6 +176,12 @@ def test_transfer_creation_and_paired_cascade_deletion(client, db_session, test_
     assert out_tx.type == "transfer_out"
     assert in_tx.type == "transfer_in"
 
+    update = client.put(f"/api/v1/transactions/{out_id}", json={"amount": 200_000})
+    assert update.status_code == 200, update.text
+    assert update.json()["is_internal_loan_transfer"] is False
+    db_session.refresh(in_tx)
+    assert in_tx.amount == 200_000
+
     # Delete from the 'transfer_out' side
     del_res = client.delete(f"/api/v1/transactions/{out_id}")
     assert del_res.status_code == 200

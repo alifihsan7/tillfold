@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 from sqlalchemy import Column, Integer, BigInteger, String, Text, Date, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
@@ -20,6 +21,17 @@ class Transaction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     pocket = relationship("Pocket", foreign_keys=[pocket_id])
+
+    @property
+    def is_internal_loan_transfer(self) -> bool:
+        if self.type not in ("transfer_in", "transfer_out"):
+            return False
+        raw_text = self.raw_text or ""
+        if raw_text.startswith(("transfer out (internal loan):", "transfer in (internal loan):")):
+            return bool(re.search(r"\[internal_loan_id:[0-9]+\]$", raw_text))
+        if raw_text.startswith(("transfer out (pelunasan loan #", "transfer in (pelunasan loan #")):
+            return bool(re.search(r"\[internal_loan_settle_id:[0-9]+\]$", raw_text))
+        return False
 
     @property
     def pocket_name(self) -> Optional[str]:

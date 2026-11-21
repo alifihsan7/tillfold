@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from datetime import datetime, date, timedelta
 import zoneinfo
@@ -27,6 +28,7 @@ from app.services.analytics import compute_safe_to_spend_metrics
 from app.core.config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 WIB = zoneinfo.ZoneInfo(settings.TIMEZONE)
 
 # Period labels are shown verbatim in the UI: Indonesian month names (strftime
@@ -496,18 +498,41 @@ def sync_sheets_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from google.auth.exceptions import GoogleAuthError
+    from gspread.exceptions import APIError, SpreadsheetNotFound
+
     from app.services.sheets_sync import sync_cycle_snapshot
     start_d = None
     if cycle_start:
         try:
             start_d = datetime.strptime(cycle_start, "%Y-%m-%d").date()
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid date format, use YYYY-MM-DD")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Format tanggal siklus harus YYYY-MM-DD.")
     try:
-        res = sync_cycle_snapshot(db, user_id=current_user.id, cycle_start_date=start_d)
-        return res
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Google Sheets sync failed: {str(e)}")
+        return sync_cycle_snapshot(db, user_id=current_user.id, cycle_start_date=start_d)
+    except SpreadsheetNotFound as exc:
+        raise HTTPException(404, "Spreadsheet tidak bisa dibuka. Periksa tautannya dan bagikan akses Editor ke akun layanan Tillfold yang tampil di Pengaturan.") from exc
+    except (APIError, PermissionError) as exc:
+        provider_error = exc.__cause__ if isinstance(exc, PermissionError) else exc
+        if isinstance(provider_error, APIError):
+            details = provider_error.error.get("details", [])
+            if any(isinstance(item, dict) and item.get("reason") == "SERVICE_DISABLED" for item in details):
+                logger.warning("Google API disabled for Sheets sync")
+                raise HTTPException(503, "Google Sheets API belum aktif di konfigurasi server Tillfold.") from exc
+            if provider_error.response.status_code == 429:
+                raise HTTPException(429, "Google Sheets sedang membatasi permintaan. Coba lagi sebentar.") from exc
+        if isinstance(exc, PermissionError) or exc.response.status_code == 403:
+            raise HTTPException(403, "Google menolak akses. Berikan akses Editor pada spreadsheet ke akun layanan Tillfold yang tampil di Pengaturan.") from exc
+        if exc.response.status_code == 404:
+            raise HTTPException(404, "Spreadsheet tidak bisa dibuka. Periksa tautannya dan bagikan akses Editor ke akun layanan Tillfold yang tampil di Pengaturan.") from exc
+        logger.warning("Sheets sync rejected by Google (HTTP %s)", exc.response.status_code)
+        raise HTTPException(502, "Google Sheets menolak sinkronisasi. Coba lagi.") from exc
+    except (FileNotFoundError, GoogleAuthError) as exc:
+        logger.warning("Sheets sync could not authenticate (%s)", type(exc).__name__)
+        raise HTTPException(503, "Koneksi Google Sheets di server Tillfold belum siap. Coba lagi nanti.") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Unexpected error during Google Sheets sync")
+        raise HTTPException(500, "Sinkronisasi Google Sheets gagal. Coba lagi.") from exc
 

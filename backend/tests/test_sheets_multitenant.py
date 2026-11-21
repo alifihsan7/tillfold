@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
+from gspread.exceptions import APIError, SpreadsheetNotFound
 
 from app.db.session import Base
 from app.models.user import User
@@ -285,3 +286,44 @@ def test_api_sync_sheets_universal_for_non_admin_user(db_session, test_user):
         mock_client.open_by_key.assert_called_with("universal_sheet_id")
 
     app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize(("failure", "status", "message"), [
+    (PermissionError(), 403, "akses Editor"),
+    (SpreadsheetNotFound(), 404, "Periksa tautannya"),
+    (FileNotFoundError("private-credentials.json"), 503, "server Tillfold belum siap"),
+])
+def test_api_sync_sheets_gives_actionable_error(db_session, test_user, monkeypatch, failure, status, message):
+    test_user.google_spreadsheet_id = "test-sheet"
+    db_session.commit()
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db_session)
+    monkeypatch.setitem(app.dependency_overrides, get_current_user, lambda: test_user)
+    with patch("app.services.sheets_sync.get_google_sheets_client") as get_client:
+        if isinstance(failure, FileNotFoundError):
+            get_client.side_effect = failure
+        else:
+            get_client.return_value.open_by_key.side_effect = failure
+        response = TestClient(app).post("/api/v1/analytics/sync-sheets")
+    assert response.status_code == status
+    assert message in response.json()["detail"]
+    assert "private-credentials.json" not in response.text
+
+
+def test_api_sync_sheets_distinguishes_disabled_google_api(db_session, test_user, monkeypatch):
+    test_user.google_spreadsheet_id = "test-sheet"
+    db_session.commit()
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db_session)
+    monkeypatch.setitem(app.dependency_overrides, get_current_user, lambda: test_user)
+    google_response = MagicMock(status_code=403)
+    google_response.json.return_value = {"error": {
+        "code": 403, "message": "provider project details",
+        "details": [{"reason": "SERVICE_DISABLED"}],
+    }}
+    failure = PermissionError()
+    failure.__cause__ = APIError(google_response)
+    with patch("app.services.sheets_sync.get_google_sheets_client") as get_client:
+        get_client.return_value.open_by_key.side_effect = failure
+        response = TestClient(app).post("/api/v1/analytics/sync-sheets")
+    assert response.status_code == 503
+    assert "Google Sheets API belum aktif" in response.json()["detail"]
+    assert "provider project details" not in response.text

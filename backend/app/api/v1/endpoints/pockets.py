@@ -407,9 +407,12 @@ def compute_pockets_summary(
     account_id: Optional[int] = None,
     cycle_start: Optional[date] = None,
     cycle_end: Optional[date] = None,
+    *,
+    persist: bool = True,
 ) -> PocketSummaryResponse:
     """Computes comprehensive summary, auto-deduction metrics, and balance for pockets of an account."""
-    ensure_default_pockets(db, user_id, account_id=account_id)
+    if persist:
+        ensure_default_pockets(db, user_id, account_id=account_id)
 
     if not cycle_start or not cycle_end:
         calc_start, calc_end = get_current_cycle_bounds(db, user_id)
@@ -499,7 +502,7 @@ def compute_pockets_summary(
             target = int(sub.amount) if state == "active" else 0
             link_states[pocket.id] = state
         targets[pocket.id] = target
-    sum_other_targets = sum(targets[p.id] for p in ordered_pockets if not p.slug.startswith("utama"))
+    sum_other_allocations = sum(p.target_amount for p in ordered_pockets if not p.slug.startswith("utama"))
     allocated_spending = sum(spent_by_slug.get(p.slug, 0) for p in ordered_pockets)
 
     pocket_ids = [p.id for p in ordered_pockets]
@@ -529,18 +532,21 @@ def compute_pockets_summary(
     items: List[PocketItemResponse] = []
     total_target = 0
     total_spent = 0
+    total_remaining = 0
 
     for p in ordered_pockets:
         target = targets[p.id]
-        if p.slug.startswith("utama") and target == 0 and not p.subscription_id:
-            target = max(0, total_balance + allocated_spending - sum_other_targets)
+        allocation = p.target_amount
+        if p.slug.startswith("utama") and allocation == 0 and not p.subscription_id:
+            allocation = total_balance + allocated_spending - sum_other_allocations
+            target = max(0, allocation)
 
         spent = spent_by_slug.get(p.slug, 0)
-        remaining = target - spent
+        remaining = allocation - spent
         pocket_bal = remaining
         pct = round((spent / target * 100), 1) if target > 0 else 0.0
 
-        if p.balance != pocket_bal:
+        if persist and p.balance != pocket_bal:
             p.balance = pocket_bal
 
         p_acc = db.query(Account).filter(Account.id == p.account_id).first() if p.account_id else acc
@@ -572,13 +578,13 @@ def compute_pockets_summary(
         items.append(item)
         total_target += target
         total_spent += spent
+        total_remaining += remaining
 
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-
-    total_remaining = total_target - total_spent
+    if persist:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
 
     return PocketSummaryResponse(
         account_id=acc.id if acc else None,
@@ -1072,12 +1078,10 @@ def link_pocket_subscription(
         existing = db.query(Pocket).filter(Pocket.user_id == current_user.id, Pocket.subscription_id == sub.id, Pocket.id != pocket.id).first()
         if existing:
             raise HTTPException(status_code=409, detail=f"Tagihan sudah terhubung ke kantong {existing.name}")
-        pocket.subscription_id = sub.id
-        pocket.target_amount = int(sub.amount)
+        if pocket.subscription_id != sub.id:
+            pocket.subscription_id = sub.id
+            pocket.target_amount = int(sub.amount)
     else:
-        sub = db.query(Subscription).filter(Subscription.id == pocket.subscription_id, Subscription.user_id == current_user.id).first() if pocket.subscription_id else None
-        if sub:
-            pocket.target_amount = int(sub.amount) if sub.is_active else 0
         pocket.subscription_id = None
     try:
         db.commit()

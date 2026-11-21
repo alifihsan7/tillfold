@@ -12,7 +12,8 @@ from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.account import Account
 from app.models.category import Category
 from app.models.goal import Goal
-from app.models.pocket import Pocket
+from app.models.internal_loan import InternalLoan
+from app.models.pocket import Pocket, PocketMutation
 from app.models.paycheck import (
     LegacyPaycheckCycle, PaycheckBucket, PaycheckConfig, PaycheckCycle,
     PaycheckReceipt, PaycheckSession,
@@ -31,9 +32,23 @@ MODELS = {
     "paycheck_cycles": PaycheckCycle, "legacy_paycheck_cycles": LegacyPaycheckCycle,
     "paycheck_receipts": PaycheckReceipt, "pockets": Pocket,
     "subscription_payments": SubscriptionPayment,
+    "internal_loans": InternalLoan, "pocket_mutations": PocketMutation,
 }
 MAX_BYTES = 25 * 1024 * 1024
 TAG = re.compile(r"\[(pair_id|paycheck_receipt):(\d+)\]")
+LOAN_TAG = re.compile(r"\[(internal_loan_(?:id|settle_id|reversal_id|reversal_of)):(\d+)\]")
+LOAN_SECTIONS = {"internal_loans", "pocket_mutations"}
+POCKET_FIELDS = (
+    ("transactions", "pocket_id", "pockets"),
+    ("internal_loans", "source_account_id", "accounts"),
+    ("internal_loans", "target_account_id", "accounts"),
+    ("internal_loans", "source_pocket_id", "pockets"),
+    ("internal_loans", "target_pocket_id", "pockets"),
+    ("pocket_mutations", "account_id", "accounts"),
+    ("pocket_mutations", "pocket_id", "pockets"),
+    ("pocket_mutations", "counterpart_pocket_id", "pockets"),
+    ("pocket_mutations", "transaction_id", "transactions"),
+)
 
 
 def invalid():
@@ -75,7 +90,7 @@ def export_backup(db: Session, user_id: int):
                         row["raw_text"] = f"[pair_id:{pair.id}] {raw}"
             rows.append(row)
         data[name] = rows
-    return {"format": "tillfold-backup", "version": 4,
+    return {"format": "tillfold-backup", "version": 5,
             "exported_at": datetime.now(timezone.utc).isoformat(), "data": data}
 
 
@@ -127,10 +142,15 @@ def json_rows(value):
 
 
 def validate_backup(payload):
-    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4):
+    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4, 5):
         invalid()
+    version = payload["version"]
     data = payload.get("data")
-    if isinstance(data, dict) and payload["version"] in (1, 2):
+    if isinstance(data, dict) and version < 5:
+        if LOAN_SECTIONS.intersection(data):
+            invalid()
+        data = {**data, **dict.fromkeys(LOAN_SECTIONS, [])}
+    if isinstance(data, dict) and version in (1, 2):
         if set(data) == set(MODELS) - {"subscription_payments"}:
             data = {**data, "subscription_payments": []}
         elif data.get("subscription_payments"):
@@ -149,6 +169,8 @@ def validate_backup(payload):
         required = {column.name for column in columns}
         rows, keys = [], set()
         for row in data[name]:
+            if model is Transaction and isinstance(row, dict) and version < 5:
+                row = {"pocket_id": None, **row}
             if model is Account and isinstance(row, dict) and payload["version"] < 4:
                 if row.get("is_archived"):
                     invalid()
@@ -170,10 +192,25 @@ def validate_backup(payload):
         ("pockets", "account_id", "accounts"), ("pockets", "subscription_id", "subscriptions"),
         ("subscription_payments", "subscription_id", "subscriptions"),
         ("subscription_payments", "transaction_id", "transactions"),
+        *POCKET_FIELDS,
     ]:
         for row in parsed[name]:
             if row[field] is not None and row[field] not in indexes.get(target, {}):
                 invalid()
+    for loan in parsed["internal_loans"]:
+        if not 0 <= loan["remaining_amount"] <= loan["amount"] or loan["amount"] <= 0:
+            invalid()
+        if loan["status"] not in ("active", "settled", "cancelled"):
+            invalid()
+        if (loan["status"] == "settled") != (loan["remaining_amount"] == 0):
+            invalid()
+        for side in ("source", "target"):
+            pocket_id = loan[f"{side}_pocket_id"]
+            if pocket_id is not None and indexes["pockets"][pocket_id]["account_id"] != loan[f"{side}_account_id"]:
+                invalid()
+    for mutation in parsed["pocket_mutations"]:
+        if indexes["pockets"][mutation["pocket_id"]]["account_id"] not in (None, mutation["account_id"]):
+            invalid()
     if parsed["accounts"] and all(row["is_archived"] for row in parsed["accounts"]):
         invalid()
     if len(parsed["paycheck_configs"]) > 1:
@@ -241,14 +278,25 @@ def summary(data):
 def restore_backup(db: Session, user: User, data):
     db.query(User).filter(User.id == user.id).with_for_update().one()
     populated = any(scoped(db, model, user.id).first() is not None for model in (
-        Account, Transaction, Subscription, Goal, PaycheckSession, PaycheckReceipt, LegacyPaycheckCycle, SubscriptionPayment,
+        Transaction, Subscription, Goal, PaycheckSession, PaycheckReceipt, LegacyPaycheckCycle, SubscriptionPayment,
+        InternalLoan, PocketMutation,
     ))
+    from app.api.v1.endpoints.accounts import DEFAULT_ACCOUNTS
     from app.api.v1.endpoints.pockets import DEFAULT_POCKET_SPECS
 
+    default_accounts = {spec["name"]: spec for spec in DEFAULT_ACCOUNTS}
+    accounts = scoped(db, Account, user.id).all()
+    seeded_accounts = {account.id for account in accounts
+                       if account.name in default_accounts and not account.is_archived
+                       and all(getattr(account, key) == value for key, value in default_accounts[account.name].items())}
+    if accounts and (len(accounts) != len(default_accounts) or len(seeded_accounts) != len(accounts)):
+        populated = True
     defaults = {spec["slug"]: spec for spec in DEFAULT_POCKET_SPECS}
     for pocket in scoped(db, Pocket, user.id):
         spec = defaults.get(pocket.slug)
-        if (not spec or pocket.account_id is not None or pocket.subscription_id is not None
+        if pocket.account_id in seeded_accounts and pocket.slug == f"utama-{pocket.account_id}":
+            spec = defaults.get("utama")
+        if (not spec or (pocket.account_id is not None and pocket.account_id not in seeded_accounts) or pocket.subscription_id is not None
                 or pocket.name != spec["name"] or pocket.role != spec.get("role", "operasional")
                 or pocket.target_amount != spec["default_target"] or not pocket.is_active):
             populated = True
@@ -259,6 +307,7 @@ def restore_backup(db: Session, user: User, data):
     scoped(db, PaycheckBucket, user.id).delete(synchronize_session=False)
     scoped(db, PaycheckConfig, user.id).delete(synchronize_session=False)
     scoped(db, Category, user.id).delete(synchronize_session=False)
+    scoped(db, Account, user.id).delete(synchronize_session=False)
     maps = {}
     for name, model in MODELS.items():
         maps[name] = {}
@@ -292,17 +341,30 @@ def restore_backup(db: Session, user: User, data):
                 row["transaction_id"] = maps["transactions"][row["transaction_id"]]
                 if row["subscription_id"] is not None:
                     row["subscription_id"] = maps["subscriptions"][row["subscription_id"]]
+            for owner, field, target in POCKET_FIELDS:
+                if owner == name:
+                    row[field] = maps.get(target, {}).get(row[field])
             obj = model(**row)
             db.add(obj)
             db.flush()
             if old_id is not None:
                 maps[name][old_id] = obj.id
     for original in data["transactions"]:
+        tx = db.get(Transaction, maps["transactions"][original["id"]])
+        tx.pocket_id = maps["pockets"].get(original["pocket_id"])
         if original["raw_text"]:
             def remap(match):
                 target = maps["transactions"].get(int(match[2]))
                 return f"[{match[1]}:{target}]" if target is not None else ""
-            db.get(Transaction, maps["transactions"][original["id"]]).raw_text = TAG.sub(remap, original["raw_text"])
+            def remap_loan(match):
+                section = "transactions" if match[1] == "internal_loan_reversal_of" else "internal_loans"
+                target = maps[section].get(int(match[2]))
+                if target is None:
+                    return f"[archived_{match[1]}:{match[2]}]"
+                return f"[{match[1]}:{target}]"
+
+            raw = TAG.sub(remap, original["raw_text"])
+            tx.raw_text = LOAN_TAG.sub(remap_loan, raw) if tx.is_internal_loan_transfer else raw
     user.is_onboarded = True
     db.flush()
     result = summary(export_backup(db, user.id)["data"])

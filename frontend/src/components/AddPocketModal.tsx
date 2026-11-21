@@ -88,10 +88,10 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
           />
         </fieldset>
         <fieldset disabled={saving} className="space-y-1.5">
-          <legend className="text-xs font-semibold text-zinc-300">Target komitmen</legend>
+          <legend className="text-xs font-semibold text-zinc-300">Alokasi awal</legend>
           <CurrencyInput value={amount} onChange={setAmount} placeholder="0" accent="amber" />
           <p className="text-xs text-luma-smoke mt-1.5">
-            Target komitmen untuk kantong ini. Saldo kas riil dapat dipindahkan dari Kantong Utama kapan saja melalui tombol Pindah saldo.
+            Nominal ini ikut berubah saat saldo dipindahkan antar-kantong.
           </p>
         </fieldset>
         <div className="flex justify-end gap-2.5 pt-4 border-t border-luma-smokeline">

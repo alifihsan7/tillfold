@@ -22,7 +22,7 @@ async def read_backup(request: Request):
             raise HTTPException(413, "Ukuran backup maksimal 25 MB.")
     try:
         payload = json.loads(content)
-        return validate_backup(payload)
+        return validate_backup(payload), payload["version"]
     except (ValueError, TypeError, RecursionError, OverflowError):
         raise HTTPException(400, "File JSON backup tidak dapat dibaca.")
 
@@ -47,12 +47,16 @@ def download_backup(user: User = Depends(get_strict_current_user), db: Session =
 
 @router.post("/preview")
 async def preview_backup(request: Request, user: User = Depends(get_strict_current_user)):
-    return summary(await read_backup(request))
+    data, version = await read_backup(request)
+    result = summary(data)
+    if version < 5:
+        result["legacy_missing_loan_history"] = True
+    return result
 
 
 @router.post("/restore")
 async def restore(request: Request, user: User = Depends(get_strict_current_user), db: Session = Depends(get_db)):
-    data = await read_backup(request)
+    data, _ = await read_backup(request)
     try:
         return restore_backup(db, user, data)
     except IntegrityError:

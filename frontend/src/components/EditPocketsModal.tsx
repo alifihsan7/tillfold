@@ -148,7 +148,7 @@ export function EditPocketsModal({
                 <p className="text-xs text-luma-smoke">
                   Target sinkron dengan tagihan {pocket.subscription_name || "terhubung"}. Lepaskan hubungan tagihan untuk mengaturnya manual.
                 </p>
-              ) : pocket.slug === "utama" ? (
+              ) : pocket.slug === "utama" || pocket.slug.startsWith("utama-") ? (
                 <p className="text-xs text-luma-smoke">
                   Kantong Utama adalah kas bebas yang belum dialokasikan. Targetnya boleh 0.
                 </p>

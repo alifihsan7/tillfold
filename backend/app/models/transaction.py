@@ -28,9 +28,11 @@ class Transaction(Base):
             return False
         raw_text = self.raw_text or ""
         if raw_text.startswith(("transfer out (internal loan):", "transfer in (internal loan):")):
-            return bool(re.search(r"\[internal_loan_id:[0-9]+\]$", raw_text))
+            return bool(re.search(r"\[(?:archived_)?internal_loan_id:[0-9]+\]$", raw_text))
         if raw_text.startswith(("transfer out (pelunasan loan #", "transfer in (pelunasan loan #")):
-            return bool(re.search(r"\[internal_loan_settle_id:[0-9]+\]$", raw_text))
+            return bool(re.search(r"\[(?:archived_)?internal_loan_settle_id:[0-9]+\]$", raw_text))
+        if raw_text.startswith(("transfer out (koreksi pelunasan):", "transfer in (koreksi pelunasan):")):
+            return bool(re.search(r"\[(?:archived_)?internal_loan_reversal_id:[0-9]+\]$", raw_text))
         return False
 
     @property

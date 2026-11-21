@@ -176,7 +176,7 @@ export function Pockets({
     data?.total_balance ?? data?.total_pocket_balance ?? data?.total_jago_balance ?? 0;
 
   const utamaPocket = useMemo(
-    () => pockets.find((p) => p.slug === "utama"),
+    () => pockets.find((p) => p.slug === "utama" || p.slug.startsWith("utama-")),
     [pockets]
   );
   const utamaBalance =
@@ -356,7 +356,7 @@ export function Pockets({
           {pockets.map((pocket) => {
             const balance = pocket.balance ?? pocket.remaining_amount ?? 0;
             const target = pocket.target_amount ?? 0;
-            const isUtama = pocket.slug === "utama";
+            const isUtama = pocket === utamaPocket;
             const state = getPocketStatus(balance, target, isUtama);
             const status = statusFor(state.tone);
             const fillPct =
@@ -421,7 +421,7 @@ export function Pockets({
                       >
                         {pocket.subscription_name || "Tagihan terhubung"} ·{" "}
                         {pocket.subscription_status === "active"
-                          ? "Autodebet sinkron"
+                          ? "Target mengikuti nominal tagihan"
                           : "Tagihan non-aktif"}
                       </p>
                     )}
@@ -431,7 +431,7 @@ export function Pockets({
                   {!isUtama && target > 0 && fillPct !== null && (
                     <div className="space-y-1.5 pt-1">
                       <div className="flex justify-between items-center text-xs tabular-nums text-luma-smoke">
-                        <span>Target: {formatRupiah(target)}</span>
+                        <span>{pocket.subscription_id ? "Target tagihan" : "Alokasi"}: {formatRupiah(target)}</span>
                         <span className="font-semibold text-luma-ivory">{fillPct}%</span>
                       </div>
                       <div

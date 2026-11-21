@@ -17,6 +17,8 @@ from app.services.internal_loans import (
     cancel_internal_loan,
     list_internal_loans,
     get_internal_loan_by_id,
+    latest_reversible_settlement,
+    reverse_internal_loan_settlement,
 )
 
 router = APIRouter()
@@ -93,6 +95,31 @@ def settle_loan(
         loan_id=loan_id,
         payload=request_payload,
     )
+
+
+@router.get("/{loan_id}/settlements/latest")
+def get_latest_settlement(
+    loan_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    loan = get_internal_loan_by_id(db, current_user.id, loan_id)
+    if not loan:
+        raise HTTPException(404, "Pinjaman internal tidak ditemukan.")
+    tx = latest_reversible_settlement(db, loan)
+    if not tx:
+        raise HTTPException(404, "Tidak ada pelunasan yang bisa dikoreksi.")
+    return {"id": tx.id, "amount": tx.amount, "date": tx.date}
+
+
+@router.post("/{loan_id}/settlements/{transaction_id}/reverse", response_model=InternalLoanResponse)
+def reverse_settlement(
+    loan_id: int,
+    transaction_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return reverse_internal_loan_settlement(db, current_user, loan_id, transaction_id)
 
 
 @router.delete("/{loan_id}", response_model=InternalLoanResponse)

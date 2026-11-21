@@ -14,12 +14,13 @@ def find_paired_transfer(db: Session, tx: Transaction) -> Optional[Transaction]:
         Transaction.type == target_type,
         Transaction.amount == tx.amount,
         Transaction.date == tx.date,
-        Transaction.account != tx.account,
     )
     marker = re.search(r"\[pair_id:(\d+)\]", tx.raw_text or "")
     if marker:
         pair = candidates.filter(Transaction.id == int(marker.group(1))).first()
-        if pair:
+        if pair and (pair.account != tx.account or (
+            pair.is_internal_loan_transfer and tx.is_internal_loan_transfer and pair.pocket_id != tx.pocket_id
+        )):
             reverse = re.search(r"\[pair_id:(\d+)\]", pair.raw_text or "")
             if reverse is None or int(reverse.group(1)) == tx.id:
                 return pair

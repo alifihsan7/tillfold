@@ -1,12 +1,14 @@
+import re
 import zoneinfo
 from datetime import datetime
 from typing import List, Optional, Tuple
 from fastapi import HTTPException
-from sqlalchemy import case, func
+from sqlalchemy import case, func, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
+from app.core.transfer import find_paired_transfer
 from app.models.account import Account
 from app.models.pocket import Pocket, PocketMutation
 from app.models.transaction import Transaction
@@ -45,7 +47,7 @@ def get_account_balance(db: Session, user_id: int, account_name: str) -> int:
 def get_pocket_balance(db: Session, user_id: int, pocket: Pocket) -> int:
     """Calculates real-time balance for a pocket."""
     from app.api.v1.endpoints.pockets import compute_pockets_summary
-    summary = compute_pockets_summary(db, user_id, account_id=pocket.account_id)
+    summary = compute_pockets_summary(db, user_id, account_id=pocket.account_id, persist=False)
     item = next((p for p in summary.pockets if p.id == pocket.id), None)
     return int(item.balance if item else pocket.balance)
 
@@ -106,6 +108,19 @@ def get_internal_loan_by_id(db: Session, user_id: int, loan_id: int) -> Optional
         InternalLoan.id == loan_id,
         InternalLoan.user_id == user_id,
     ).first()
+
+
+def lock_loan(db: Session, user_id: int, loan_id: int) -> InternalLoan:
+    query = db.query(InternalLoan).filter(InternalLoan.id == loan_id, InternalLoan.user_id == user_id)
+    if db.get_bind().dialect.name == "sqlite":
+        # SQLite ignores FOR UPDATE. Acquire its write lock before reading repayment history.
+        db.execute(update(InternalLoan).where(
+            InternalLoan.id == loan_id, InternalLoan.user_id == user_id,
+        ).values(remaining_amount=InternalLoan.remaining_amount))
+    loan = query.populate_existing().with_for_update().first()
+    if not loan:
+        raise HTTPException(404, "Pinjaman internal tidak ditemukan.")
+    return loan
 
 
 def create_internal_loan(
@@ -170,12 +185,12 @@ def create_internal_loan(
             raise HTTPException(status_code=400, detail=f"Kantong tujuan '{target_pocket.name}' tidak terdaftar pada rekening '{target_acc.name}'")
 
     # 4. Check source balance
+    source_pocket_balance = get_pocket_balance(db, current_user.id, source_pocket) if source_pocket else 0
     if source_pocket:
-        pocket_bal = get_pocket_balance(db, current_user.id, source_pocket)
-        if pocket_bal < payload.amount:
+        if source_pocket_balance < payload.amount:
             raise HTTPException(
                 status_code=400,
-                detail=f"Saldo kantong sumber '{source_pocket.name}' tidak mencukupi (Tersedia: Rp{pocket_bal:,}, Dibutuhkan: Rp{payload.amount:,})".replace(",", ".")
+                detail=f"Saldo kantong sumber '{source_pocket.name}' tidak mencukupi (Tersedia: Rp{source_pocket_balance:,}, Dibutuhkan: Rp{payload.amount:,})".replace(",", ".")
             )
 
     source_acc_bal = get_account_balance(db, current_user.id, source_acc.name)
@@ -186,6 +201,7 @@ def create_internal_loan(
         )
 
     # 5. Atomic execution: ledger transactions & internal loan record
+    target_pocket_balance = get_pocket_balance(db, current_user.id, target_pocket) if target_pocket else 0
     now_wib = datetime.now(WIB)
     tx_date = now_wib.date()
 
@@ -237,7 +253,7 @@ def create_internal_loan(
 
     # Adjust pocket target/balance & log pocket mutations if pockets involved
     if source_pocket:
-        source_pocket.balance = max(0, source_pocket.balance - payload.amount)
+        source_pocket.balance = source_pocket_balance - payload.amount
         if not source_pocket.slug.startswith("utama"):
             source_pocket.target_amount = max(0, source_pocket.target_amount - payload.amount)
         db.add(PocketMutation(
@@ -253,7 +269,7 @@ def create_internal_loan(
         ))
 
     if target_pocket:
-        target_pocket.balance = target_pocket.balance + payload.amount
+        target_pocket.balance = target_pocket_balance + payload.amount
         if not target_pocket.slug.startswith("utama"):
             target_pocket.target_amount = target_pocket.target_amount + payload.amount
         db.add(PocketMutation(
@@ -283,12 +299,7 @@ def settle_internal_loan(
     Settles an active internal loan (partially or fully).
     Debtor (target) transfers funds back to creditor (source).
     """
-    loan = db.query(InternalLoan).filter(
-        InternalLoan.id == loan_id,
-        InternalLoan.user_id == current_user.id,
-    ).first()
-    if not loan:
-        raise HTTPException(status_code=404, detail="Pinjaman internal tidak ditemukan")
+    loan = lock_loan(db, current_user.id, loan_id)
     if loan.status != "active":
         raise HTTPException(status_code=400, detail=f"Pinjaman tidak dapat dilunasi karena berstatus '{loan.status}'")
 
@@ -327,6 +338,10 @@ def settle_internal_loan(
             detail=f"Saldo rekening peminjam '{target_acc.name}' tidak mencukupi untuk pelunasan (Tersedia: Rp{target_bal:,}, Dibutuhkan: Rp{settle_amount:,})".replace(",", ".")
         )
 
+    source_pocket = db.query(Pocket).filter(
+        Pocket.id == loan.source_pocket_id, Pocket.user_id == current_user.id,
+    ).first() if loan.source_pocket_id else None
+    source_pocket_balance = get_pocket_balance(db, current_user.id, source_pocket) if source_pocket else 0
     now_wib = datetime.now(WIB)
     tx_date = now_wib.date()
 
@@ -360,12 +375,8 @@ def settle_internal_loan(
     tx_out.raw_text = f"{tx_out.raw_text} [pair_id:{tx_in.id}] [internal_loan_settle_id:{loan.id}]"
     tx_in.raw_text = f"{tx_in.raw_text} [pair_id:{tx_out.id}] [internal_loan_settle_id:{loan.id}]"
 
-    source_pocket = None
-    if loan.source_pocket_id:
-        source_pocket = db.query(Pocket).filter(Pocket.id == loan.source_pocket_id, Pocket.user_id == current_user.id).first()
-
     if target_pocket:
-        target_pocket.balance = max(0, target_pocket.balance - settle_amount)
+        target_pocket.balance = pocket_bal - settle_amount
         if not target_pocket.slug.startswith("utama"):
             target_pocket.target_amount = max(0, target_pocket.target_amount - settle_amount)
         db.add(PocketMutation(
@@ -381,7 +392,7 @@ def settle_internal_loan(
         ))
 
     if source_pocket:
-        source_pocket.balance = source_pocket.balance + settle_amount
+        source_pocket.balance = source_pocket_balance + settle_amount
         if not source_pocket.slug.startswith("utama"):
             source_pocket.target_amount = source_pocket.target_amount + settle_amount
         db.add(PocketMutation(
@@ -406,17 +417,107 @@ def settle_internal_loan(
     return loan
 
 
+def latest_reversible_settlement(db: Session, loan: InternalLoan) -> Optional[Transaction]:
+    if loan.status == "cancelled" or loan.remaining_amount >= loan.amount:
+        return None
+    rows = db.query(Transaction).filter(
+        Transaction.user_id == loan.user_id,
+        Transaction.type == "transfer_out",
+        Transaction.raw_text.endswith(f"[internal_loan_settle_id:{loan.id}]", autoescape=True)
+        | Transaction.raw_text.endswith(f"[internal_loan_reversal_id:{loan.id}]", autoescape=True),
+    ).order_by(Transaction.id.desc()).all()
+    reversed_ids = set()
+    for tx in rows:
+        if not tx.is_internal_loan_transfer:
+            continue
+        reversal = re.search(r"\[internal_loan_reversal_of:(\d+)\] \[internal_loan_reversal_id:", tx.raw_text)
+        if reversal:
+            reversed_ids.add(int(reversal[1]))
+        elif tx.raw_text.endswith(f"[internal_loan_settle_id:{loan.id}]") and tx.id not in reversed_ids:
+            return tx
+    return None
+
+
+def reverse_internal_loan_settlement(
+    db: Session, current_user: User, loan_id: int, transaction_id: int,
+) -> InternalLoan:
+    loan = lock_loan(db, current_user.id, loan_id)
+
+    original = latest_reversible_settlement(db, loan)
+    if not original or original.id != transaction_id:
+        raise HTTPException(409, "Pelunasan terakhir sudah berubah. Muat ulang dan coba lagi.")
+    paired = find_paired_transfer(db, original)
+    if not paired or not (paired.raw_text or "").endswith(f"[internal_loan_settle_id:{loan.id}]"):
+        raise HTTPException(409, "Pasangan transaksi pelunasan tidak lengkap.")
+
+    accounts = {account.id: account for account in db.query(Account).filter(
+        Account.user_id == current_user.id,
+        Account.id.in_([loan.source_account_id, loan.target_account_id]),
+    ).order_by(Account.id).with_for_update()}
+    source = accounts.get(loan.source_account_id)
+    target = accounts.get(loan.target_account_id)
+    amount = original.amount
+    if (not source or not target or source.is_archived or target.is_archived
+            or original.account != target.name or paired.account != source.name
+            or original.pocket_id != loan.target_pocket_id or paired.pocket_id != loan.source_pocket_id
+            or amount <= 0 or loan.remaining_amount + amount > loan.amount):
+        raise HTTPException(409, "Rekening, kantong, atau nominal pelunasan sudah berubah.")
+    if source.id != target.id and get_account_balance(db, current_user.id, source.name) < amount:
+        raise HTTPException(400, "Saldo rekening pemberi talangan kurang untuk mengoreksi pelunasan.")
+
+    pocket_ids = [p for p in (loan.source_pocket_id, loan.target_pocket_id) if p is not None]
+    pockets = {p.id: p for p in db.query(Pocket).filter(
+        Pocket.user_id == current_user.id, Pocket.id.in_(pocket_ids), Pocket.is_active.is_(True),
+    ).order_by(Pocket.id).with_for_update()}
+    if len(pockets) != len(set(pocket_ids)):
+        raise HTTPException(409, "Kantong pelunasan sudah berubah atau nonaktif.")
+    balances = {p.id: get_pocket_balance(db, current_user.id, p) for p in pockets.values()}
+    if loan.source_pocket_id and balances[loan.source_pocket_id] < amount:
+        raise HTTPException(400, "Saldo kantong pemberi talangan kurang untuk mengoreksi pelunasan.")
+
+    today = datetime.now(WIB).date()
+    description = f"Koreksi pelunasan talangan #{loan.id}"
+    tx_out = Transaction(
+        user_id=current_user.id, type="transfer_out", amount=amount, date=today,
+        account=source.name, pocket_id=loan.source_pocket_id, category="Transfer",
+        description=f"{description} ke {target.name}",
+        raw_text=f"transfer out (koreksi pelunasan): {source.name} -> {target.name}",
+    )
+    tx_in = Transaction(
+        user_id=current_user.id, type="transfer_in", amount=amount, date=today,
+        account=target.name, pocket_id=loan.target_pocket_id, category="Transfer",
+        description=f"{description} dari {source.name}",
+        raw_text=f"transfer in (koreksi pelunasan): {source.name} -> {target.name}",
+    )
+    db.add_all([tx_out, tx_in])
+    db.flush()
+    for tx, counterpart, account, sign in ((tx_out, tx_in, source, -1), (tx_in, tx_out, target, 1)):
+        tx.raw_text += f" [pair_id:{counterpart.id}] [internal_loan_reversal_of:{original.id}] [internal_loan_reversal_id:{loan.id}]"
+        pocket = pockets.get(tx.pocket_id)
+        if pocket:
+            pocket.balance = balances[pocket.id] + sign * amount
+            if not pocket.slug.startswith("utama"):
+                pocket.target_amount = max(0, pocket.target_amount + sign * amount)
+            db.add(PocketMutation(
+                user_id=current_user.id, account_id=account.id, pocket_id=pocket.id,
+                counterpart_pocket_id=counterpart.pocket_id, transaction_id=tx.id,
+                mutation_type="allocation_out" if sign < 0 else "allocation_in",
+                amount=amount, balance_after=pocket.balance, description=description,
+            ))
+    loan.remaining_amount += amount
+    loan.status = "active"
+    loan.settled_at = None
+    db.commit()
+    db.refresh(loan)
+    return loan
+
+
 def cancel_internal_loan(db: Session, current_user: User, loan_id: int) -> InternalLoan:
     """
     Cancels an active internal loan without reversing past cash transfers
     (used to revoke or invalidate mistaken loan records).
     """
-    loan = db.query(InternalLoan).filter(
-        InternalLoan.id == loan_id,
-        InternalLoan.user_id == current_user.id,
-    ).first()
-    if not loan:
-        raise HTTPException(status_code=404, detail="Pinjaman internal tidak ditemukan")
+    loan = lock_loan(db, current_user.id, loan_id)
     if loan.status == "settled":
         raise HTTPException(status_code=400, detail="Pinjaman yang sudah lunas tidak dapat dibatalkan")
     if loan.status == "cancelled":

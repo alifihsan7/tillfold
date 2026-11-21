@@ -16,6 +16,9 @@ import {
   InternalLoan,
   getInternalLoans,
   cancelInternalLoan,
+  getLatestLoanSettlement,
+  LoanSettlement,
+  reverseLoanSettlement,
   getPockets,
   PocketItem,
 } from "@/lib/api";
@@ -85,6 +88,9 @@ export function InternalLoansWidget({
   const [settleLoanTarget, setSettleLoanTarget] = useState<InternalLoan | null>(null);
   const [cancelLoanTarget, setCancelLoanTarget] = useState<InternalLoan | null>(null);
   const [cancelling, setCancelling] = useState<boolean>(false);
+  const [correction, setCorrection] = useState<{ loanId: number; payment: LoanSettlement } | null>(null);
+  const [loadingCorrection, setLoadingCorrection] = useState(false);
+  const [correcting, setCorrecting] = useState(false);
 
   const fetchLoans = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -139,6 +145,33 @@ export function InternalLoansWidget({
       onToast?.(msg);
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const openCorrection = async (loanId: number) => {
+    setLoadingCorrection(true);
+    try {
+      setCorrection({ loanId, payment: await getLatestLoanSettlement(loanId) });
+    } catch (error) {
+      onToast?.(error instanceof Error ? error.message : "Gagal membuka pelunasan.");
+    } finally {
+      setLoadingCorrection(false);
+    }
+  };
+
+  const confirmCorrection = async () => {
+    if (!correction || correcting) return;
+    setCorrecting(true);
+    try {
+      await reverseLoanSettlement(correction.loanId, correction.payment.id);
+      setCorrection(null);
+      onToast?.("Pelunasan dikoreksi dan sisa talangan diperbarui.");
+      fetchLoans(true);
+      onDataChanged?.();
+    } catch (error) {
+      onToast?.(error instanceof Error ? error.message : "Gagal mengoreksi pelunasan.");
+    } finally {
+      setCorrecting(false);
     }
   };
 
@@ -380,7 +413,16 @@ export function InternalLoansWidget({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap justify-end items-center gap-2">
+                    {!isCancelled && loan.remaining_amount < loan.amount && (
+                      <Button
+                        variant="secondary"
+                        disabled={loadingCorrection}
+                        onClick={() => openCorrection(loan.id)}
+                      >
+                        Koreksi pelunasan
+                      </Button>
+                    )}
                     {canCancel && (
                       <button
                         type="button"
@@ -427,6 +469,17 @@ export function InternalLoansWidget({
         loan={settleLoanTarget}
         formatRupiah={formatRupiah}
         onSuccess={handleSettleSuccess}
+      />
+
+      <ConfirmModal
+        isOpen={!!correction}
+        onClose={() => setCorrection(null)}
+        onConfirm={confirmCorrection}
+        title="Koreksi pelunasan terakhir"
+        message={correction ? `Pelunasan ${formatRupiah(correction.payment.amount)} pada ${formatDateIndo(correction.payment.date)} akan dikembalikan dan dicatat di riwayat transaksi. Sisa talangan bertambah sebesar nominal ini.` : ""}
+        confirmText="Koreksi pelunasan"
+        cancelText="Kembali"
+        loading={correcting}
       />
 
       <ConfirmModal

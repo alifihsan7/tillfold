@@ -33,8 +33,8 @@ export function TransferPocketModal({
   // Sort pockets: Utama first, then by name
   const sortedPockets = useMemo(() => {
     return [...pockets].sort((a, b) => {
-      if (a.slug === "utama") return -1;
-      if (b.slug === "utama") return 1;
+      if (a.slug === "utama" || a.slug.startsWith("utama-")) return -1;
+      if (b.slug === "utama" || b.slug.startsWith("utama-")) return 1;
       return a.name.localeCompare(b.name);
     });
   }, [pockets]);
@@ -44,7 +44,7 @@ export function TransferPocketModal({
     if (initialSourcePocketId && sortedPockets.some((p) => p.id === initialSourcePocketId)) {
       return String(initialSourcePocketId);
     }
-    const utama = sortedPockets.find((p) => p.slug === "utama");
+    const utama = sortedPockets.find((p) => p.slug === "utama" || p.slug.startsWith("utama-"));
     return utama ? String(utama.id) : sortedPockets[0] ? String(sortedPockets[0].id) : "";
   }, [initialSourcePocketId, sortedPockets]);
 

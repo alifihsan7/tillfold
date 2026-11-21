@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_current_user, get_strict_current_user
-from app.api.v1.endpoints import backup, transactions, analytics, accounts
+from app.api.v1.endpoints import backup, transactions, analytics, accounts, internal_loans, pockets
 from app.db.session import Base, get_db
 from app.models.account import Account
 from app.models.category import Category
@@ -76,6 +76,8 @@ def recovery():
         app.include_router(transactions.router, prefix="/transactions")
         app.include_router(analytics.router, prefix="/analytics")
         app.include_router(accounts.router, prefix="/accounts")
+        app.include_router(internal_loans.router, prefix="/internal-loans")
+        app.include_router(pockets.router, prefix="/pockets")
         app.dependency_overrides[get_db] = lambda: db
         current = [users[0]]
         app.dependency_overrides[get_strict_current_user] = lambda: current[0]
@@ -136,6 +138,64 @@ def test_restore_refuses_existing_data_and_duplicate_retry(recovery):
     assert client.post("/backup/restore", json=payload).status_code == 200
     assert client.post("/backup/restore", json=payload).status_code == 409
     assert db.query(Transaction).filter_by(user_id=2).count() == 4
+
+
+def test_loan_correction_and_pocket_history_survive_restore(recovery):
+    client, db, users, current = recovery
+    bill = db.query(Pocket).filter_by(user_id=1, slug="tagihan").one()
+    db.add(Pocket(user_id=1, account_id=102, slug="utama-102", name="Kantong Utama", target_amount=0))
+    db.commit()
+    parent = {"account_id": 102}
+    summary = client.get("/pockets", params=parent).json()
+    main = next(p for p in summary["pockets"] if p["slug"].startswith("utama"))
+    moved = client.post("/pockets/transfer", json={
+        **parent, "from_pocket_id": main["id"], "to_pocket_id": bill.id, "amount": 25_000,
+    })
+    assert moved.status_code == 200, moved.text
+    refreshed = next(p for p in client.get("/pockets", params=parent).json()["pockets"] if p["id"] == bill.id)
+    assert (refreshed["target_amount"], refreshed["balance"]) == (100_000, 125_000)
+
+    created = client.post("/internal-loans", json={
+        "source_account_id": 101, "target_account_id": 102, "target_pocket_id": bill.id,
+        "amount": 50_000,
+    })
+    assert created.status_code == 201, created.text
+    loan = f"/internal-loans/{created.json()['id']}"
+    partial = client.post(f"{loan}/settle", json={"amount": 20_000})
+    assert partial.json()["remaining_amount"] == 30_000
+    full = client.post(f"{loan}/settle", json={})
+    assert full.json()["status"] == "settled"
+    latest = client.get(f"{loan}/settlements/latest").json()
+    assert latest["amount"] == 30_000
+    reversal = f"{loan}/settlements/{latest['id']}/reverse"
+    corrected = client.post(reversal)
+    assert corrected.status_code == 200, corrected.text
+    assert (corrected.json()["status"], corrected.json()["remaining_amount"]) == ("active", 30_000)
+    assert client.post(reversal).status_code == 409
+
+    payload = download(client)
+    assert len(payload["data"]["pocket_mutations"]) == 6
+    current[0] = users[1]
+    defaults = client.get("/accounts").json()
+    assert len(defaults) == 5
+    client.get("/pockets")
+    restored = client.post("/backup/restore", json=payload)
+    assert restored.status_code == 200, restored.text
+    assert restored.json()["balances"] == {"Bank": 770_000, "Cash": 180_000}
+    replay = download(client)["data"]
+    restored_loan = replay["internal_loans"][0]
+    assert restored_loan["id"] != created.json()["id"]
+    assert restored_loan["remaining_amount"] == 30_000
+    tx_by_id = {tx["id"]: tx for tx in replay["transactions"]}
+    for mutation in replay["pocket_mutations"]:
+        if mutation["transaction_id"]:
+            assert tx_by_id[mutation["transaction_id"]]["pocket_id"] == mutation["pocket_id"]
+    correction = next(tx for tx in replay["transactions"] if "internal_loan_reversal_of" in (tx["raw_text"] or ""))
+    assert client.delete(f"/transactions/{correction['id']}").status_code == 409
+    restored_url = f"/internal-loans/{restored_loan['id']}"
+    remaining_payment = client.get(f"{restored_url}/settlements/latest").json()
+    assert remaining_payment["amount"] == 20_000
+    assert client.post(f"{restored_url}/settlements/{remaining_payment['id']}/reverse").json()["remaining_amount"] == 50_000
 
 
 @pytest.mark.parametrize("damage", ["version", "owner", "foreign_key", "duplicate", "boolean_amount", "broken_json"])
@@ -239,11 +299,14 @@ def test_backup_restore_preserves_reconciliation_records(recovery, kind, expecte
     assert client.delete(f"/transactions/{adjustment.id}").status_code == 409
 
 
-@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.parametrize("version", [1, 2, 3, 4])
 def test_previous_backup_format_still_restores(recovery, version):
     client, db, users, current = recovery
     payload = download(client)
     payload["version"] = version
-    payload["data"].pop("subscription_payments")
+    payload["data"].pop("internal_loans")
+    payload["data"].pop("pocket_mutations")
+    if version < 3:
+        payload["data"].pop("subscription_payments")
     current[0] = users[1]
     assert client.post("/backup/restore", json=payload).status_code == 200

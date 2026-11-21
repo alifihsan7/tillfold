@@ -155,7 +155,7 @@ def test_backup_preserves_archive_status_and_balances(recovery):
     bank.is_archived = True
     db.commit()
     payload = download(client)
-    assert payload["version"] == 4
+    assert payload["version"] == 5
     current[0] = users[1]
     response = client.post("/backup/restore", json=payload)
     assert response.status_code == 200, response.text
@@ -169,6 +169,8 @@ def test_old_backups_restore_accounts_as_active(recovery, version):
     client, db, users, current = recovery
     payload = download(client)
     payload["version"] = version
+    payload["data"].pop("internal_loans")
+    payload["data"].pop("pocket_mutations")
     for account in payload["data"]["accounts"]:
         account.pop("is_archived")
     if version < 3:

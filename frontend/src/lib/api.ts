@@ -421,6 +421,29 @@ export async function settleInternalLoan(
   return res.json();
 }
 
+export interface LoanSettlement {
+  id: number;
+  amount: number;
+  date: string;
+}
+
+export async function getLatestLoanSettlement(id: number): Promise<LoanSettlement> {
+  const response = await authFetch(`/api/v1/internal-loans/${id}/settlements/latest`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.detail || "Gagal membuka pelunasan.");
+  return data;
+}
+
+export async function reverseLoanSettlement(id: number, transactionId: number): Promise<void> {
+  const response = await authFetch(`/api/v1/internal-loans/${id}/settlements/${transactionId}/reverse`, {
+    method: "POST",
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.detail || "Gagal mengoreksi pelunasan.");
+  }
+}
+
 export async function cancelInternalLoan(
   id: number
 ): Promise<void> {

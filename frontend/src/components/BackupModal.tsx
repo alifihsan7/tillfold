@@ -9,6 +9,7 @@ interface BackupSummary {
   counts: Record<string, number>;
   total_balance: number;
   balances: Record<string, number>;
+  legacy_missing_loan_history?: boolean;
 }
 
 const labels: Record<string, string> = {
@@ -17,6 +18,8 @@ const labels: Record<string, string> = {
   paycheck_configs: "Pengaturan gajian", paycheck_buckets: "Alokasi gaji",
   paycheck_sessions: "Checklist gajian", paycheck_cycles: "Siklus checklist",
   legacy_paycheck_cycles: "Riwayat siklus", paycheck_receipts: "Catatan gaji",
+  subscription_payments: "Pembayaran tagihan", internal_loans: "Pinjaman internal",
+  pocket_mutations: "Mutasi kantong",
 };
 
 export function BackupModal({ isOpen, onClose, onRestored }: {
@@ -133,6 +136,9 @@ export function BackupModal({ isOpen, onClose, onRestored }: {
               {Object.entries(preview.counts).map(([key, count]) => <div key={key}><dt className="text-xs text-luma-smoke">{labels[key] || key}</dt><dd className="font-medium">{count.toLocaleString("id-ID")}</dd></div>)}
             </dl>
             <p>Total saldo <strong className="tabular-nums">{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(preview.total_balance)}</strong></p>
+            {preview.legacy_missing_loan_history && (
+              <p className="text-sm text-luma-smoke">Backup versi lama ini hanya memuat transaksi talangan yang tercatat di riwayat. Daftar talangan dan mutasi kantong belum tersedia di format ini.</p>
+            )}
             <label className="flex min-h-11 items-start gap-3 cursor-pointer">
               <input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} disabled={busy} className="mt-1 shrink-0" />
               <span>Saya ingin memulihkan file ini ke akun dengan data keuangan kosong.</span>

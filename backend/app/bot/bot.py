@@ -9,6 +9,7 @@ import calendar
 import zoneinfo
 import json
 import uuid
+from hashlib import blake2s
 
 logger = logging.getLogger("ai7-finance-bot")
 
@@ -25,6 +26,7 @@ from app.db.session import SessionLocal, Base, engine
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
 from app.models.account import Account
+from app.models.category import Category
 from app.models.pocket import Pocket
 from app.models.internal_loan import InternalLoan
 from app.schemas.internal_loan import InternalLoanCreate, InternalLoanSettleRequest
@@ -2009,6 +2011,32 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
     send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token)
 
 
+def receipt_callback_key(ref_number: str, user_id: int, chat_id: int, message_id: int) -> str:
+    # Keep callbacks under Telegram's 64-byte limit, even for long bank references.
+    context = f"{user_id}:{chat_id}:{message_id}:{ref_number}".encode()
+    return blake2s(context, digest_size=12).hexdigest()
+
+
+def receipt_category_keyboard(db: Session, user_id: int, key: str, account_id: int, suggested: str, page: int) -> list:
+    page_size = 8
+    categories = db.query(Category).filter(
+        Category.user_id == user_id, Category.type == "expense", Category.name != suggested,
+    ).order_by(func.lower(Category.name), Category.id).offset(page * page_size).limit(page_size + 1).all()
+    rows = [[{"text": f"Pakai saran · {suggested[:45]}", "callback_data": f"rcpt_save:{key}:{account_id}:0"}]]
+    rows.extend([
+        {"text": category.name, "callback_data": f"rcpt_save:{key}:{account_id}:{category.id}"}
+    ] for category in categories[:page_size])
+    navigation = []
+    if page > 0:
+        navigation.append({"text": "Sebelumnya", "callback_data": f"rcpt_cat:{key}:{account_id}:{page - 1}"})
+    if len(categories) > page_size:
+        navigation.append({"text": "Berikutnya", "callback_data": f"rcpt_cat:{key}:{account_id}:{page + 1}"})
+    if navigation:
+        rows.append(navigation)
+    rows.append([{"text": "Abaikan struk", "callback_data": f"rcpt_drop:{key}:{account_id}:0"}])
+    return rows
+
+
 def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None):
     cb_id = callback_query.get("id")
     tg_user = callback_query.get("from", {})
@@ -2045,16 +2073,29 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 pass
             return
 
-        if not data.startswith("rcpt_"):
+        if not data.startswith("rcpt_") or not chat_id or not msg_id:
             return
 
         parts = data.split(":")
         action = parts[0]
         ref_num = parts[1] if len(parts) > 1 else ""
 
-        from app.core.receipt_store import get_pending_receipt, delete_pending_receipt
+        from app.core.receipt_store import get_pending_receipt, delete_pending_receipt, list_pending_receipts
 
-        if action == "rcpt_ign":
+        picker_actions = {"rcpt_cat", "rcpt_save", "rcpt_drop"}
+        if action in picker_actions:
+            # New buttons are tied to the account holder and the original message.
+            ref_num = next((ref for ref in list_pending_receipts()
+                            if receipt_callback_key(ref, user.id, chat_id, msg_id) == ref_num), "")
+        entry = get_pending_receipt(ref_num)
+        if entry:
+            owner_id = entry.get("user_id")
+            owner_telegram_id = entry.get("telegram_user_id") or (settings.ALLOWED_USER_ID if not owner_id else None)
+            if ((owner_id and str(owner_id) != str(user.id))
+                    or (owner_telegram_id and str(owner_telegram_id) != str(sender_id))):
+                return
+
+        if action in ("rcpt_ign", "rcpt_drop") and entry:
             delete_pending_receipt(ref_num)
             edit_text = (
                 f"❌ **RECEIPT DIABAIKAN**\n"
@@ -2068,9 +2109,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 "reply_markup": {"inline_keyboard": []},
             }, timeout=8)
 
-        elif action == "rcpt_rec":
-            chosen_acc = parts[2] if len(parts) > 2 else "Mandiri"
-            entry = get_pending_receipt(ref_num)
+        elif action in {"rcpt_rec", "rcpt_cat", "rcpt_save"}:
             if not entry:
                 requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
                     "chat_id": chat_id,
@@ -2081,40 +2120,76 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 }, timeout=8)
                 return
 
+            accounts = db.query(Account).filter(Account.user_id == user.id, Account.is_archived.is_(False))
+            choice = 0
+            if action == "rcpt_rec":
+                account_name = ":".join(parts[2:]) if len(parts) > 2 else "Mandiri"
+                account = accounts.filter(Account.name == account_name).first()
+            else:
+                if len(parts) != 4 or not parts[2].isascii() or not parts[2].isdigit() or not parts[3].isascii() or not parts[3].isdigit():
+                    return
+                account = accounts.filter(Account.id == int(parts[2])).first()
+                choice = int(parts[3])
+            if not account:
+                send_message(chat_id, "Rekening ini sudah tidak tersedia.", reply_to_message_id=msg_id, bot_token=token)
+                return
+
             p = entry.get("parsed", entry)
-            nominal = p.get("nominal", 0)
-            merchant = p.get("merchant", "Transaksi")
-            cat_name = p.get("category", "Makanan & Minuman")
-            bank = p.get("bank", "Bank").upper()
+            nominal = int(p.get("nominal") or 0)
+            merchant = str(p.get("merchant") or "Transaksi")
+            suggested = str(p.get("category") or "Lainnya")[:100]
+            bank = str(p.get("bank") or "Bank").upper()
             tx_date_str = p.get("date")
+            chosen_acc = account.name
+            if nominal <= 0:
+                send_message(chat_id, "Nominal struk tidak valid.", reply_to_message_id=msg_id, bot_token=token)
+                return
+
+            if action in ("rcpt_rec", "rcpt_cat"):
+                if action == "rcpt_rec":
+                    from app.api.v1.endpoints.categories import ensure_default_categories
+                    ensure_default_categories(db, user.id)
+                key = receipt_callback_key(ref_num, user.id, chat_id, msg_id)
+                rows = receipt_category_keyboard(db, user.id, key, account.id, suggested, choice)
+                requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": msg_id,
+                    "text": f"Pilih kategori untuk mencatat transaksi.\n\n{merchant[:255]} · {format_rp(nominal)}\nRekening: {chosen_acc}\nKategori saran: {suggested}",
+                    "reply_markup": {"inline_keyboard": rows},
+                }, timeout=8)
+                return
+
+            cat_name = suggested
+            if choice:
+                category = db.query(Category).filter(
+                    Category.id == choice, Category.user_id == user.id, Category.type == "expense",
+                ).first()
+                if not category:
+                    send_message(chat_id, "Kategori ini sudah tidak tersedia. Pilih kategori lain.", reply_to_message_id=msg_id, bot_token=token)
+                    return
+                cat_name = category.name
 
             try:
                 tx_date = datetime.fromisoformat(tx_date_str).date()
             except Exception:
                 tx_date = datetime.now(WIB).date()
 
+            db.query(User.id).filter(User.id == user.id).with_for_update().one()
             existing = db.query(Transaction).filter(
                 Transaction.user_id == user.id,
-                Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_num}]%"),
+                Transaction.raw_text.contains(f"[receipt_radar:ref_{ref_num}]", autoescape=True),
             ).first()
 
             if existing:
-                edit_text = (
-                    f"ℹ️ **SUDAH TERCATAT SEBELUMNYA**\n"
-                    f"Transaksi referensi `{ref_num}` sudah ada di buku besar Tillfold."
-                )
+                edit_text = f"Struk {ref_num} sudah tercatat di Tillfold."
             else:
-                acc = db.query(Account).filter(Account.user_id == user.id, Account.name == chosen_acc).first()
-                if not acc:
-                    chosen_acc = "Mandiri"
-
                 tx = Transaction(
                     user_id=user.id,
                     type="expense",
                     amount=nominal,
                     account=chosen_acc,
                     category=cat_name,
-                    description=f"{merchant} (Struk {bank})",
+                    description=f"{merchant} (Struk {bank})"[:255],
                     raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded via Telegram approval from {bank}",
                     date=tx_date,
                 )
@@ -2128,7 +2203,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                         amount=admin_fee,
                         account=chosen_acc,
                         category="Biaya Admin",
-                        description=f"Biaya Admin Transfer ke {merchant} (Ref: {ref_num})",
+                        description=f"Biaya Admin Transfer ke {merchant} (Ref: {ref_num})"[:255],
                         raw_text=f"[receipt_radar:ref_{ref_num}_admin] Auto-recorded transfer admin fee",
                         date=tx_date,
                     )
@@ -2137,16 +2212,15 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 db.commit()
                 db.refresh(tx)
 
-                s2s_snippet = get_safe_to_spend_snippet(db, user_id=user.id)
                 delete_pending_receipt(ref_num)
+                s2s_snippet = get_safe_to_spend_snippet(db, user_id=user.id).replace("*", "")
 
                 edit_text = (
-                    f"✅ **TRANSAKSI BERHASIL DICATAT KE TILLFOLD**\n\n"
-                    f"• **Merchant**: `{merchant}`\n"
-                    f"• **Nominal**: `Rp {nominal:,}`\n"
-                    f"• **Rekening**: `{chosen_acc}`\n"
-                    f"• **Kategori**: `{cat_name}`\n"
-                    f"• **No. Ref**: `{ref_num}`\n\n"
+                    f"Transaksi dicatat di Tillfold.\n\n"
+                    f"{merchant[:255]} · {format_rp(nominal)}\n"
+                    f"Rekening: {chosen_acc}\n"
+                    f"Kategori: {cat_name}\n"
+                    f"No. referensi: {ref_num}\n\n"
                     f"{s2s_snippet}"
                 )
 
@@ -2154,7 +2228,6 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 "chat_id": chat_id,
                 "message_id": msg_id,
                 "text": edit_text,
-                "parse_mode": "Markdown",
                 "reply_markup": {"inline_keyboard": []},
             }, timeout=8)
 
@@ -2168,7 +2241,6 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
             except ValueError:
                 admin_fee = 0
 
-            entry = get_pending_receipt(ref_num)
             if not entry:
                 requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
                     "chat_id": chat_id,

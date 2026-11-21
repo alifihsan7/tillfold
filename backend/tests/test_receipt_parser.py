@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.session import Base, get_db
 from app.models.user import User
 from app.models.account import Account
+from app.models.category import Category
 from app.models.transaction import Transaction
 from app.core.receipt_parser import (
     parse_mandiri_receipt,
@@ -592,8 +593,69 @@ def test_receipt_radar_callback_authorization_rejected(monkeypatch):
     assert "Akses ditolak" in reject_call["json"]["text"]
     assert reject_call["json"]["show_alert"] is True
 
-def test_receipt_radar_callback_rcpt_xfer_atomic_and_idempotent(db_session, monkeypatch):
+def test_receipt_radar_category_picker_records_selected_category(db_session, monkeypatch, tmp_path):
+    from app.bot import bot
+    from app.core import receipt_store
+
+    user = db_session.get(User, 1)
+    user.telegram_chat_id = 12345
+    db_session.add(User(id=2, username="other", hashed_password="pw", is_active=True, full_name="Other"))
+    db_session.add_all([
+        Category(id=100 + i, user_id=1, type="expense", name=f"Pilihan {i:02}")
+        for i in range(9)
+    ])
+    db_session.add_all([
+        Category(id=200, user_id=1, type="income", name="Pemasukan milik sendiri"),
+        Category(id=201, user_id=2, type="expense", name="Kategori akun lain"),
+    ])
+    db_session.commit()
+    monkeypatch.setattr(receipt_store, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(receipt_store, "PENDING_FILE", tmp_path / "receipt.json")
+    monkeypatch.setattr(bot, "SessionLocal", lambda: db_session)
+    monkeypatch.setattr(bot, "get_safe_to_spend_snippet", lambda db, user_id: "")
+    messages = []
+    monkeypatch.setattr(bot.requests, "post", lambda url, **kwargs: messages.append((url, kwargs["json"])))
+    ref = "R" * 40
+    assert save_pending_receipt(ref, {
+        "user_id": 1, "nominal": 75_000, "merchant": "Kedai Uji", "category": "Makan",
+    })
+
+    def press(data):
+        bot.handle_callback_query({
+            "id": "test", "data": data, "from": {"id": 12345},
+            "message": {"chat": {"id": 12345}, "message_id": 10},
+        })
+
+    def buttons():
+        edits = [body for url, body in messages if url.endswith("/editMessageText")]
+        return {item["text"]: item["callback_data"] for row in edits[-1]["reply_markup"]["inline_keyboard"] for item in row}
+
+    press(f"rcpt_rec:{ref}:Mandiri")
+    assert db_session.query(Transaction).count() == 0
+    first = buttons()
+    assert "Pakai saran · Makan" in first
+    assert "Kategori akun lain" not in first
+    assert "Pemasukan milik sendiri" not in first
+    assert all(len(label.encode()) <= 64 for label in first.values())
+
+    press(first["Berikutnya"])
+    second = buttons()
+    assert "Sebelumnya" in second
+    press(second["Pilihan 08"])
+    tx = db_session.query(Transaction).one()
+    assert (tx.user_id, tx.amount, tx.account, tx.category) == (1, 75_000, "Mandiri", "Pilihan 08")
+    assert "Pilihan 08" in messages[-1][1]["text"]
+    assert get_pending_receipt(ref) is None
+    press(second["Pilihan 08"])
+    assert db_session.query(Transaction).count() == 1
+
+
+def test_receipt_radar_callback_rcpt_xfer_atomic_and_idempotent(db_session, monkeypatch, tmp_path):
     import app.bot.bot as bot
+    from app.core import receipt_store
+
+    monkeypatch.setattr(receipt_store, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(receipt_store, "PENDING_FILE", tmp_path / "receipt.json")
 
     # 1. Setup user & accounts in db_session
     u = db_session.query(User).filter(User.id == 1).first()

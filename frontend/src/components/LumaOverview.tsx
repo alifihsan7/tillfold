@@ -41,6 +41,7 @@ export function LumaOverview({ totalBalance, income, openingBalance = 0, expense
   const remainingPct = pocketBudget && pocketBudget > 0
     ? Math.min(100, Math.max(0, pocketRemaining / pocketBudget * 100)) : null;
   const privateAmount = (amount: number) => hideBalance ? <HiddenAmount /> : formatRupiah(amount);
+  const meterStyle = (fraction: number) => ({ "--meter-fill": fraction } as React.CSSProperties);
 
   if (loading) return <div className="luma-overview-grid" aria-busy="true" aria-label="Memuat ringkasan">
     <span className="sr-only" role="status">Memuat saldo dan transaksi Anda.</span>
@@ -80,7 +81,7 @@ export function LumaOverview({ totalBalance, income, openingBalance = 0, expense
       </div>
       <div className="luma-balance-body">
         <p className="luma-balance-number" aria-live="polite">{privateAmount(totalBalance)}</p>
-        <p className="text-xs text-luma-ivory/70">Tersimpan di {accountCount} rekening Anda</p>
+        <p className="text-sm text-luma-ivory/75">Tersimpan di {accountCount} rekening Anda</p>
         <div className="luma-balance-actions">
           <button type="button" className="luma-action-primary" onClick={onAddTransaction}><Plus size={16} aria-hidden="true" /> Catat transaksi</button>
           <button type="button" className="luma-action-secondary" onClick={onOpenPaycheck}>Catat gaji</button>
@@ -92,21 +93,21 @@ export function LumaOverview({ totalBalance, income, openingBalance = 0, expense
       </div>
     </section>
     <div className="luma-overview-side">
-      <section className="luma-matte luma-flow-panel" aria-label="Arus kas periode ini">
-        <div className="luma-section-heading"><h2>Arus kas</h2><span>Periode ini</span></div>
-        <div className="luma-flow-line"><span>Masuk</span><div className="luma-flow-track"><div style={{ width: `${Math.max(0, income) / flowMax * 100}%` }} className="luma-flow-income" /></div><strong>{privateAmount(income)}</strong></div>
-        <div className="luma-flow-line"><span>Keluar</span><div className="luma-flow-track"><div style={{ width: `${Math.max(0, expense) / flowMax * 100}%` }} className="luma-flow-expense" /></div><strong>{privateAmount(expense)}</strong></div>
-        <div className="luma-flow-net"><span>Selisih</span><span className={income - expense < 0 ? "text-luma-coral" : "text-luma-ivory"}>{privateAmount(income - expense)}</span></div>
-        {openingBalance > 0 && <p className="mt-3 text-xs text-luma-smoke">Saldo awal {privateAmount(openingBalance)} dicatat terpisah, tidak termasuk pemasukan.</p>}
-      </section>
       <section className="luma-matte luma-daily-panel" data-pace={paceStatus} aria-label="Batas belanja harian">
         <div className="luma-section-heading"><h2>Batas belanja harian</h2></div>
         {pocketBudget === null ? <div className="luma-budget-empty"><p>Anggaran belum diatur.</p><button type="button" className="luma-text-action" onClick={onOpenPaycheck}>Atur siklus gajian</button></div> : <>
         <div className="luma-daily-amount">{periodEnded ? "Periode berakhir" : privateAmount(safeDaily)}{!periodEnded && <span>/ hari</span>}</div>
-        <div className="luma-daily-caption"><span>{periodEnded ? "Siklus selesai" : paceStatus === "warning" ? "Belanja melebihi laju anggaran" : "Belanja dalam batas anggaran"}</span><span>{periodEnded ? "Mulai siklus baru" : `${daysRemaining} hari tersisa`}</span></div>
-        {remainingPct !== null && <div className="luma-quota-track" role="progressbar" aria-label={`Sisa anggaran ${pocketAccount}`} aria-valuenow={Math.round(remainingPct)} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${remainingPct}%` }} /></div>}
+        <div className="luma-daily-caption"><span className={periodEnded ? undefined : "luma-daily-status"}>{periodEnded ? "Siklus selesai" : paceStatus === "warning" ? "Belanja melebihi laju anggaran" : "Belanja dalam batas anggaran"}</span><span>{periodEnded ? "Mulai siklus baru" : `${daysRemaining} hari tersisa`}</span></div>
+        {remainingPct !== null && <div className="luma-quota-track" role="progressbar" aria-label={`Sisa anggaran ${pocketAccount}`} aria-valuenow={Math.round(remainingPct)} aria-valuemin={0} aria-valuemax={100}><div style={meterStyle(remainingPct / 100)} /></div>}
         <div className="luma-daily-caption"><span>Sisa {pocketAccount}: {privateAmount(pocketRemaining)}</span><span>Hari {dayOfCycle}/{cycleDays}</span></div>
         </>}
+      </section>
+      <section className="luma-matte luma-flow-panel" aria-label="Arus kas periode ini">
+        <div className="luma-section-heading"><h2>Arus kas</h2><span>Periode ini</span></div>
+        <div className="luma-flow-line"><span>Masuk</span><div className="luma-flow-track"><div style={meterStyle(Math.max(0, income) / flowMax)} className="luma-flow-income" /></div><strong>{privateAmount(income)}</strong></div>
+        <div className="luma-flow-line"><span>Keluar</span><div className="luma-flow-track"><div style={meterStyle(Math.max(0, expense) / flowMax)} className="luma-flow-expense" /></div><strong>{privateAmount(expense)}</strong></div>
+        <div className="luma-flow-net"><span>Selisih</span><strong className={income - expense < 0 ? "text-luma-coral" : "text-luma-ivory"}>{privateAmount(income - expense)}</strong></div>
+        {openingBalance > 0 && <p className="mt-3 text-xs text-luma-smoke">Saldo awal {privateAmount(openingBalance)} dicatat terpisah, tidak termasuk pemasukan.</p>}
       </section>
     </div>
   </div>;

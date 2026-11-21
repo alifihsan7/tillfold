@@ -31,9 +31,9 @@ export function LumaAccountStrip({ accounts, formatRupiah, loading, hideBalance,
         <Skeleton className="h-5 w-48 rounded-full" />
         <div className="luma-accounts-grid">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="luma-glass !rounded-3xl p-5 space-y-3">
-              <Skeleton className="h-4 w-24 rounded-full" />
-              <Skeleton className="h-6 w-32 rounded-full" />
+            <div key={i} className="luma-account-item space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-6 w-4/5" />
             </div>
           ))}
         </div>
@@ -46,7 +46,7 @@ export function LumaAccountStrip({ accounts, formatRupiah, loading, hideBalance,
   return (
     <section aria-label="Ringkasan rekening kas" className="luma-accounts space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="ai7-type-card text-luma-ivory tracking-tight">
+        <h2 className="ai7-type-section text-luma-ivory tracking-tight">
           Rekening kas
         </h2>
         <button
@@ -63,14 +63,13 @@ export function LumaAccountStrip({ accounts, formatRupiah, loading, hideBalance,
             key={acc.name}
             className="luma-account-item"
           >
-            {/* Name on its own line so a role badge never squeezes it onto two lines. */}
             <div className="flex items-center gap-2 min-w-0">
               <Wallet className="w-4 h-4 text-luma-smoke shrink-0" aria-hidden="true" />
-              <p className="text-xs font-normal text-luma-smoke leading-snug truncate" title={acc.name}>
+              <p className="text-sm font-medium text-luma-ivory leading-snug [overflow-wrap:anywhere]">
                 {acc.name}
               </p>
             </div>
-            <p className="text-lg font-medium text-luma-ivory mt-2 tabular-nums break-words">
+            <p className={`text-lg font-semibold mt-2 tabular-nums [overflow-wrap:anywhere] ${acc.balance < 0 && !hideBalance ? "text-luma-coral" : "text-luma-ivory"}`}>
               {hideBalance ? <HiddenAmount /> : formatRupiah(acc.balance)}
             </p>
             {acc.type && (

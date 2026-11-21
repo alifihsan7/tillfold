@@ -1583,7 +1583,7 @@ export default function FinanceDashboard() {
                   aria-haspopup="menu"
                   aria-expanded={isUtilitiesMenuOpen}
                   aria-label="Utilitas"
-                  className="luma-touch py-2 px-3 sm:px-3.5 text-xs rounded-full font-semibold border border-luma-smokeline bg-white/[0.06] text-luma-ivory hover:bg-white/[0.1] hover:border-white/[0.2] transition inline-flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap cursor-pointer active:scale-95"
+                  className="luma-touch py-2 px-3 sm:px-3.5 text-xs font-semibold border border-luma-smokeline bg-luma-coal text-luma-ivory hover:bg-obsidian-hover transition-colors inline-flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-luma-smoke shrink-0" />
                   <span className="font-semibold hidden sm:inline">Utilitas</span>
@@ -1591,7 +1591,7 @@ export default function FinanceDashboard() {
                 </button>
 
                 {isUtilitiesMenuOpen && (
-                  <div role="menu" className="absolute right-0 mt-2 w-60 p-2 bg-luma-coal/95 backdrop-blur-md border border-luma-smokeline rounded-3xl shadow-luma-glass z-50 text-xs space-y-1 animate-fadeIn">
+                  <div role="menu" className="absolute right-0 mt-2 w-60 p-2 border border-luma-smokeline shadow-luma-glass z-50 text-xs space-y-1">
                     <button
                       type="button"
                       onClick={() => {

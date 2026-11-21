@@ -2,7 +2,7 @@
 
 import React from "react";
 import { formatShortDate, formatSignedRupiah } from "@/lib/format";
-import { ArrowRight, Receipt, ArrowUpRight, ArrowDownRight, ArrowLeftRight } from "lucide-react";
+import { ArrowRight, Receipt, ArrowUpRight, ArrowDownRight, ArrowLeftRight, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "./ui/Skeleton";
 
 export interface LumaTransaction {
@@ -61,7 +61,7 @@ export function LumaRecentTransactions({
     <section aria-label="Transaksi terbaru" className="luma-recent space-y-4">
       <p className="sr-only" role="status">{transactions.some((tx) => newTransactionIds?.has(tx.id)) ? "Transaksi baru ditampilkan." : ""}</p>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="ai7-type-card text-luma-ivory tracking-tight">
+        <h2 className="ai7-type-section text-luma-ivory tracking-tight">
           Transaksi terbaru
         </h2>
         <button
@@ -139,9 +139,9 @@ export function LumaRecentTransactions({
                           onClick={() => onEdit(tx)}
                           title="Edit transaksi"
                           aria-label={`Edit transaksi ${tx.description}`}
-                          className="luma-touch min-w-[44px] inline-flex items-center justify-center rounded-full text-luma-smoke hover:text-luma-gold hover:bg-luma-gold/10 border border-transparent hover:border-luma-gold/25 transition cursor-pointer"
+                          className="luma-overview-row-action luma-touch inline-flex items-center justify-center text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal transition-colors"
                         >
-                          <span className="text-xs font-semibold">Ubah</span>
+                          <Pencil size={15} aria-hidden="true" />
                         </button>
                       )}
                       {onDelete && (
@@ -150,9 +150,9 @@ export function LumaRecentTransactions({
                           onClick={() => onDelete(tx)}
                           title="Hapus transaksi"
                           aria-label={`Hapus transaksi ${tx.description}`}
-                          className="luma-touch min-w-[44px] inline-flex items-center justify-center rounded-full text-luma-smoke hover:text-luma-coral hover:bg-luma-coral/10 border border-transparent hover:border-luma-coral/25 transition cursor-pointer"
+                          className="luma-overview-row-action luma-touch inline-flex items-center justify-center text-luma-smoke hover:text-luma-coral hover:bg-luma-coral/10 transition-colors"
                         >
-                          <span className="text-xs font-semibold">Hapus</span>
+                          <Trash2 size={15} aria-hidden="true" />
                         </button>
                       )}
                     </div>

@@ -30,7 +30,7 @@ All Fold colors are `--fold-*` tokens defined on `:root` (dark) and `.light`. Co
 | Field fill / edge | #2c323a / #858d99 | #f0f2f5 / #a2aab5 |
 | Focus ring `--fold-focus` | #a8c0ff | #2d5ad6 |
 
-The hero panel is always ink (`--fold-ink` #15181d, text `--fold-on-ink`) in both themes, with a folded top-right corner (`--fold-corner`). Mint and coral inside it use `--fold-mint` and `--fold-coral`.
+The hero panel has a folded top-right corner (`--fold-corner`). In light mode it is an ink card (`--fold-ink` #15181d, text `--fold-on-ink`). In dark mode it is a white sheet (#f3f5f7) with ink text, a darker action button, and the light-theme mint and coral for contrast. The dark-mode values are scoped to `html:not(.light) .fold-hero` in `fold2.css`.
 
 Account colors appear only as a small identifying dot. User-selected category colors keep their meaning. Both themes share the same semantic roles.
 

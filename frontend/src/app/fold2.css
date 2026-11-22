@@ -46,6 +46,8 @@
   --fold-on-ink-action: #eef1f4;
   --fold-on-ink-action-hover: #fff;
   --fold-on-ink-action-pressed: #d5dae1;
+  --fold-on-ink-action-text: #15181d;
+  --fold-hero-tint: 255 255 255;
 }
 
 .light {
@@ -516,6 +518,21 @@
   background: linear-gradient(225deg, transparent 0 calc(var(--fold-size) / 1.4142), var(--fold-ink) 0);
   container-type: inline-size;
 }
+/* In dark mode the folded overview card is a white sheet; light mode keeps the ink card. */
+html:not(.light) .fold-hero {
+  --fold-ink: #f3f5f7;
+  --fold-on-ink: #15181d;
+  --fold-on-ink-muted: #5a626d;
+  --fold-corner: #c4cad2;
+  --fold-mint: #147a46;
+  --fold-coral: #b3352e;
+  --fold-focus: #2d5ad6;
+  --fold-on-ink-action: #15181d;
+  --fold-on-ink-action-hover: #2a2f37;
+  --fold-on-ink-action-pressed: #3b414a;
+  --fold-on-ink-action-text: #fff;
+  --fold-hero-tint: 21 24 29;
+}
 .fold-hero::after {
   content: "";
   position: absolute;
@@ -528,7 +545,7 @@
 }
 .fold-hero-header { display: flex; align-items: center; justify-content: space-between; padding-inline-end: 38px; gap: 10px; }
 .fold-hero-header h2 { color: var(--fold-on-ink-muted); font-size: 13px; font-weight: 600; }
-.fold-hero .fold-icon-button:hover { color: inherit; background: rgb(255 255 255 / .12); }
+.fold-hero .fold-icon-button:hover { color: inherit; background: rgb(var(--fold-hero-tint) / .12); }
 .fold-hero .fold-balance {
   margin-top: 10px;
   font-variant-numeric: tabular-nums;
@@ -550,12 +567,12 @@
 .fold-balance-legend svg { color: var(--fold-mint); }
 .fold-balance-legend > div + div svg { color: var(--fold-coral); }
 .fold-hero-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 22px; }
-.fold-hero .fold-action { background: var(--fold-on-ink-action); color: var(--fold-ink); }
+.fold-hero .fold-action { background: var(--fold-on-ink-action); color: var(--fold-on-ink-action-text); }
 .fold-hero .fold-action:hover { background: var(--fold-on-ink-action-hover); }
 .fold-hero .fold-action:active { background: var(--fold-on-ink-action-pressed); }
-.fold-hero .fold-action-secondary { background: rgb(255 255 255 / .09); color: var(--fold-on-ink); }
-.fold-hero .fold-action-secondary:hover { background: rgb(255 255 255 / .12); }
-.fold-hero .fold-action-secondary:active { background: rgb(255 255 255 / .2); }
+.fold-hero .fold-action-secondary { background: rgb(var(--fold-hero-tint) / .09); color: var(--fold-on-ink); }
+.fold-hero .fold-action-secondary:hover { background: rgb(var(--fold-hero-tint) / .12); }
+.fold-hero .fold-action-secondary:active { background: rgb(var(--fold-hero-tint) / .2); }
 
 .fold-budget { display: flex; flex-direction: column; gap: 10px; padding: 22px 24px 20px; }
 .fold-gauge { position: relative; width: min(100%, 260px); margin: 6px auto 0; }
@@ -680,7 +697,7 @@
 .fold-budget .fold-message { padding: 4px 0; }
 .fold-card.fold-loading { display: grid; place-items: center; padding: 20px; }
 .fold-hero.fold-loading { gap: 20px; }
-.fold-hero .animate-pulse { background: rgb(255 255 255 / .16); }
+.fold-hero .animate-pulse { background: rgb(var(--fold-hero-tint) / .16); }
 
 @media (prefers-reduced-motion: no-preference) {
   /* Move the heading into place first, then reveal the page without shifting its controls. */

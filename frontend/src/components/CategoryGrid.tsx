@@ -396,7 +396,7 @@ export function CategoryGrid({
               setAddType(filterTab === "income" ? "income" : "expense");
               setIsAddModalOpen(true);
             }}
-            className="px-3.5 py-2 bg-amberGold text-slate-950 hover:bg-amber-300 font-semibold text-xs sm:text-sm rounded-xl transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 min-h-[38px]"
+            className="luma-action-primary shrink-0"
             title="Tambah kategori transaksi baru"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
@@ -436,7 +436,7 @@ export function CategoryGrid({
               setAddType(filterTab === "income" ? "income" : "expense");
               setIsAddModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amberGold text-slate-950 font-semibold text-xs rounded-xl hover:bg-amber-300 transition cursor-pointer min-h-[44px]"
+            className="luma-action-primary"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Tambah kategori baru</span>
@@ -516,7 +516,7 @@ export function CategoryGrid({
                         }}
                         title={`Edit kategori ${c.name}`}
                         aria-label={`Edit kategori ${c.name}`}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-amberGold hover:bg-amberGold/15 border border-transparent hover:border-amberGold/30 transition-all duration-150 cursor-pointer active:scale-95"
+                        className="p-1.5 text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal transition-colors cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -528,7 +528,7 @@ export function CategoryGrid({
                         }}
                         title={`Hapus kategori ${c.name}`}
                         aria-label={`Hapus kategori ${c.name}`}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/15 border border-transparent hover:border-rose-500/30 transition-all duration-150 cursor-pointer active:scale-95"
+                        className="p-1.5 text-luma-smoke hover:text-luma-coral hover:bg-luma-coral/10 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -811,7 +811,7 @@ export function CategoryGrid({
               type="button"
               onClick={handleConfirmDelete}
               disabled={deleteLoading}
-              className="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="ui-btn ui-btn--danger"
             >
               {deleteLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Hapus kategori</span>

@@ -696,7 +696,7 @@ export function ManageCategoriesModal({
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 text-xs font-semibold text-slate-950 bg-coralFall hover:brightness-110 rounded-xl transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="ui-btn ui-btn--danger"
               >
                 {isDeleting ? (
                   <>

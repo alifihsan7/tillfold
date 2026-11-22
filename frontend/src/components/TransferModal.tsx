@@ -183,7 +183,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions, init
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-cyanHub text-slate-950 hover:brightness-110 rounded-2xl transition inline-flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="luma-action-primary"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>{loading ? "Memproses..." : "Transfer"}</span>

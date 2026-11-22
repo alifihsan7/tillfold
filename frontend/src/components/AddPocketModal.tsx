@@ -106,7 +106,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
           <button
             type="submit"
             disabled={saving}
-            className="min-h-[44px] px-6 py-2.5 rounded-full bg-luma-ivory hover:bg-white text-luma-charcoal text-xs font-semibold transition active:scale-95 cursor-pointer disabled:opacity-50"
+            className="luma-action-primary"
           >
             {saving ? "Menyimpan..." : "Tambah kantong"}
           </button>

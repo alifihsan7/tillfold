@@ -350,7 +350,7 @@ export function TransferPocketModal({
           <button
             type="submit"
             disabled={loading || numericAmount <= 0 || fromPocketId === toPocketId}
-            className="px-5 py-2.5 rounded-full bg-luma-ivory hover:bg-white text-luma-charcoal text-xs font-semibold transition active:scale-95 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed min-h-[44px] flex items-center gap-2"
+            className="luma-action-primary"
           >
             {loading ? (
               <span>Memproses...</span>

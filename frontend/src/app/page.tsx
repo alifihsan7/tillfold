@@ -1525,7 +1525,7 @@ export default function FinanceDashboard() {
       {/* MOBILE FLOATING ACTION BUTTON (Catat Transaksi) */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-luma-ivory text-luma-charcoal shadow-xl shadow-black/40 flex items-center justify-center font-bold active:scale-90 transition border border-white/20 cursor-pointer"
+        className="md:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-luma-ivory text-luma-charcoal flex items-center justify-center font-bold active:scale-90 transition border border-white/20 cursor-pointer"
         title="Catat transaksi baru"
         aria-label="Catat transaksi baru"
       >
@@ -1533,7 +1533,7 @@ export default function FinanceDashboard() {
       </button>
 
       {/* MOBILE BOTTOM NAVIGATION BAR — 5 Core Menus */}
-      <nav className="luma-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-1.5 py-1.5 flex items-center justify-around safe-bottom shadow-2xl" aria-label="Navigasi utama">
+      <nav className="luma-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-1.5 py-1.5 flex items-center justify-around safe-bottom" aria-label="Navigasi utama">
         {[
           { name: "Ringkasan", slug: "#/overview", icon: LayoutDashboard },
           { name: "Transaksi", slug: "#/transactions", icon: Receipt },
@@ -1794,7 +1794,7 @@ export default function FinanceDashboard() {
                 </div>
                 <button
                   onClick={() => setIsPaycheckModalOpen(true)}
-                  className="luma-touch px-4 py-2 rounded-full text-xs font-semibold bg-luma-sage text-luma-charcoal hover:brightness-105 transition shrink-0 inline-flex items-center justify-center gap-1.5 cursor-pointer self-end sm:self-center"
+                  className="luma-action-primary shrink-0 self-end sm:self-center"
                 >
                   <span>Lanjutkan checklist</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -2937,7 +2937,7 @@ export default function FinanceDashboard() {
             <button
               type="submit"
               disabled={billAccountOptions.length === 0}
-              className="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-amberGold text-slate-950 hover:bg-amber-300 rounded-2xl transition inline-flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+              className="luma-action-primary"
             >
               Simpan tagihan
             </button>

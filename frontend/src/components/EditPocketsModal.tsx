@@ -175,7 +175,7 @@ export function EditPocketsModal({
           <button
             type="submit"
             disabled={loading || pockets.every((pocket) => !!pocket.subscription_id)}
-            className="min-h-[44px] px-6 py-2.5 rounded-full text-xs sm:text-sm bg-luma-ivory text-luma-charcoal font-semibold hover:bg-white transition flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer active:scale-95"
+            className="luma-action-primary"
           >
             {loading ? (
               "Menyimpan..."

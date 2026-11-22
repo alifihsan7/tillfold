@@ -293,7 +293,7 @@ export function SettleInternalLoanModal({
           <button
             type="submit"
             disabled={loading || !!validationError}
-            className="luma-touch px-5 py-2.5 rounded-2xl bg-luma-sage hover:bg-luma-sage/90 text-luma-charcoal text-xs sm:text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-2 shadow-sm"
+            className="luma-action-primary"
           >
             {loading ? (
               <span>Memproses...</span>

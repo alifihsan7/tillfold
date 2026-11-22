@@ -439,7 +439,7 @@ export function InternalLoansWidget({
                       <button
                         type="button"
                         onClick={() => setSettleLoanTarget(loan)}
-                        className="luma-touch px-3.5 py-1.5 rounded-xl bg-luma-sage hover:bg-luma-sage/90 text-luma-charcoal text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1.5 shadow-sm"
+                        className="luma-action-secondary"
                       >
                         <Coins className="w-3.5 h-3.5" />
                         <span>Lunasi</span>

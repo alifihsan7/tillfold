@@ -650,7 +650,7 @@ export default function PaycheckModal({
                 type="button"
                 onClick={handleStartSession}
                 disabled={loading || !cycleValid || balanceDifference !== 0}
-                className="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-mintRise text-slate-950 hover:brightness-110 rounded-2xl transition inline-flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="luma-action-primary"
               >
                 <span>{loading ? "Menyiapkan..." : "Mulai checklist transfer"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -715,7 +715,7 @@ export default function PaycheckModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-mintRise text-slate-950 hover:brightness-110 transition shrink-0 cursor-pointer"
+                className="luma-action-secondary shrink-0"
               >
                 Tutup
               </button>
@@ -856,7 +856,7 @@ export default function PaycheckModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2 text-xs sm:text-sm font-semibold bg-mintRise text-slate-950 hover:brightness-110 rounded-2xl transition cursor-pointer"
+                className="luma-action-primary"
               >
                 {isAllCompleted ? "Selesai & tutup" : "Simpan & lanjutkan nanti"}
               </button>
@@ -1049,7 +1049,7 @@ export default function PaycheckModal({
               type="button"
               onClick={handleSaveCustomize}
               disabled={loading}
-              className="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-mintRise text-slate-950 hover:brightness-110 rounded-2xl transition cursor-pointer"
+              className="luma-action-primary"
             >
               {loading ? "Menyiapkan..." : "Simpan alokasi"}
             </button>

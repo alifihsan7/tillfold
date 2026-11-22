@@ -1144,7 +1144,7 @@ export default function FinanceDashboard() {
   };
 
   return (
-    <div className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
+    <div data-page={activeNav === "Ringkasan" ? "overview" : undefined} className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
       <aside id="desktop-sidebar" aria-label="Sidebar" data-collapsed={sidebarCollapsed} data-motion={sidebarMotion} className="luma-sidebar hidden md:flex shrink-0 bg-luma-charcoal p-5 flex-col justify-between overflow-x-hidden overflow-y-auto">
         <div>
           <div className="luma-sidebar-heading flex items-center justify-between gap-1">
@@ -1757,7 +1757,7 @@ export default function FinanceDashboard() {
         {/* VIEW 1: RINGKASAN */}
         {/* ============================================================== */}
         {activeNav === "Ringkasan" && (
-          <div className="space-y-5 sm:space-y-8 animate-fadeIn">
+          <div className="fold-page animate-fadeIn">
             {/* Active Paycheck Session Banner */}
             {activePaycheckSession && activePaycheckSession.status === "in_progress" && (
               <div className="luma-glass !rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

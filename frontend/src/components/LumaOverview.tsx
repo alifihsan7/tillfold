@@ -1,14 +1,12 @@
 "use client";
 
-import React from "react";
-import { Plus, ArrowUpRight, Eye, EyeOff, ArrowDownLeft, ArrowLeftRight } from "lucide-react";
-import { Skeleton } from "./ui/Skeleton";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Eye, EyeOff, Plus } from "lucide-react";
 import { HiddenAmount } from "./ui/HiddenAmount";
+import { Skeleton } from "./ui/Skeleton";
 
 interface LumaOverviewProps {
   totalBalance: number;
   income: number;
-  /** Opening balances recorded in the period; shown apart, never added to income. */
   openingBalance?: number;
   expense: number;
   accountCount: number;
@@ -33,104 +31,136 @@ interface LumaOverviewProps {
   onToggleBalance?: () => void;
 }
 
-export function LumaOverview({ totalBalance, income, openingBalance = 0, expense, accountCount, safeDaily,
+const arc = "M 20 127 A 110 110 0 0 1 240 127";
+
+export function LumaOverview({
+  totalBalance, income, openingBalance = 0, expense, accountCount, safeDaily,
   pocketAccount, pocketRemaining, pocketBudget, dayOfCycle, cycleDays, daysRemaining,
   paceStatus, periodEnded, formatRupiah, loading, isGuest, error, onRetry, onSignIn,
-  onAddTransaction, onOpenPaycheck, hideBalance = false, onToggleBalance }: LumaOverviewProps) {
-  const remainingPct = pocketBudget && pocketBudget > 0
-    ? Math.min(100, Math.max(0, pocketRemaining / pocketBudget * 100)) : null;
-  const privateAmount = (amount: number) => hideBalance ? <HiddenAmount /> : formatRupiah(amount);
-  const flowTotal = Math.max(0, income) + Math.max(0, expense);
-  const incomeShare = flowTotal > 0 ? Math.max(0, income) / flowTotal : 0;
-  const net = income - expense;
+  onAddTransaction, onOpenPaycheck, hideBalance = false, onToggleBalance,
+}: LumaOverviewProps) {
+  if (loading) return (
+    <div className="fold-grid" aria-busy="true" aria-label="Memuat ringkasan">
+      <span className="sr-only" role="status">Memuat saldo dan transaksi Anda.</span>
+      <div className="fold-hero fold-loading"><Skeleton className="h-4 w-28" /><Skeleton className="h-14 w-3/4" /></div>
+      <div className="fold-card fold-loading"><Skeleton className="h-32 w-full" /></div>
+    </div>
+  );
 
-  if (loading) return <div className="luma-overview-grid" aria-busy="true" aria-label="Memuat ringkasan">
-    <span className="sr-only" role="status">Memuat saldo dan transaksi Anda.</span>
-    <div className="luma-balance-panel space-y-6"><Skeleton className="h-4 w-28" /><Skeleton className="h-12 w-3/4" /><Skeleton className="h-11 w-40" /></div>
-    <div className="luma-glass p-6"><Skeleton className="h-52 w-full" /></div>
-  </div>;
-
-  if (error) return <section className="luma-data-state" role="alert">
-    <h2>Ringkasan belum dapat dimuat</h2><p>{error}</p>
-    <button type="button" className="luma-action-primary" onClick={onRetry}>Coba lagi</button>
-  </section>;
-
-  if (isGuest) return <div className="luma-overview-grid">
-    <section className="luma-balance-panel luma-guest-panel" aria-label="Mulai mencatat keuangan">
-      <p className="luma-panel-label">Keuangan pribadi</p>
-      <h2>Saldo, jatah belanja,<br />dan catatan harian.</h2>
-      <p>Masuk untuk melihat rekening dan transaksi Anda.<br />Data keuangan belum ditampilkan.</p>
-      <div className="luma-balance-actions"><button type="button" className="luma-action-primary" onClick={onSignIn}>Masuk ke akun</button></div>
-      <div className="luma-guest-inset">Catat pengeluaran lewat web atau bot Telegram yang terhubung.</div>
+  if (error) return (
+    <section className="fold-card fold-message" role="alert">
+      <h2>Ringkasan belum dapat dimuat</h2>
+      <p>{error}</p>
+      <button type="button" className="fold-action" onClick={onRetry}>Coba lagi</button>
     </section>
-    <section className="luma-matte luma-guest-guide" aria-label="Panduan ringkasan">
-      <h2>Yang bisa Anda lihat di sini</h2>
-      <dl><div><dt>Saldo rekening</dt><dd>Total kas dari rekening yang Anda catat.</dd></div>
-        <div><dt>Jatah belanja harian</dt><dd>Batas belanja berdasarkan sisa anggaran dan waktu dalam siklus gajian.</dd></div>
-        <div><dt>Catatan transaksi</dt><dd>Riwayat pemasukan, pengeluaran, dan transfer.</dd></div></dl>
-    </section>
-  </div>;
+  );
 
-  return <div className="fold-overview">
-    <div className="luma-overview-grid">
-    <section className="luma-balance-panel" aria-label="Total saldo kas">
-      <div className="luma-balance-top">
-        <h2 className="luma-panel-label">Total saldo kas</h2>
-        <button type="button" className="luma-icon-button" onClick={onToggleBalance}
-          aria-label="Sembunyikan saldo" title={hideBalance ? "Tampilkan saldo" : "Sembunyikan saldo"} aria-pressed={hideBalance}>
-          {hideBalance ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-        </button>
-      </div>
-      <div className="luma-balance-body">
-        <p className="luma-balance-number" aria-live="polite">{privateAmount(totalBalance)}</p>
-        <p>Tersimpan di {accountCount} rekening Anda</p>
-      </div>
-      {!hideBalance && flowTotal > 0 && <div className="fold-flow-ratio" aria-hidden="true">
-        {incomeShare > 0 && <span className="fold-ratio-income" style={{ flexGrow: incomeShare }} />}
-        {incomeShare < 1 && <span className="fold-ratio-expense" style={{ flexGrow: 1 - incomeShare }} />}
-      </div>}
-      <div className="fold-balance-legend">
-        <span><ArrowDownLeft size={14} aria-hidden="true" /> Pemasukan <strong>{privateAmount(income)}</strong></span>
-        <span><ArrowUpRight size={14} aria-hidden="true" /> Pengeluaran <strong>{privateAmount(expense)}</strong></span>
-      </div>
-      <div className="luma-balance-actions">
-        <button type="button" className="luma-action-primary" onClick={onAddTransaction}><Plus size={16} aria-hidden="true" /> Catat transaksi</button>
-        <button type="button" className="luma-action-secondary" onClick={onOpenPaycheck}>Catat gaji</button>
-      </div>
-    </section>
-      <section className="luma-matte luma-daily-panel" data-pace={paceStatus} aria-label="Batas belanja harian">
-        <div className="luma-section-heading"><h2>Batas belanja harian</h2></div>
-        {pocketBudget === null ? <div className="luma-budget-empty"><p>Anggaran belum diatur.</p><button type="button" className="luma-text-action" onClick={onOpenPaycheck}>Atur siklus gajian</button></div> : <>
-        {periodEnded ? <div className="luma-daily-amount">Periode berakhir</div> : <div className="fold-gauge">
-          <svg viewBox="0 0 260 138" aria-hidden="true">
-            <path className="fold-gauge-track" d="M 20 128 A 110 110 0 0 1 240 128" pathLength="100" />
-            {!hideBalance && remainingPct !== null && remainingPct > 0 && <path className="fold-gauge-fill" d="M 20 128 A 110 110 0 0 1 240 128" pathLength="100" strokeDasharray={`${remainingPct} 100`} />}
-          </svg>
-          <div className="fold-gauge-value">
-            <div className="luma-daily-amount">{privateAmount(safeDaily)}</div>
-            <span>per hari</span>
-          </div>
-        </div>}
-        <div className="luma-daily-caption"><span className={periodEnded ? undefined : "luma-daily-status"}>{periodEnded ? "Siklus selesai" : paceStatus === "warning" ? "Belanja melebihi laju anggaran" : "Belanja dalam batas anggaran"}</span><span>{periodEnded ? "Mulai siklus baru" : `${daysRemaining} hari tersisa`}</span></div>
-        {!hideBalance && remainingPct !== null && !periodEnded && <span className="sr-only" role="progressbar" aria-label={`Sisa anggaran ${pocketAccount}`} aria-valuenow={Math.round(remainingPct)} aria-valuemin={0} aria-valuemax={100} />}
-        <div className="fold-budget-stats">
-          <div><span>Sisa {pocketAccount}</span><strong>{privateAmount(pocketRemaining)}</strong></div>
-          <div>
-            <span>Siklus</span><strong>Hari {dayOfCycle}/{cycleDays}</strong>
-            <div className="fold-cycle-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, dayOfCycle / Math.max(cycleDays, 1) * 100))}%` }} /></div>
-          </div>
-        </div>
-        </>}
+  if (isGuest) return (
+    <div className="fold-grid">
+      <section className="fold-hero fold-message" aria-label="Mulai mencatat keuangan">
+        <h2>Saldo, jatah belanja, dan catatan harian</h2>
+        <p>Masuk untuk melihat rekening dan transaksi Anda. Data keuangan belum ditampilkan.</p>
+        <button type="button" className="fold-action" onClick={onSignIn}>Masuk ke akun</button>
+      </section>
+      <section className="fold-card fold-message" aria-label="Panduan ringkasan">
+        <h2>Ringkasan keuangan</h2>
+        <p>Lihat saldo rekening, batas belanja harian, dan transaksi di satu tempat.</p>
       </section>
     </div>
-    <section className="fold-flow" aria-label="Arus kas periode ini">
-      <div className="luma-section-heading"><h2>Arus kas</h2><span>Periode ini</span></div>
-      <dl>
-        <div><dt><ArrowDownLeft size={16} aria-hidden="true" /> Pemasukan</dt><dd className="text-luma-sage">{privateAmount(income)}</dd></div>
-        <div><dt><ArrowUpRight size={16} aria-hidden="true" /> Pengeluaran</dt><dd className="text-luma-coral">{privateAmount(expense)}</dd></div>
-        <div><dt><ArrowLeftRight size={16} aria-hidden="true" /> Selisih</dt><dd className={net < 0 ? "text-luma-coral" : undefined}>{privateAmount(net)}</dd></div>
-      </dl>
-      {openingBalance > 0 && <p className="mt-3 text-xs text-luma-smoke">Saldo awal {privateAmount(openingBalance)} dicatat terpisah, tidak termasuk pemasukan.</p>}
-    </section>
-  </div>;
+  );
+
+  const privateAmount = (value: number) => hideBalance ? <HiddenAmount /> : formatRupiah(value);
+  const ratio = pocketBudget && pocketBudget > 0
+    ? Math.min(100, Math.max(0, pocketRemaining * 100 / pocketBudget))
+    : null;
+  const inflow = Math.max(0, income);
+  const outflow = Math.max(0, expense);
+  const net = income - expense;
+  const cycleProgress = Math.min(100, Math.max(0, dayOfCycle / Math.max(1, cycleDays) * 100));
+
+  return (
+    <>
+      <div className="fold-grid">
+        <section className="fold-hero" aria-labelledby="fold-balance-title">
+          <div className="fold-hero-header">
+            <h2 id="fold-balance-title">Total saldo kas</h2>
+            <button type="button" className="fold-icon-button" onClick={onToggleBalance}
+              aria-label="Sembunyikan saldo" aria-pressed={hideBalance}
+              title={hideBalance ? "Tampilkan saldo" : "Sembunyikan saldo"}>
+              {hideBalance ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+          <p className="fold-balance" aria-live="polite">{privateAmount(totalBalance)}</p>
+          <p className="fold-balance-caption">Tersimpan di {accountCount} rekening Anda</p>
+          {!hideBalance && inflow + outflow > 0 && (
+            <div className="fold-ratio" aria-hidden="true">
+              {inflow > 0 && <span className="fold-ratio-income" style={{ flexGrow: inflow }} />}
+              {outflow > 0 && <span className="fold-ratio-expense" style={{ flexGrow: outflow }} />}
+            </div>
+          )}
+          <dl className="fold-balance-legend">
+            <div><dt><ArrowDownLeft size={14} aria-hidden="true" /> Pemasukan</dt><dd>{privateAmount(income)}</dd></div>
+            <div><dt><ArrowUpRight size={14} aria-hidden="true" /> Pengeluaran</dt><dd>{privateAmount(expense)}</dd></div>
+          </dl>
+          <div className="fold-hero-actions">
+            <button type="button" className="fold-action" onClick={onAddTransaction}>
+              <Plus size={16} aria-hidden="true" /> Catat transaksi
+            </button>
+            <button type="button" className="fold-action fold-action-secondary" onClick={onOpenPaycheck}>Catat gaji</button>
+          </div>
+        </section>
+
+        <section className="fold-card fold-budget" data-pace={paceStatus} aria-labelledby="fold-budget-title">
+          <h2 id="fold-budget-title">Batas belanja harian</h2>
+          {pocketBudget === null ? (
+            <div className="fold-message">
+              <p>Anggaran belum diatur.</p>
+              <button type="button" className="fold-link" onClick={onOpenPaycheck}>Atur siklus gajian</button>
+            </div>
+          ) : (
+            <>
+              {periodEnded ? <p className="fold-daily-amount">Periode berakhir</p> : (
+                <div className="fold-gauge">
+                  <svg viewBox="0 0 260 138" aria-hidden="true">
+                    <path className="fold-gauge-track" d={arc} pathLength="100" />
+                    {!hideBalance && ratio !== null && ratio > 0 && (
+                      <path className="fold-gauge-fill" d={arc} pathLength="100" strokeDasharray={`${ratio} 100`} />
+                    )}
+                  </svg>
+                  <div className="fold-gauge-value">
+                    <p className="fold-daily-amount">{privateAmount(safeDaily)}</p>
+                    <p>per hari</p>
+                  </div>
+                  {!hideBalance && ratio !== null && <span className="sr-only" role="progressbar"
+                    aria-label={`Sisa anggaran ${pocketAccount}`} aria-valuenow={Math.round(ratio)}
+                    aria-valuemin={0} aria-valuemax={100} />}
+                </div>
+              )}
+              <p className="fold-budget-status">
+                <span>{periodEnded ? "Siklus selesai" : paceStatus === "warning" ? "Belanja melebihi laju anggaran" : "Belanja dalam batas anggaran"}</span>
+                {!periodEnded && <span>{daysRemaining} hari tersisa</span>}
+              </p>
+              <dl className="fold-budget-stats">
+                <div><dt>Sisa {pocketAccount}</dt><dd>{privateAmount(pocketRemaining)}</dd></div>
+                <div>
+                  <dt>Siklus</dt><dd>Hari {dayOfCycle}/{cycleDays}</dd>
+                  <div className="fold-cycle" aria-hidden="true"><span style={{ width: `${cycleProgress}%` }} /></div>
+                </div>
+              </dl>
+            </>
+          )}
+        </section>
+      </div>
+
+      <section className="fold-flow" aria-labelledby="fold-flow-title">
+        <header className="fold-section-header"><h2 id="fold-flow-title">Arus kas</h2><span>Periode ini</span></header>
+        <dl>
+          <div><dt><ArrowDownLeft size={15} aria-hidden="true" /> Pemasukan</dt><dd className="fold-positive">{privateAmount(income)}</dd></div>
+          <div><dt><ArrowUpRight size={15} aria-hidden="true" /> Pengeluaran</dt><dd className="fold-negative">{privateAmount(expense)}</dd></div>
+          <div><dt><ArrowLeftRight size={15} aria-hidden="true" /> Selisih</dt><dd className={net < 0 && !hideBalance ? "fold-negative" : undefined}>{privateAmount(net)}</dd></div>
+        </dl>
+        {openingBalance > 0 && <p>Saldo awal {privateAmount(openingBalance)} dicatat terpisah, tidak termasuk pemasukan.</p>}
+      </section>
+    </>
+  );
 }

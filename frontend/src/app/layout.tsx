@@ -18,6 +18,14 @@ const geistMono = localFont({
   display: "swap",
 });
 
+const jakartaSans = localFont({
+  src: "./fonts/PlusJakartaSans.ttf",
+  variable: "--font-plus-jakarta",
+  weight: "200 800",
+  display: "swap",
+  preload: false,
+});
+
 export const viewport: Viewport = {
   themeColor: "#090A0D",
   width: "device-width",
@@ -54,7 +62,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${jakartaSans.variable}`}
       suppressHydrationWarning
     >
       <head>

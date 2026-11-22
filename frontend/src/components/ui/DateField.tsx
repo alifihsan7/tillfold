@@ -99,6 +99,7 @@ export function DateField({ id, label, value, onChange, min, max, required }: Pr
   return (
     <div ref={field} className="tillfold-date" onKeyDown={(event) => {
       if (event.key === "Escape" && open) {
+        event.preventDefault();
         event.stopPropagation();
         setOpen(false);
         trigger.current?.focus();

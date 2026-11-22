@@ -166,7 +166,64 @@
   background: #2a2f37;
 }
 .tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button:active { background: #3b414a; }
-.tillfold-fold .luma-topbar-inner button:not([role="menuitem"]),
+.luma-period-popup {
+  display: grid;
+  gap: 10px;
+  width: min(21rem, calc(100vw - 3.5rem));
+  max-height: calc(100dvh - 9rem);
+  overflow-y: auto;
+}
+.tillfold-fold .luma-period-tabs { border-radius: 999px; }
+.luma-period-popup .luma-period-tabs .ui-segment {
+  min-width: 0;
+  padding-inline: 4px;
+  font-size: 12px;
+}
+.fold-period-list {
+  display: grid;
+  gap: 2px;
+  max-height: 14rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.luma-period-popup .fold-period-option {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding-inline: 8px;
+  border-radius: 12px;
+  color: var(--fold-overview-text);
+  font-size: 13px;
+  text-align: start;
+}
+.luma-period-popup .fold-period-option:hover { background: var(--fold-panel); }
+.luma-period-popup .fold-period-option[aria-pressed="true"] {
+  background: var(--fold-selected);
+  font-weight: 700;
+}
+.fold-period-check { display: grid; place-items: center; }
+.fold-period-option:focus-visible { outline-offset: -2px; }
+.luma-period-popup .fold-period-history {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+  color: var(--fold-overview-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+.fold-period-history:hover { background: var(--fold-panel); }
+.fold-period-dates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 142px), 1fr));
+  gap: 8px;
+}
+.fold-period-custom .tillfold-date .tillfold-date-field input { font-size: 14px; padding-inline: 8px; }
+.tillfold-fold .luma-topbar-inner button:not(:where([role="menuitem"], .luma-period-popup *)),
 .tillfold-fold :is(.ui-btn, .luma-action-primary, .luma-action-secondary) { border-radius: 999px; }
 .tillfold-fold :is(.ui-btn--primary, .luma-action-primary):not(:disabled):active {
   background: var(--fold-primary-pressed);
@@ -617,6 +674,7 @@
   .fold-content > .animate-fadeIn:not(.fold-heading) { animation: fold-content-enter 300ms ease-out; }
   .fold-content [role="tabpanel"].animate-fadeIn,
   .fold-content .transaction-calendar-grid,
+  :is(.fold-period-options, .fold-period-custom),
   .luma-dialog-panel [role="tabpanel"] {
     animation: fold-content-enter var(--luma-motion-panel) ease-out;
   }
@@ -632,6 +690,7 @@
     transition-duration: 60ms;
   }
   .tillfold-fold :is(.luma-period-selector > button, .luma-toolbar button[aria-expanded]) svg:last-child,
+  .fold-period-history > svg,
   .luma-sidebar-toggle > svg {
     transition: transform var(--luma-motion-panel) var(--luma-motion-out);
   }

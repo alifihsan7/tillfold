@@ -406,8 +406,6 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-topbar-inner { flex-wrap: wrap; }
 .luma-period-controls { flex: 1 1 220px; max-width: 100%; }
 .luma-period-selector { flex: 1 1 auto; max-width: 100%; }
-.luma-period-popup { width: min(24rem, calc(100vw - 4rem)); }
-.luma-period-popup button { min-height: 44px; }
 .luma-toolbar { margin-left: auto; }
 .luma-sidebar { background: var(--luma-sidebar-surface); border: 1px solid var(--luma-smokeline); }
 .luma-sidebar nav button { border-radius: var(--ai7-radius-control); font-size: 14px; padding-left: 12px; padding-right: 12px; }
@@ -1166,17 +1164,6 @@ textarea:focus-visible,
   .luma-app :is(.ui-btn, .ui-chip, .ui-segment, .luma-action-primary, .luma-action-secondary) {
     padding: 7px 11px;
   }
-}
-
-.luma-period-popup .luma-period-tabs .ui-segment {
-  min-width: 0;
-  padding-inline: 3px;
-  font-size: 12px;
-  gap: 5px;
-}
-.luma-period-tabs .ui-btn-icon svg { width: 14px; height: 14px; }
-@media (max-width: 420px) {
-  .luma-period-tabs .ui-btn-icon { display: none; }
 }
 
 /* Keyboard focus uses an inset indicator on compact selectors. */

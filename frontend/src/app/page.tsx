@@ -1573,7 +1573,7 @@ export default function FinanceDashboard() {
             {/* Pure Control Period Selector & Theme Switch */}
             <div className="luma-period-controls flex items-center gap-2 sm:gap-2.5 min-w-0">
               {currentUser ? <PeriodSelector
-                key={`${selectedPeriod.id}_${currentUser?.id || 1}`}
+                key={currentUser.id}
                 currentPeriod={selectedPeriod}
                 onSelectPeriod={(p) => setSelectedPeriod(p)}
               /> : <span className="text-xs text-luma-smoke">Keuangan pribadi</span>}

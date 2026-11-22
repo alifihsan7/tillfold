@@ -12,6 +12,21 @@ export function formatShortDate(value: string, today: Date = new Date()): string
   return (date.getUTCFullYear() === today.getFullYear() ? shortDate : shortDateWithYear).format(date);
 }
 
+/** Compact inclusive range, with the year repeated only when it changes. */
+export function formatDateRange(start: string, end: string): string {
+  const first = new Date(start);
+  const last = new Date(end);
+  if (!Number.isFinite(first.getTime()) || !Number.isFinite(last.getTime())) return "";
+  if (start === end) return shortDateWithYear.format(last);
+  if (first.getUTCFullYear() !== last.getUTCFullYear()) {
+    return `${shortDateWithYear.format(first)} – ${shortDateWithYear.format(last)}`;
+  }
+  if (first.getUTCMonth() === last.getUTCMonth()) {
+    return `${first.getUTCDate()}–${shortDateWithYear.format(last)}`;
+  }
+  return `${shortDate.format(first)} – ${shortDateWithYear.format(last)}`;
+}
+
 /** "+Rp 750.000" or "-Rp 120.000": the sign sits directly against the currency. */
 export function formatSignedRupiah(amount: number, positive: boolean, formatRupiah: (value: number) => string): string {
   return `${positive ? "+" : "-"}${formatRupiah(Math.abs(amount))}`;

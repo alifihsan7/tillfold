@@ -1,10 +1,10 @@
+import React, { useEffect, useId, useRef, useState } from "react";
+import { Calendar, Check, ChevronDown } from "lucide-react";
 import { DateField } from "@/components/ui/DateField";
-import { SegmentedControl, type SegmentedOption } from "@/components/ui/controls";
-import { useLatest } from "@/lib/useLatest";
-import { formatShortDate } from "@/lib/format";
-import React, { useState, useEffect, useRef, useId } from "react";
-import { Calendar, ChevronDown, Check, Clock, CalendarDays, SlidersHorizontal } from "lucide-react";
+import { Badge, SegmentedControl, type SegmentedOption } from "@/components/ui/controls";
 import { authFetch } from "@/lib/api";
+import { formatDateRange } from "@/lib/format";
+import { useLatest } from "@/lib/useLatest";
 
 export interface PeriodOption {
   id: string;
@@ -19,282 +19,198 @@ export interface PeriodOption {
 interface PeriodSelectorProps {
   currentPeriod: PeriodOption;
   onSelectPeriod: (period: PeriodOption) => void;
-  formatRupiah?: (val: number) => string;
 }
 
 const periodTabs: SegmentedOption<PeriodOption["type"]>[] = [
-  { value: "cycle", label: "Siklus", icon: <Clock /> },
-  { value: "week", label: "Minggu", icon: <CalendarDays /> },
-  { value: "month", label: "Bulan", icon: <Calendar /> },
-  { value: "custom", label: "Kustom", icon: <SlidersHorizontal /> },
+  { value: "cycle", label: "Siklus" },
+  { value: "week", label: "Minggu" },
+  { value: "month", label: "Bulan" },
+  { value: "custom", label: "Kustom" },
 ];
+const currentBadges = { cycle: "Berjalan", week: "Minggu ini", month: "Bulan ini" };
+const monthAndYear = new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric", timeZone: "UTC" });
+const recentCycleCount = 3;
 
-export function PeriodSelector({
-  currentPeriod,
-  onSelectPeriod,
-}: PeriodSelectorProps) {
+function periodTitle(period: PeriodOption) {
+  if (!period.start || !period.end) return period.label || "Pilih periode";
+  return period.type === "month"
+    ? monthAndYear.format(new Date(period.start))
+    : formatDateRange(period.start, period.end);
+}
+
+export function PeriodSelector({ currentPeriod, onSelectPeriod }: PeriodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PeriodOption["type"]>(currentPeriod.type);
-  const [periodGroups, setPeriodGroups] = useState<{
-    cycles: PeriodOption[];
-    weeks: PeriodOption[];
-    months: PeriodOption[];
-  }>({
-    cycles: [],
-    weeks: [],
-    months: [],
+  const [showHistory, setShowHistory] = useState(false);
+  const [periods, setPeriods] = useState<Record<"cycles" | "weeks" | "months", PeriodOption[]>>({
+    cycles: [], weeks: [], months: [],
   });
-
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const currentPeriodIdRef = useLatest(currentPeriod.id);
   const onSelectPeriodRef = useLatest(onSelectPeriod);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const popupId = useId();
+  const cycleId = currentPeriod.type === "cycle" ? currentPeriod.id : null;
 
   useEffect(() => {
-    authFetch("/api/v1/analytics/periods")
+    const request = new AbortController();
+    authFetch("/api/v1/analytics/periods", { signal: request.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (data) {
-          const cycles: PeriodOption[] = data.cycles || [];
-          setPeriodGroups({
-            cycles,
-            weeks: data.weeks || [],
-            months: data.months || [],
-          });
-
-          // Auto-sync initial active cycle if placeholder was passed
-          const activeCycle = cycles.find((c) => c.is_current) || cycles[0];
-          const selectedId = currentPeriodIdRef.current;
-          if (activeCycle && (selectedId === "cycle_current" || !selectedId)) {
-            onSelectPeriodRef.current(activeCycle);
-          }
+        if (!data || request.signal.aborted) return;
+        const cycles: PeriodOption[] = data.cycles || [];
+        setPeriods({ cycles, weeks: data.weeks || [], months: data.months || [] });
+        const activeCycle = cycles.find((cycle) => cycle.is_current) || cycles[0];
+        if (activeCycle && currentPeriodIdRef.current === "cycle_current") {
+          onSelectPeriodRef.current(activeCycle);
         }
       })
-      .catch((err) => console.error("Error fetching periods:", err));
-    // Load the period list once; the refs read the selection at response time.
-  }, [currentPeriodIdRef, onSelectPeriodRef]);
+      .catch((error) => {
+        if (!request.signal.aborted) console.error("Error fetching periods:", error);
+      });
+    return () => request.abort();
+  }, [cycleId, currentPeriodIdRef, onSelectPeriodRef]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest(".tillfold-calendar")) return;
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest(".tillfold-calendar")) return;
+      if (!dropdownRef.current?.contains(event.target as Node)) setIsOpen(false);
     };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        if (dropdownRef.current?.querySelector(".tillfold-date-field button[aria-expanded='true']")) return;
+        event.preventDefault();
         setIsOpen(false);
         triggerRef.current?.focus();
       }
     };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleKeyDown);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
 
-  const handleApplyCustom = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customStart || !customEnd) return;
-    const customOpt: PeriodOption = {
+  const activeCycle = periods.cycles.find((cycle) => cycle.is_current);
+  const cycles = activeCycle ? [activeCycle, ...periods.cycles.filter((cycle) => cycle !== activeCycle)] : periods.cycles;
+  const cycleHeading = (activeCycle || cycles[0])?.label.split(" · ")[0].replace(", gajian", " · Gajian");
+  const recentCycles = cycles.slice(0, recentCycleCount);
+  const options = {
+    cycle: showHistory ? cycles : recentCycles,
+    week: periods.weeks,
+    month: periods.months,
+  };
+
+  const selectPeriod = (period: PeriodOption) => {
+    onSelectPeriod(period);
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const togglePopup = () => {
+    if (!isOpen) {
+      setActiveTab(currentPeriod.type);
+      setShowHistory(currentPeriod.type === "cycle" && cycles.slice(recentCycleCount).some((cycle) => cycle.id === currentPeriod.id));
+      setCustomStart(currentPeriod.type === "custom" ? currentPeriod.start : "");
+      setCustomEnd(currentPeriod.type === "custom" ? currentPeriod.end : "");
+    }
+    setIsOpen(!isOpen);
+  };
+
+  const applyCustom = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!customStart || !customEnd || customStart > customEnd) return;
+    selectPeriod({
       id: `custom_${customStart}_${customEnd}`,
       type: "custom",
-      label: `Kustom · ${formatShortDate(customStart)} – ${formatShortDate(customEnd)}`,
+      label: `Kustom · ${formatDateRange(customStart, customEnd)}`,
       start: customStart,
       end: customEnd,
-    };
-    onSelectPeriod(customOpt);
-    setIsOpen(false);
+    });
   };
+
+  const title = periodTitle(currentPeriod);
 
   return (
     <div ref={dropdownRef} className="luma-period-selector relative min-w-0 text-left">
-      {/* Trigger Button */}
       <button
         ref={triggerRef}
         type="button"
         aria-expanded={isOpen}
-        aria-controls={popupId}
-        aria-label={currentPeriod.label || "Pilih periode"}
-        title={currentPeriod.label || "Pilih periode"}
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full min-w-0 min-h-11 py-2 px-3.5 rounded-[var(--ai7-radius-control)] text-xs font-medium bg-obsidian-card border border-luma-smokeline hover:border-luma-smoke text-slateText-primary hover:bg-obsidian-hover transition inline-flex items-center gap-2 group"
+        aria-controls={isOpen ? popupId : undefined}
+        aria-label={`Pilih periode: ${title}`}
+        title={title}
+        onClick={togglePopup}
+        className="w-full min-w-0 min-h-11 py-2 px-3.5 text-xs font-medium inline-flex items-center gap-2"
       >
-        <Calendar className="w-3.5 h-3.5 text-luma-ivory shrink-0" />
-        <span className="min-w-0 flex-1 text-left truncate">
-          {currentPeriod.label || "Pilih periode"}
-        </span>
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-slateText-muted shrink-0 transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-luma-ivory" : ""
-          }`}
-        />
+        <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+        <span className="min-w-0 flex-1 text-left truncate">{title}</span>
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 
-      {/* Floating Modal Popover */}
       {isOpen && (
-        <div id={popupId} aria-label="Pilih periode" className="luma-period-popup absolute left-0 mt-2 z-[90] bg-obsidian-card border border-luma-smokeline rounded-[var(--ai7-radius-panel)] shadow-2xl p-3.5">
+        <div id={popupId} className="luma-period-popup absolute left-0 mt-2 z-[90] border p-3">
           <SegmentedControl
             label="Jenis periode"
             value={activeTab}
             options={periodTabs}
             onChange={setActiveTab}
-            className="luma-period-tabs mb-3"
+            className="luma-period-tabs"
             fill
           />
 
-          {/* Tab Content List */}
-          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
-            {activeTab === "cycle" && (
-              <>
-                <div className="text-xs font-semibold text-slateText-muted px-2 py-1">
-                  Siklus Anggaran Dinamis
+          {activeTab === "custom" ? (
+            <form onSubmit={applyCustom} className="fold-period-custom space-y-3 p-1">
+              <div className="fold-period-dates">
+                <div>
+                  <label htmlFor={`${popupId}-start`} className="block text-xs text-luma-smoke mb-1">Mulai</label>
+                  <DateField id={`${popupId}-start`} required value={customStart} onChange={setCustomStart} />
                 </div>
-                {periodGroups.cycles.length === 0 ? (
-                  <div className="text-xs text-slateText-muted p-3 text-center">
-                    Belum ada riwayat siklus
-                  </div>
-                ) : (
-                  periodGroups.cycles.map((opt) => {
-                    const isSelected = currentPeriod.id === opt.id || currentPeriod.start === opt.start;
+                <div>
+                  <label htmlFor={`${popupId}-end`} className="block text-xs text-luma-smoke mb-1">Sampai</label>
+                  <DateField id={`${popupId}-end`} required value={customEnd} min={customStart || undefined} onChange={setCustomEnd} />
+                </div>
+              </div>
+              <button type="submit" className="luma-action-primary w-full">Terapkan</button>
+            </form>
+          ) : (
+            <div className="fold-period-options" key={activeTab}>
+              {activeTab === "cycle" && cycleHeading && (
+                <p className="px-2 pb-1 text-xs font-medium text-luma-smoke">{cycleHeading}</p>
+              )}
+              {options[activeTab].length === 0 ? (
+                <p className="p-2 text-xs text-luma-smoke">
+                  {activeTab === "cycle" ? "Belum ada riwayat siklus." : "Belum ada pilihan periode."}
+                </p>
+              ) : (
+                <ul id={`${popupId}-options`} className="fold-period-list">
+                  {options[activeTab].map((option) => {
+                    const selected = currentPeriod.id === option.id;
                     return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectPeriod(opt);
-                          setIsOpen(false);
-                        }}
-                        className={`w-full px-3 py-2 rounded-[var(--ai7-radius-control)] text-left text-xs transition flex items-center justify-between gap-2 ${
-                          isSelected
-                            ? "bg-luma-coal border border-luma-smokeline text-luma-ivory font-semibold"
-                            : "hover:bg-obsidian-hover border border-transparent text-slateText-primary"
-                        }`}
-                      >
-                        <div>
-                          <div>{opt.label}</div>
-                          <div className="text-xs text-slateText-muted font-sans mt-0.5">
-                            {opt.start} s/d {opt.end}
-                          </div>
-                        </div>
-                        {isSelected && <Check className="w-4 h-4 text-luma-ivory shrink-0" />}
-                      </button>
+                      <li key={option.id}>
+                        <button type="button" className="fold-period-option" aria-pressed={selected} onClick={() => selectPeriod(option)}>
+                          <span className="fold-period-check" aria-hidden="true">{selected && <Check size={15} />}</span>
+                          <span>{periodTitle(option)}</span>
+                          {option.is_current && <Badge>{currentBadges[activeTab]}</Badge>}
+                        </button>
+                      </li>
                     );
-                  })
-                )}
-              </>
-            )}
-
-            {activeTab === "week" && (
-              <>
-                <div className="text-xs font-semibold text-slateText-muted px-2 py-1">
-                  Periode Mingguan (7 Hari)
-                </div>
-                {periodGroups.weeks.map((opt) => {
-                  const isSelected = currentPeriod.id === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        onSelectPeriod(opt);
-                        setIsOpen(false);
-                      }}
-                      className={`w-full px-3 py-2 rounded-[var(--ai7-radius-control)] text-left text-xs transition flex items-center justify-between gap-2 ${
-                        isSelected
-                          ? "bg-luma-coal border border-luma-smokeline text-luma-ivory font-semibold"
-                          : "hover:bg-obsidian-hover border border-transparent text-slateText-primary"
-                      }`}
-                    >
-                      <div>
-                        <div>{opt.label}</div>
-                        <div className="text-xs text-slateText-muted font-sans mt-0.5">
-                          {opt.start} s/d {opt.end}
-                        </div>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-luma-ivory shrink-0" />}
-                    </button>
-                  );
-                })}
-              </>
-            )}
-
-            {activeTab === "month" && (
-              <>
-                <div className="text-xs font-semibold text-slateText-muted px-2 py-1">
-                  Kalender Bulanan
-                </div>
-                {periodGroups.months.map((opt) => {
-                  const isSelected = currentPeriod.id === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        onSelectPeriod(opt);
-                        setIsOpen(false);
-                      }}
-                      className={`w-full px-3 py-2 rounded-[var(--ai7-radius-control)] text-left text-xs transition flex items-center justify-between gap-2 ${
-                        isSelected
-                          ? "bg-luma-coal border border-luma-smokeline text-luma-ivory font-semibold"
-                          : "hover:bg-obsidian-hover border border-transparent text-slateText-primary"
-                      }`}
-                    >
-                      <div>
-                        <div>{opt.label}</div>
-                        <div className="text-xs text-slateText-muted font-sans mt-0.5">
-                          {opt.start} s/d {opt.end}
-                        </div>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-luma-ivory shrink-0" />}
-                    </button>
-                  );
-                })}
-              </>
-            )}
-
-            {activeTab === "custom" && (
-              <form onSubmit={handleApplyCustom} className="p-2 space-y-3">
-                <div className="text-xs font-semibold text-slateText-muted">
-                  Tentukan Rentang Tanggal Bebas
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <label htmlFor={`${popupId}-start`} className="block text-xs text-slateText-muted mb-1">Tanggal mulai</label>
-                    <DateField
-                      id={`${popupId}-start`}
-                      required
-                      value={customStart}
-                      onChange={(dateValue) => setCustomStart(dateValue)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor={`${popupId}-end`} className="block text-xs text-slateText-muted mb-1">Tanggal selesai</label>
-                    <DateField
-                      id={`${popupId}-end`}
-                      required
-                      value={customEnd}
-                      onChange={(dateValue) => setCustomEnd(dateValue)}
-                    />
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="luma-action-primary w-full"
-                >
-                  Terapkan Rentang
+                  })}
+                </ul>
+              )}
+              {activeTab === "cycle" && cycles.length > recentCycleCount && (
+                <button type="button" className="fold-period-history" aria-expanded={showHistory}
+                  aria-controls={`${popupId}-options`} onClick={() => setShowHistory((visible) => !visible)}>
+                  {showHistory ? "Ringkas riwayat" : "Lihat riwayat"}
+                  <ChevronDown size={14} className={showHistory ? "rotate-180" : ""} aria-hidden="true" />
                 </button>
-              </form>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

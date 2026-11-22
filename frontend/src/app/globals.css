@@ -143,11 +143,11 @@ input[type="number"] {
 .tillfold-date-field {
   display: flex;
   align-items: center;
-  background: var(--luma-coal);
+  background: var(--ai7-field-surface);
   border: 1px solid transparent;
   border-radius: var(--ai7-radius-control);
 }
-.tillfold-date-field:focus-within { background: var(--obsidian-hover); }
+.tillfold-date-field:focus-within { background: var(--ai7-field-hover); }
 .tillfold-date .tillfold-date-field input {
   width: 100%;
   min-width: 0;
@@ -196,7 +196,7 @@ input[type="number"] {
   box-shadow: 0 12px 28px rgb(0 0 0 / .22);
 }
 .tillfold-calendar button { min-height: 40px; font-size: 12px; }
-.tillfold-date-field button:hover { background: var(--luma-coal); }
+.tillfold-date-field button:hover { background: var(--ai7-field-accessory); }
 .tillfold-calendar button:not(:disabled):not([aria-pressed="true"]):hover {
   background: var(--ai7-selected);
   color: var(--luma-ivory);
@@ -381,7 +381,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   }
 
   .luma-form-scope :where(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]), textarea, select) {
-    background-color: var(--obsidian-card);
+    background-color: var(--ai7-field-surface);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--ai7-radius-panel);
     color: var(--luma-ivory);
@@ -648,6 +648,9 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   --ai7-primary-hover: #eeeef2;
   --ai7-primary-ink: #1d1d23;
   --ai7-field-border: #747480;
+  --ai7-field-surface: #3b3c46;
+  --ai7-field-hover: #444651;
+  --ai7-field-accessory: #50525e;
   --ai7-selected: #393940;
 }
 .light {
@@ -655,6 +658,9 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   --ai7-primary-hover: #202f42;
   --ai7-primary-ink: #fbfcfe;
   --ai7-field-border: #687688; /* 3.7:1 on #e0e7ef buttons, 4.5:1 on panels */
+  --ai7-field-surface: #cbd5e2;
+  --ai7-field-hover: #c1cddd;
+  --ai7-field-accessory: #b4c2d4;
   --ai7-selected: #dbe5f0;
 }
 :is(.luma-app, .luma-dialog-panel) button.bg-amberGold,
@@ -675,18 +681,20 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-dialog-panel label { text-transform: none; letter-spacing: normal; font: 500 12px/1.5 var(--font-geist-sans), sans-serif; }
 .luma-dialog-panel .luma-form-scope :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
 .ai7-select-trigger, .light .ai7-select-trigger {
-  background: var(--luma-coal); color: var(--luma-ivory); border: 1px solid transparent;
+  background: var(--ai7-field-surface); color: var(--luma-ivory); border: 1px solid transparent;
   border-radius: 10px; min-height: 44px; font-family: inherit;
 }
 .luma-form-scope input::placeholder, .luma-form-scope textarea::placeholder { color: var(--luma-smoke); }
-.luma-form-scope :is(input, textarea):focus, .ai7-select-trigger[aria-expanded="true"] { background: var(--obsidian-hover); }
+.luma-form-scope :is(input, textarea):focus,
+.ai7-select-trigger:hover:not(:disabled),
+.ai7-select-trigger[aria-expanded="true"] { background: var(--ai7-field-hover); }
 .ai7-select-menu { background: var(--luma-panel-surface); border-color: transparent; box-shadow: 0 12px 28px rgb(0 0 0 / .18); }
 .ai7-select-menu button { border-radius: 6px; margin-inline: 4px; width: calc(100% - 8px); }
 .ai7-select-menu .text-amberGold, .ai7-select-menu button.bg-amberGold\/10 { color: var(--luma-ivory); }
 .ai7-select-menu button.bg-amberGold\/10 { background: var(--ai7-selected); }
-.ai7-currency-field { border-color: transparent; border-radius: 10px; background: var(--luma-coal); }
-.ai7-currency-field:focus-within { outline: 2px solid var(--luma-ember); outline-offset: 2px; }
-.ai7-currency-prefix { background: var(--obsidian-hover); color: var(--luma-smoke); border-color: transparent; }
+.ai7-currency-field { border-color: transparent; border-radius: 10px; background: var(--ai7-field-surface); }
+.ai7-currency-field:focus-within { background: var(--ai7-field-hover); outline: 2px solid var(--luma-ember); outline-offset: 2px; }
+.ai7-currency-prefix { background: var(--ai7-field-accessory); color: var(--luma-ivory); border-color: transparent; }
 .luma-form-scope .ai7-currency-field input { border: 0; background: transparent; border-radius: 0; outline: none; font-family: inherit; box-shadow: none; }
 .luma-dialog-panel .payroll-form :where(input:not([type="checkbox"]), select) {
   min-width: 0;
@@ -747,13 +755,13 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .ai7-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media(min-width: 1440px) { .ai7-metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media(max-width: 600px) { .ai7-metric-grid { grid-template-columns: minmax(0, 1fr); } }
-.luma-app :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+.luma-app :where(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]), textarea, select) {
   border-radius: var(--ai7-radius-control);
-  background-color: var(--luma-coal);
+  background-color: var(--ai7-field-surface);
   border-color: transparent;
   min-height: 44px;
 }
-.luma-app .ai7-currency-field input { border-radius: 0; border: 0; }
+.luma-app .ai7-currency-field input { background: transparent; border-radius: 0; border: 0; }
 .luma-app .ai7-filters button { border-radius: var(--ai7-radius-control) var(--ai7-radius-control) 0 0; }
 @media(max-width: 600px) {
   :root { --ai7-text-page: 24px; --ai7-text-metric: 24px; }

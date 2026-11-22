@@ -159,19 +159,13 @@ export function CustomSelect({
         onClick={handleToggle}
         aria-expanded={isOpen}
         aria-label={label ? `${label}: ${selectedOption?.label || placeholder}` : undefined}
-        className={`ai7-select-trigger w-full border px-3.5 py-2.5 min-h-[44px] text-left text-sm flex items-center justify-between gap-2 select-none cursor-pointer ${
-          disabled
-            ? "opacity-50 cursor-not-allowed border-luma-smokeline"
-            : isOpen
-            ? "border-luma-ember text-slateText-primary"
-            : "border-luma-smokeline hover:border-white/[0.18] text-slateText-primary"
-        }`}
+        className="ai7-select-trigger w-full px-3.5 py-2.5 min-h-[44px] text-left text-sm flex items-center justify-between gap-2 select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className="min-w-0 flex-1 font-medium flex items-center gap-2 pr-1 overflow-hidden">
           {selectedOption?.color && (
             <span className={`w-2 h-2 rounded-full shrink-0 ${selectedOption.color}`} />
           )}
-          <span className={`truncate block flex-1 ${selectedOption ? "text-slateText-primary" : "text-zinc-400 font-normal"}`}>
+          <span className={`truncate block flex-1 ${selectedOption ? "text-slateText-primary" : "text-luma-smoke font-normal"}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </span>

@@ -1850,6 +1850,9 @@ export default function FinanceDashboard() {
               hideBalance={hideOverviewBalances}
               featuredName={overviewAccount?.name}
               featuredPockets={overviewPockets}
+              cycleStart={summary.start_date}
+              cycleEnd={summary.end_date}
+              refreshSignal={pocketsRefreshSignal}
               accounts={(summary.accounts || []).map((a) => {
                 const found = customAccounts.find((c) => c.name.toLowerCase() === a.account.toLowerCase());
                 return {

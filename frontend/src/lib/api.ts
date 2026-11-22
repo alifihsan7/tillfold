@@ -159,14 +159,14 @@ async function parsePocketResponse(res: Response, action: string): Promise<Pocke
 }
 export const parseJagoResponse = parsePocketResponse;
 
-export async function getPockets(accountId?: number, cycleStart?: string, cycleEnd?: string): Promise<PocketsSummaryResponse> {
+export async function getPockets(accountId?: number, cycleStart?: string, cycleEnd?: string, signal?: AbortSignal): Promise<PocketsSummaryResponse> {
   const query = new URLSearchParams();
   if (accountId) query.set("account_id", String(accountId));
   if (cycleStart && cycleEnd) {
     query.set("cycle_start", cycleStart);
     query.set("cycle_end", cycleEnd);
   }
-  const res = await authFetch(`/api/v1/pockets${query.size ? `?${query}` : ""}`);
+  const res = await authFetch(`/api/v1/pockets${query.size ? `?${query}` : ""}`, { signal });
   return parsePocketResponse(res, "memuat");
 }
 export const getJagoPockets = getPockets;

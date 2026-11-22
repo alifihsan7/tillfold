@@ -1,4 +1,5 @@
 import { DateField } from "@/components/ui/DateField";
+import { SegmentedControl, type SegmentedOption } from "@/components/ui/controls";
 import { useLatest } from "@/lib/useLatest";
 import { formatShortDate } from "@/lib/format";
 import React, { useState, useEffect, useRef, useId } from "react";
@@ -21,12 +22,19 @@ interface PeriodSelectorProps {
   formatRupiah?: (val: number) => string;
 }
 
+const periodTabs: SegmentedOption<PeriodOption["type"]>[] = [
+  { value: "cycle", label: "Siklus", icon: <Clock /> },
+  { value: "week", label: "Minggu", icon: <CalendarDays /> },
+  { value: "month", label: "Bulan", icon: <Calendar /> },
+  { value: "custom", label: "Kustom", icon: <SlidersHorizontal /> },
+];
+
 export function PeriodSelector({
   currentPeriod,
   onSelectPeriod,
 }: PeriodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"cycle" | "week" | "month" | "custom">("cycle");
+  const [activeTab, setActiveTab] = useState<PeriodOption["type"]>(currentPeriod.type);
   const [periodGroups, setPeriodGroups] = useState<{
     cycles: PeriodOption[];
     weeks: PeriodOption[];
@@ -134,57 +142,14 @@ export function PeriodSelector({
       {/* Floating Modal Popover */}
       {isOpen && (
         <div id={popupId} aria-label="Pilih periode" className="luma-period-popup absolute left-0 mt-2 z-[90] bg-obsidian-card border border-luma-smokeline rounded-[var(--ai7-radius-panel)] shadow-2xl p-3.5">
-          {/* Header Type Tabs */}
-          <div className="ai7-tab-group grid grid-cols-4 gap-1 bg-obsidian-panel border border-luma-smokeline mb-3">
-            <button
-              type="button"
-              onClick={() => setActiveTab("cycle")}
-              className={`py-1.5 text-xs font-semibold rounded-[var(--ai7-radius-control)] transition-all flex items-center justify-center gap-1 ${
-                activeTab === "cycle"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-slateText-secondary hover:text-white"
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>Siklus</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("week")}
-              className={`py-1.5 text-xs font-semibold rounded-[var(--ai7-radius-control)] transition-all flex items-center justify-center gap-1 ${
-                activeTab === "week"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-slateText-secondary hover:text-white"
-              }`}
-            >
-              <CalendarDays className="w-3.5 h-3.5" />
-              <span>Minggu</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("month")}
-              className={`py-1.5 text-xs font-semibold rounded-[var(--ai7-radius-control)] transition-all flex items-center justify-center gap-1 ${
-                activeTab === "month"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-slateText-secondary hover:text-white"
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Bulan</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("custom")}
-              className={`py-1.5 text-xs font-semibold rounded-[var(--ai7-radius-control)] transition-all flex items-center justify-center gap-1 ${
-                activeTab === "custom"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-slateText-secondary hover:text-white"
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>Kustom</span>
-            </button>
-          </div>
+          <SegmentedControl
+            label="Jenis periode"
+            value={activeTab}
+            options={periodTabs}
+            onChange={setActiveTab}
+            className="luma-period-tabs mb-3"
+            fill
+          />
 
           {/* Tab Content List */}
           <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">

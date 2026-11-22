@@ -1074,3 +1074,20 @@ textarea:focus-visible,
     padding: 7px 11px;
   }
 }
+
+.luma-period-popup .luma-period-tabs .ui-segment {
+  min-width: 0;
+  padding-inline: 3px;
+  font-size: 12px;
+  gap: 5px;
+}
+.luma-period-tabs .ui-btn-icon svg { width: 14px; height: 14px; }
+@media (max-width: 420px) {
+  .luma-period-tabs .ui-btn-icon { display: none; }
+}
+
+/* Keyboard focus uses an inset indicator on compact selectors. */
+.luma-app :is(.luma-period-selector > button, .luma-period-tabs .ui-segment, .luma-profile-tabs .ui-segment):focus-visible {
+  outline: none;
+  box-shadow: inset 0 -2px var(--luma-ember);
+}

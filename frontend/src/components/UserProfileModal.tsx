@@ -296,7 +296,7 @@ export function UserProfileModal({
           </button>
         </div>
 
-        <div className="ui-segmented" role="tablist" aria-label="Pengaturan akun">
+        <div className="ui-segmented luma-profile-tabs" role="tablist" aria-label="Pengaturan akun">
           <button
             type="button"
             role="tab"

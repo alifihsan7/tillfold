@@ -81,6 +81,7 @@ export interface PocketItem {
   slug: string;
   balance?: number;
   current_balance?: number;
+  allocation_amount?: number;
   target_amount: number;
   spent_amount: number;
   remaining_amount: number;
@@ -210,7 +211,9 @@ export async function linkPocketBill(pocketId: number, subscriptionId: number | 
   return parsePocketResponse(res, "menghubungkan tagihan ke");
 }
 
-export async function createAccountPocket(payload: { account_id: number; name: string; role: string; target_amount: number }): Promise<PocketItem> {
+export async function createAccountPocket(payload: {
+  account_id: number; name: string; role: string; target_amount: number; allocation_amount: number;
+}): Promise<PocketItem> {
   const res = await authFetch("/api/v1/pockets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

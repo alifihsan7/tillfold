@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.transfer import find_paired_transfer
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
+from app.db.pocket_schema import legacy_allocation
 from app.models.account import Account
 from app.models.category import Category
 from app.models.goal import Goal
@@ -90,7 +91,7 @@ def export_backup(db: Session, user_id: int):
                         row["raw_text"] = f"[pair_id:{pair.id}] {raw}"
             rows.append(row)
         data[name] = rows
-    return {"format": "tillfold-backup", "version": 5,
+    return {"format": "tillfold-backup", "version": 6,
             "exported_at": datetime.now(timezone.utc).isoformat(), "data": data}
 
 
@@ -142,7 +143,7 @@ def json_rows(value):
 
 
 def validate_backup(payload):
-    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4, 5):
+    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4, 5, 6):
         invalid()
     version = payload["version"]
     data = payload.get("data")
@@ -166,7 +167,7 @@ def validate_backup(payload):
         if count > 100_000:
             invalid()
         columns = fields(model)
-        required = {column.name for column in columns}
+        required = {column.name for column in columns if not (model is Pocket and version < 6 and column.name == "allocation_amount")}
         rows, keys = [], set()
         for row in data[name]:
             if model is Transaction and isinstance(row, dict) and version < 5:
@@ -177,7 +178,9 @@ def validate_backup(payload):
                 row = {**row, "is_archived": False}
             if not isinstance(row, dict) or set(row) != required:
                 invalid()
-            decoded = {column.name: decode_value(column, row[column.name]) for column in columns}
+            decoded = {column.name: decode_value(column, row[column.name]) for column in columns if column.name in required}
+            if model is Pocket and version < 6:
+                decoded["allocation_amount"] = legacy_allocation(decoded["slug"], decoded["target_amount"])
             key = tuple(decoded[column.name] for column in model.__table__.primary_key.columns if column.name != "user_id")
             if key in keys:
                 invalid()
@@ -298,7 +301,8 @@ def restore_backup(db: Session, user: User, data):
             spec = defaults.get("utama")
         if (not spec or (pocket.account_id is not None and pocket.account_id not in seeded_accounts) or pocket.subscription_id is not None
                 or pocket.name != spec["name"] or pocket.role != spec.get("role", "operasional")
-                or pocket.target_amount != spec["default_target"] or not pocket.is_active):
+                or pocket.target_amount != spec["default_target"] or (pocket.allocation_amount or 0) != spec["default_target"]
+                or not pocket.is_active):
             populated = True
     if populated:
         raise HTTPException(409, "Restore hanya tersedia untuk akun dengan data keuangan kosong.")

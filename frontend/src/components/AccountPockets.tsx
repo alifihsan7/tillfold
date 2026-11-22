@@ -408,7 +408,7 @@ export function Pockets({
                     <div className="text-xs text-luma-smoke mt-0.5">
                       {isUtama
                         ? "Kas bebas siap alokasi & belanja"
-                        : "Saldo kas riil sub-kantong"}
+                        : "Saldo tersisa"}
                     </div>
 
                     {pocket.subscription_id && (
@@ -427,11 +427,16 @@ export function Pockets({
                     )}
                   </div>
 
-                  {/* Target Commitment & Sinking Fund Progress */}
+                  {!isUtama && pocket.allocation_amount != null && (
+                    <p className="text-xs text-luma-smoke tabular-nums">
+                      Dialokasikan: {formatRupiah(pocket.allocation_amount)}
+                    </p>
+                  )}
+
                   {!isUtama && target > 0 && fillPct !== null && (
                     <div className="space-y-1.5 pt-1">
                       <div className="flex justify-between items-center text-xs tabular-nums text-luma-smoke">
-                        <span>{pocket.subscription_id ? "Target tagihan" : "Alokasi"}: {formatRupiah(target)}</span>
+                        <span>{pocket.subscription_id ? "Target tagihan" : "Target"}: {formatRupiah(target)}</span>
                         <span className="font-semibold text-luma-ivory">{fillPct}%</span>
                       </div>
                       <div
@@ -514,7 +519,6 @@ export function Pockets({
       {/* Target Edit Modal */}
       <EditPocketsModal
         accountId={accountId}
-        accountName={parentName}
         isOpen={isEditOpen}
         pockets={pockets}
         formatRupiah={formatRupiah}

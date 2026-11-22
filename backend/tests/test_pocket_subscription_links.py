@@ -24,7 +24,7 @@ def linked_client():
     with Session(engine) as db:
         db.add_all([User(id=i, username=f"link_user_{i}", full_name=f"Link test {i}", hashed_password="unused", is_active=True) for i in (1, 2)])
         db.add_all([Account(id=i, user_id=1 if i < 3 else 2, name=name, type="operasional", initial_balance=0) for i, name in ((1, "Bank A"), (2, "Bank B"), (3, "Bank Asing"))])
-        db.add_all([Pocket(id=i, user_id=1 if i < 4 else 2, account_id=1 if i < 3 else i-1, name=f"Kantong {i}", slug=f"manual-{i}", target_amount=700000) for i in (1, 2, 3, 4)])
+        db.add_all([Pocket(id=i, user_id=1 if i < 4 else 2, account_id=1 if i < 3 else i-1, name=f"Kantong {i}", slug=f"manual-{i}", target_amount=700000, allocation_amount=700000) for i in (1, 2, 3, 4)])
         for i, account, active, owner in ((1, "Bank A", True, 1), (2, "Bank B", True, 1), (3, "Bank A", True, 2), (4, "Bank A", False, 1)):
             db.add(Subscription(id=i, user_id=owner, name="Gym", account=account, amount=300000, category="Tagihan", is_active=active))
         db.commit()
@@ -71,11 +71,13 @@ def test_explicit_link_follows_amount_and_unlink_keeps_last_target(linked_client
     response = client.put("/pockets/1/subscription", json={"subscription_id": 1})
     assert response.status_code == 200
     assert pocket_summary(client)[1]["target_amount"] == 300000
+    assert pocket_summary(client)[1]["allocation_amount"] == 700000
     assert pocket_summary(client)[2]["target_amount"] == 700000
     assert client.put("/subscriptions/1", json={"amount": 450000, "billing_cycle": "yearly"}).status_code == 200
     assert db.get(Pocket, 1).target_amount == 450000
     item = pocket_summary(client)[1]
     assert (item["target_amount"], item["subscription_billing_cycle"], item["subscription_status"]) == (450000, "yearly", "active")
+    assert item["allocation_amount"] == 700000
     assert client.put("/pockets?account_id=1", json=[{"id": 1, "target_amount": 999999}]).status_code == 200
     assert pocket_summary(client)[1]["target_amount"] == 450000
     assert client.put("/pockets/1/subscription", json={"subscription_id": None}).status_code == 200
@@ -90,6 +92,7 @@ def test_linked_bill_payment_and_operating_expense_are_each_deducted_once(linked
     client, db = linked_client
     db.get(Account, 1).initial_balance = 2_000_000
     db.get(Pocket, 1).name = "Gym"
+    db.get(Pocket, 1).allocation_amount = 450_000
     db.add(Pocket(user_id=1, account_id=1, name="Kantong Utama", slug="utama", target_amount=0))
     db.commit()
 
@@ -160,12 +163,16 @@ def test_subscription_schema_upgrade_is_idempotent():
     engine = create_engine("sqlite://")
     with engine.begin() as connection:
         connection.execute(text("CREATE TABLE subscriptions (id INTEGER PRIMARY KEY)"))
-        connection.execute(text("CREATE TABLE pockets (id INTEGER PRIMARY KEY, user_id INTEGER)"))
-        connection.execute(text("INSERT INTO pockets (id, user_id) VALUES (1, 1), (2, 1)"))
+        connection.execute(text("CREATE TABLE pockets (id INTEGER PRIMARY KEY, user_id INTEGER, slug TEXT, target_amount INTEGER)"))
+        connection.execute(text("INSERT INTO pockets VALUES (1, 1, 'utama', 0), (2, 1, 'liburan', 500000)"))
     ensure_pocket_subscription_schema(engine)
+    with engine.begin() as connection:
+        assert connection.execute(text("SELECT allocation_amount FROM pockets ORDER BY id")).scalars().all() == [None, 500000]
+        connection.execute(text("UPDATE pockets SET target_amount = 700000 WHERE id = 2"))
     ensure_pocket_subscription_schema(engine)
     assert "subscription_id" in {column["name"] for column in inspect(engine).get_columns("pockets")}
     assert any(index["name"] == "uq_pocket_subscription" and index["unique"] for index in inspect(engine).get_indexes("pockets"))
     with engine.connect() as connection:
         assert connection.execute(text("SELECT COUNT(*) FROM pockets WHERE subscription_id IS NULL")).scalar() == 2
+        assert connection.execute(text("SELECT allocation_amount FROM pockets WHERE id = 2")).scalar() == 500000
     engine.dispose()

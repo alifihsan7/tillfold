@@ -15,6 +15,7 @@ class Pocket(Base):
     role = Column(String(30), nullable=False, default="operasional")  # operasional, tagihan, darurat, tabungan, investasi
     balance = Column(BigInteger, nullable=False, default=0)
     target_amount = Column(BigInteger, nullable=False, default=0)
+    allocation_amount = Column(BigInteger, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -32,6 +33,14 @@ class Pocket(Base):
         UniqueConstraint("user_id", "slug", name="uq_pockets_user_slug"),
         Index("uq_pocket_subscription", "user_id", "subscription_id", unique=True),
     )
+
+    @property
+    def uses_unallocated_cash(self) -> bool:
+        return self.slug.startswith("utama") and self.allocation_amount is None
+
+    def adjust_allocation(self, amount: int) -> None:
+        if not self.uses_unallocated_cash:
+            self.allocation_amount = max(0, (self.allocation_amount or 0) + amount)
 
 
 class PocketMutation(Base):

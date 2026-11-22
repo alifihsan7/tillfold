@@ -227,8 +227,8 @@ def test_create_internal_loan_with_pockets(client, db_session, test_user):
     acc = seed_account_with_balance(db_session, test_user.id, "Bank Jago", type="operasional", balance=1_000_000)
 
     # Create two pockets on same account
-    p_tagihan = Pocket(user_id=test_user.id, account_id=acc.id, name="Tagihan Listrik", slug="tagihan-listrik", role="tagihan", balance=400_000, target_amount=400_000)
-    p_operasional = Pocket(user_id=test_user.id, account_id=acc.id, name="Kantong Utama", slug="utama", role="operasional", balance=600_000, target_amount=600_000)
+    p_tagihan = Pocket(user_id=test_user.id, account_id=acc.id, name="Tagihan Listrik", slug="tagihan-listrik", role="tagihan", balance=400_000, target_amount=400_000, allocation_amount=400_000)
+    p_operasional = Pocket(user_id=test_user.id, account_id=acc.id, name="Kantong Utama", slug="utama", role="operasional", balance=600_000, target_amount=600_000, allocation_amount=600_000)
     db_session.add_all([p_tagihan, p_operasional])
     db_session.commit()
 
@@ -249,6 +249,8 @@ def test_create_internal_loan_with_pockets(client, db_session, test_user):
     # Check pocket balance reduction
     db_session.refresh(p_tagihan)
     assert p_tagihan.balance == 250_000
+    assert p_tagihan.allocation_amount == 250_000
+    assert p_tagihan.target_amount == 400_000
 
     # Check pocket mutations recorded
     muts = db_session.query(PocketMutation).filter(PocketMutation.user_id == test_user.id).all()

@@ -16,21 +16,25 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
   const [name, setName] = useState("");
   const [role, setRole] = useState("operasional");
   const [amount, setAmount] = useState("");
+  const [targetAmount, setTargetAmount] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (saving) return;
-    const target = Number(amount || 0);
-    if (!name.trim() || !Number.isSafeInteger(target) || target < 0 || target > 9000000000000000) {
-      setError("Isi nama dan target komitmen yang valid.");
+    const allocation = Number(amount || 0);
+    const target = Number(targetAmount || 0);
+    if (!name.trim() || [allocation, target].some((value) => !Number.isSafeInteger(value) || value < 0 || value > 9_000_000_000_000_000)) {
+      setError("Isi nama dan nominal kantong yang valid.");
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      await createAccountPocket({ account_id: accountId, name: name.trim(), role, target_amount: target });
+      await createAccountPocket({
+        account_id: accountId, name: name.trim(), role, target_amount: target, allocation_amount: allocation,
+      });
       onCreated();
       onClose();
     } catch (err) {
@@ -87,12 +91,15 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
             ]}
           />
         </fieldset>
-        <fieldset disabled={saving} className="space-y-1.5">
-          <legend className="text-xs font-semibold text-luma-secondary">Alokasi awal</legend>
-          <CurrencyInput value={amount} onChange={setAmount} placeholder="0" accent="amber" />
-          <p className="text-xs text-luma-smoke mt-1.5">
-            Nominal ini ikut berubah saat saldo dipindahkan antar-kantong.
-          </p>
+        <fieldset disabled={saving} className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label htmlFor="pocket-allocation" className="text-xs font-semibold text-luma-secondary">Alokasi awal</label>
+            <CurrencyInput id="pocket-allocation" value={amount} onChange={setAmount} placeholder="0" accent="amber" />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="pocket-target" className="text-xs font-semibold text-luma-secondary">Target (opsional)</label>
+            <CurrencyInput id="pocket-target" value={targetAmount} onChange={setTargetAmount} placeholder="0" accent="amber" />
+          </div>
         </fieldset>
         <div className="flex justify-end gap-2.5 pt-4 border-t border-luma-smokeline">
           <button

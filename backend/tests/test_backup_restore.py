@@ -69,7 +69,7 @@ def recovery():
                               cycle_end=date(2026, 11, 15), allocations_json=json.dumps([
                                   {"account_id": 102, "amount": 200_000, "transfer_id": 103},
                               ])))
-        db.add(Pocket(user_id=1, account_id=102, subscription_id=101, name="Tagihan", slug="tagihan", role="tagihan", target_amount=100_000))
+        db.add(Pocket(user_id=1, account_id=102, subscription_id=101, name="Tagihan", slug="tagihan", role="tagihan", target_amount=100_000, allocation_amount=100_000))
         db.commit()
         app = FastAPI()
         app.include_router(backup.router, prefix="/backup")
@@ -299,14 +299,19 @@ def test_backup_restore_preserves_reconciliation_records(recovery, kind, expecte
     assert client.delete(f"/transactions/{adjustment.id}").status_code == 409
 
 
-@pytest.mark.parametrize("version", [1, 2, 3, 4])
+@pytest.mark.parametrize("version", [1, 2, 3, 4, 5])
 def test_previous_backup_format_still_restores(recovery, version):
     client, db, users, current = recovery
     payload = download(client)
     payload["version"] = version
-    payload["data"].pop("internal_loans")
-    payload["data"].pop("pocket_mutations")
+    for pocket in payload["data"]["pockets"]:
+        pocket.pop("allocation_amount")
+    if version < 5:
+        payload["data"].pop("internal_loans")
+        payload["data"].pop("pocket_mutations")
     if version < 3:
         payload["data"].pop("subscription_payments")
     current[0] = users[1]
     assert client.post("/backup/restore", json=payload).status_code == 200
+    restored_pocket = db.query(Pocket).filter_by(user_id=users[1].id, slug="tagihan").one()
+    assert restored_pocket.allocation_amount == 100_000

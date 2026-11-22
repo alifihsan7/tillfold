@@ -314,13 +314,11 @@ def test_pockets_auto_deduction_and_balance(client, db_session, test_user):
     assert slugs["visa"]["remaining_amount"] == 20_000
     assert slugs["visa"]["percentage_spent"] == 60.0
 
-    # Kantong Utama: target is dynamic sisa penampung:
-    # other targets sum = 225k + 75k + 50k + 50k = 400k.
-    # Add back the 425,000 in expenses before allocating the 575,000 ledger balance.
-    assert slugs["utama"]["target_amount"] == 600_000
+    assert slugs["utama"]["target_amount"] == 0
+    assert slugs["utama"]["allocation_amount"] == 600_000
     assert slugs["utama"]["spent_amount"] == 50_000
     assert slugs["utama"]["remaining_amount"] == 550_000
-    assert slugs["utama"]["percentage_spent"] == 8.3
+    assert slugs["utama"]["percentage_spent"] == 0.0
     assert data["total_remaining_amount"] == data["total_jago_balance"]
 
 

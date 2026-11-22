@@ -211,6 +211,7 @@ def ensure_default_pockets(db: Session, user_id: int, account_id: Optional[int] 
                     role=spec.get("role", "operasional"),
                     balance=initial_target,
                     target_amount=initial_target,
+                    allocation_amount=initial_target or None,
                     is_active=True,
                 )
                 db.add(new_pocket)
@@ -267,6 +268,7 @@ def ensure_default_pockets(db: Session, user_id: int, account_id: Optional[int] 
                 role=spec.get("role", "operasional"),
                 balance=initial_target,
                 target_amount=initial_target,
+                allocation_amount=initial_target or None,
                 is_active=True,
             )
             db.add(new_pocket)
@@ -502,7 +504,7 @@ def compute_pockets_summary(
             target = int(sub.amount) if state == "active" else 0
             link_states[pocket.id] = state
         targets[pocket.id] = target
-    sum_other_allocations = sum(p.target_amount for p in ordered_pockets if not p.slug.startswith("utama"))
+    fixed_allocation = sum(p.allocation_amount or 0 for p in ordered_pockets if not p.uses_unallocated_cash)
     allocated_spending = sum(spent_by_slug.get(p.slug, 0) for p in ordered_pockets)
 
     pocket_ids = [p.id for p in ordered_pockets]
@@ -536,10 +538,9 @@ def compute_pockets_summary(
 
     for p in ordered_pockets:
         target = targets[p.id]
-        allocation = p.target_amount
-        if p.slug.startswith("utama") and allocation == 0 and not p.subscription_id:
-            allocation = total_balance + allocated_spending - sum_other_allocations
-            target = max(0, allocation)
+        allocation = p.allocation_amount or 0
+        if p.uses_unallocated_cash:
+            allocation = total_balance + allocated_spending - fixed_allocation
 
         spent = spent_by_slug.get(p.slug, 0)
         remaining = allocation - spent
@@ -565,6 +566,7 @@ def compute_pockets_summary(
             role=p.role,
             balance=pocket_bal,
             current_balance=pocket_bal,
+            allocation_amount=allocation,
             target_amount=target,
             spent_amount=spent,
             remaining_amount=remaining,
@@ -724,7 +726,7 @@ def create_pocket(
                 detail=f"Kantong dengan slug '{slug}' sudah terdaftar",
             )
 
-    initial_amount = payload.balance if payload.balance is not None and payload.balance > 0 else payload.target_amount
+    initial_amount = payload.allocation_amount if payload.allocation_amount is not None else (payload.balance or 0)
     new_pocket = Pocket(
         user_id=current_user.id,
         account_id=acc.id if acc else None,
@@ -732,12 +734,12 @@ def create_pocket(
         slug=slug,
         role=payload.role,
         balance=initial_amount,
-        target_amount=initial_amount,
+        target_amount=payload.target_amount,
+        allocation_amount=initial_amount if initial_amount or not slug.startswith("utama") else None,
         is_active=payload.is_active,
     )
     db.add(new_pocket)
-    db.commit()
-    db.refresh(new_pocket)
+    db.flush()
 
     if initial_amount > 0:
         mut = PocketMutation(
@@ -750,7 +752,8 @@ def create_pocket(
             description="Alokasi awal saldo kantong",
         )
         db.add(mut)
-        db.commit()
+    db.commit()
+    db.refresh(new_pocket)
 
     return PocketItemResponse(
         id=new_pocket.id,
@@ -762,6 +765,7 @@ def create_pocket(
         role=new_pocket.role,
         balance=new_pocket.balance,
         current_balance=new_pocket.balance,
+        allocation_amount=initial_amount,
         target_amount=new_pocket.target_amount,
         spent_amount=0,
         remaining_amount=new_pocket.balance,
@@ -782,7 +786,7 @@ def update_pockets_batch(
     db: Session = Depends(get_db),
 ):
     """
-    Update target allocations manually for pockets in batch.
+    Update pocket targets in batch. Legacy balance inputs set the allocation.
     Accepts batch list, wrapper object `{"pockets": [...]}`, or slug-target dictionary.
     """
     ensure_default_pockets(db, current_user.id, account_id=account_id)
@@ -800,8 +804,7 @@ def update_pockets_batch(
         name = item.get("name")
         role = item.get("role")
         target_amount = item.get("target_amount")
-        if target_amount is None and item.get("balance") is not None:
-            target_amount = item.get("balance")
+        allocation_amount = item.get("balance")
         is_active = item.get("is_active")
         item_acc_id = item.get("account_id")
 
@@ -825,7 +828,8 @@ def update_pockets_batch(
         if pocket:
             if target_amount is not None and not pocket.subscription_id:
                 pocket.target_amount = max(0, int(target_amount))
-                pocket.balance = pocket.target_amount
+            if allocation_amount is not None:
+                pocket.allocation_amount = max(0, int(allocation_amount))
             if role is not None and role in VALID_POCKET_ROLES:
                 pocket.role = role
             if is_active is not None:
@@ -951,7 +955,14 @@ def transfer_pocket_balance(
     if from_pocket.account_id and to_pocket.account_id and from_pocket.account_id != to_pocket.account_id:
         raise HTTPException(status_code=400, detail="Alokasi saldo hanya dapat dilakukan antar-kantong dalam rekening induk yang sama")
 
-    summary_before = compute_pockets_summary(db, current_user.id, account_id=acc_id)
+    locked_pockets = db.query(Pocket).filter(
+        Pocket.user_id == current_user.id,
+        Pocket.account_id == acc_id,
+    ).order_by(Pocket.id).populate_existing().with_for_update().all()
+    locked_by_id = {p.id: p for p in locked_pockets}
+    from_pocket = locked_by_id.get(from_pocket.id, from_pocket)
+    to_pocket = locked_by_id.get(to_pocket.id, to_pocket)
+    summary_before = compute_pockets_summary(db, current_user.id, account_id=acc_id, persist=False)
     from_item = next((p for p in summary_before.pockets if p.id == from_pocket.id), None)
     to_item = next((p for p in summary_before.pockets if p.id == to_pocket.id), None)
 
@@ -964,16 +975,12 @@ def transfer_pocket_balance(
             detail=f"Saldo kantong asal '{from_pocket.name}' tidak mencukupi (Tersedia: {from_item.balance}, Diminta: {payload.amount})"
         )
 
-    if not from_pocket.slug.startswith("utama"):
-        from_pocket.target_amount = max(0, from_pocket.target_amount - payload.amount)
-        from_pocket.balance = max(0, from_pocket.balance - payload.amount)
-
-    if not to_pocket.slug.startswith("utama"):
-        to_pocket.target_amount = to_pocket.target_amount + payload.amount
-        to_pocket.balance = to_pocket.balance + payload.amount
-
     from_bal_after = from_item.balance - payload.amount
     to_bal_after = to_item.balance + payload.amount
+    from_pocket.adjust_allocation(-payload.amount)
+    to_pocket.adjust_allocation(payload.amount)
+    from_pocket.balance = from_bal_after
+    to_pocket.balance = to_bal_after
 
     note_str = payload.note.strip() if payload.note else None
     mut_out = PocketMutation(
@@ -1154,10 +1161,8 @@ def update_single_pocket(
 
     if payload.target_amount is not None and not pocket.subscription_id:
         pocket.target_amount = max(0, int(payload.target_amount))
-        pocket.balance = pocket.target_amount
-    elif payload.balance is not None and not pocket.subscription_id:
-        pocket.target_amount = max(0, int(payload.balance))
-        pocket.balance = pocket.target_amount
+    if payload.balance is not None:
+        pocket.allocation_amount = payload.balance
     if payload.name is not None and payload.name.strip():
         pocket.name = payload.name.strip()
     if payload.role is not None:

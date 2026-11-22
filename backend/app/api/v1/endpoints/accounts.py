@@ -156,13 +156,11 @@ def get_accounts(
         if not acc_pockets and any(k in acc.name.lower() for k in ["jago", "pocket"]):
             acc_pockets = [p for p in all_user_pockets if p.account_id is None]
 
-        sum_other_targets = sum(int(p.target_amount) for p in acc_pockets if not p.slug.startswith("utama"))
+        fixed_allocation = sum(p.allocation_amount or 0 for p in acc_pockets if not p.uses_unallocated_cash)
         pockets_breakdown = []
         for p in acc_pockets:
             target = int(p.target_amount)
-            if p.slug.startswith("utama") and target == 0:
-                target = max(0, curr_bal - sum_other_targets)
-            pocket_bal = target
+            pocket_bal = max(0, curr_bal - fixed_allocation) if p.uses_unallocated_cash else (p.allocation_amount or 0)
             pockets_breakdown.append(PocketBreakdownItem(
                 id=p.id,
                 name=p.name,
@@ -170,6 +168,7 @@ def get_accounts(
                 role=p.role,
                 balance=pocket_bal,
                 current_balance=pocket_bal,
+                allocation_amount=pocket_bal,
                 target_amount=target,
                 spent_amount=0,
                 remaining_amount=pocket_bal,

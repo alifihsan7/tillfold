@@ -2467,10 +2467,13 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 
 def main():
     print("Connecting to PostgreSQL and creating tables if not exist...")
+    from app.db.pocket_schema import ensure_pocket_schema
+    ensure_pocket_schema(engine)
     Base.metadata.create_all(bind=engine)
     from app.db.account_schema import ensure_account_archive_schema, ensure_user_spreadsheet_schema
     ensure_account_archive_schema(engine)
     ensure_user_spreadsheet_schema(engine)
+    ensure_pocket_schema(engine)
     print("Setting up Telegram bot commands menu...")
     setup_bot_commands()
     print("Tillfold shared bot started listening...")

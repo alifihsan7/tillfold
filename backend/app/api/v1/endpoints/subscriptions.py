@@ -297,13 +297,11 @@ def update_subscription(
     if "account" in update_data and update_data["account"].strip().casefold() != sub.account.strip().casefold():
         if db.query(Pocket.id).filter(Pocket.subscription_id == sub.id).first():
             raise HTTPException(status_code=409, detail="Lepaskan hubungan kantong sebelum memindahkan rekening tagihan")
-    previous_target = int(sub.amount) if sub.is_active else 0
     for field, value in update_data.items():
         setattr(sub, field, value)
-    target_delta = (int(sub.amount) if sub.is_active else 0) - previous_target
-    if target_delta:
+    if "amount" in update_data or "is_active" in update_data:
         for pocket in db.query(Pocket).filter(Pocket.user_id == current_user.id, Pocket.subscription_id == sub.id).all():
-            pocket.target_amount = max(0, pocket.target_amount + target_delta)
+            pocket.target_amount = int(sub.amount) if sub.is_active else 0
 
     db.commit()
     db.refresh(sub)

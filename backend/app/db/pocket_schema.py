@@ -1,6 +1,13 @@
 from sqlalchemy import inspect, text
 
 
+def legacy_allocation(slug, target):
+    return None if slug.startswith("utama") and target == 0 else target
+
+
+LEGACY_ALLOCATION_SQL = "CASE WHEN slug LIKE 'utama%' AND target_amount = 0 THEN NULL ELSE target_amount END"
+
+
 def ensure_pocket_schema(engine):
     inspector = inspect(engine)
     tables = set(inspector.get_table_names())
@@ -19,7 +26,11 @@ def ensure_pocket_schema(engine):
                 p_cols = [c["name"] for c in inspector.get_columns("pockets")]
                 common_cols = [c for c in j_cols if c in p_cols]
                 cols_str = ", ".join(common_cols)
-                connection.execute(text(f"INSERT INTO pockets ({cols_str}) SELECT {cols_str} FROM jago_pockets"))
+                select_cols = cols_str
+                if "allocation_amount" in p_cols and "allocation_amount" not in j_cols and {"slug", "target_amount"} <= set(j_cols):
+                    cols_str += ", allocation_amount"
+                    select_cols += f", {LEGACY_ALLOCATION_SQL}"
+                connection.execute(text(f"INSERT INTO pockets ({cols_str}) SELECT {select_cols} FROM jago_pockets"))
                 connection.execute(text("DROP TABLE jago_pockets"))
 
     # Re-inspect tables after migration
@@ -30,6 +41,17 @@ def ensure_pocket_schema(engine):
 
     if target_table:
         columns = {column["name"] for column in inspector.get_columns(target_table)}
+        if "allocation_amount" not in columns:
+            with engine.begin() as connection:
+                if engine.dialect.name == "postgresql":
+                    connection.execute(text(f"LOCK TABLE {target_table} IN ACCESS EXCLUSIVE MODE"))
+                elif engine.dialect.name == "sqlite":
+                    connection.exec_driver_sql("BEGIN IMMEDIATE")
+                current_columns = {column["name"] for column in inspect(connection).get_columns(target_table)}
+                if "allocation_amount" not in current_columns:
+                    connection.execute(text(f"ALTER TABLE {target_table} ADD COLUMN allocation_amount BIGINT"))
+                    if {"slug", "target_amount"} <= current_columns:
+                        connection.execute(text(f"UPDATE {target_table} SET allocation_amount = {LEGACY_ALLOCATION_SQL}"))
         with engine.begin() as connection:
             if "subscription_id" not in columns:
                 connection.execute(text(

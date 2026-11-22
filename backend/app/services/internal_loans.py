@@ -251,11 +251,10 @@ def create_internal_loan(
     tx_out.raw_text = f"{tx_out.raw_text} [pair_id:{tx_in.id}] [internal_loan_id:{loan.id}]"
     tx_in.raw_text = f"{tx_in.raw_text} [pair_id:{tx_out.id}] [internal_loan_id:{loan.id}]"
 
-    # Adjust pocket target/balance & log pocket mutations if pockets involved
+    # Record funding movements for any pockets involved.
     if source_pocket:
         source_pocket.balance = source_pocket_balance - payload.amount
-        if not source_pocket.slug.startswith("utama"):
-            source_pocket.target_amount = max(0, source_pocket.target_amount - payload.amount)
+        source_pocket.adjust_allocation(-payload.amount)
         db.add(PocketMutation(
             user_id=current_user.id,
             account_id=source_acc.id,
@@ -270,8 +269,7 @@ def create_internal_loan(
 
     if target_pocket:
         target_pocket.balance = target_pocket_balance + payload.amount
-        if not target_pocket.slug.startswith("utama"):
-            target_pocket.target_amount = target_pocket.target_amount + payload.amount
+        target_pocket.adjust_allocation(payload.amount)
         db.add(PocketMutation(
             user_id=current_user.id,
             account_id=target_acc.id,
@@ -377,8 +375,7 @@ def settle_internal_loan(
 
     if target_pocket:
         target_pocket.balance = pocket_bal - settle_amount
-        if not target_pocket.slug.startswith("utama"):
-            target_pocket.target_amount = max(0, target_pocket.target_amount - settle_amount)
+        target_pocket.adjust_allocation(-settle_amount)
         db.add(PocketMutation(
             user_id=current_user.id,
             account_id=target_acc.id,
@@ -393,8 +390,7 @@ def settle_internal_loan(
 
     if source_pocket:
         source_pocket.balance = source_pocket_balance + settle_amount
-        if not source_pocket.slug.startswith("utama"):
-            source_pocket.target_amount = source_pocket.target_amount + settle_amount
+        source_pocket.adjust_allocation(settle_amount)
         db.add(PocketMutation(
             user_id=current_user.id,
             account_id=source_acc.id,
@@ -496,8 +492,7 @@ def reverse_internal_loan_settlement(
         pocket = pockets.get(tx.pocket_id)
         if pocket:
             pocket.balance = balances[pocket.id] + sign * amount
-            if not pocket.slug.startswith("utama"):
-                pocket.target_amount = max(0, pocket.target_amount + sign * amount)
+            pocket.adjust_allocation(sign * amount)
             db.add(PocketMutation(
                 user_id=current_user.id, account_id=account.id, pocket_id=pocket.id,
                 counterpart_pocket_id=counterpart.pocket_id, transaction_id=tx.id,

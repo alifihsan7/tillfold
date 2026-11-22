@@ -169,6 +169,44 @@ def test_pocket_role_validation(client, db_session, test_user):
     assert res.status_code == 422 or res.status_code == 400
 
 
+def test_pocket_target_and_allocation_change_independently(client, db_session, test_user):
+    account = Account(user_id=test_user.id, name="Bank Liburan", type="operasional", initial_balance=1_000_000)
+    db_session.add(account)
+    db_session.commit()
+    url = f"/api/v1/pockets?account_id={account.id}"
+    main = client.get(url).json()["pockets"][0]
+    created = client.post("/api/v1/pockets", json={
+        "account_id": account.id, "name": "Liburan", "target_amount": 5_000_000, "allocation_amount": 100_000,
+    })
+    assert created.status_code == 201
+    pocket_id = created.json()["id"]
+    assert (created.json()["target_amount"], created.json()["balance"]) == (5_000_000, 100_000)
+
+    edited = client.put(url, json=[{"id": pocket_id, "target_amount": 6_000_000}]).json()
+    by_id = {p["id"]: p for p in edited["pockets"]}
+    assert (by_id[pocket_id]["target_amount"], by_id[pocket_id]["allocation_amount"], by_id[pocket_id]["balance"]) == (
+        6_000_000, 100_000, 100_000,
+    )
+    assert by_id[main["id"]]["balance"] == 900_000
+
+    funded = client.post("/api/v1/pockets/transfer", json={
+        "account_id": account.id, "from_pocket_id": main["id"], "to_pocket_id": pocket_id, "amount": 200_000,
+    })
+    assert funded.status_code == 200, funded.text
+    by_id = {p["id"]: p for p in funded.json()["pockets"]}
+    assert (by_id[pocket_id]["target_amount"], by_id[pocket_id]["allocation_amount"], by_id[pocket_id]["balance"]) == (
+        6_000_000, 300_000, 300_000,
+    )
+    assert by_id[main["id"]]["balance"] == 700_000
+    assert sum(p["balance"] for p in by_id.values()) == 1_000_000
+
+    empty = client.post("/api/v1/pockets", json={
+        "account_id": account.id, "name": "Dana Darurat", "target_amount": 4_000_000,
+    })
+    assert empty.status_code == 201
+    assert (empty.json()["target_amount"], empty.json()["allocation_amount"]) == (4_000_000, 0)
+
+
 # ============================================================================
 # 2. Filter Pockets by Account ID
 # ============================================================================

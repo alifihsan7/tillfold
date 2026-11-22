@@ -36,20 +36,10 @@ class PocketCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     balance: Optional[int] = Field(default=None, ge=0)
     target_amount: int = Field(default=0, ge=0)
+    allocation_amount: Optional[int] = Field(default=None, ge=0)
     role: str = Field(default="operasional", max_length=30)
     slug: Optional[str] = Field(default=None, max_length=50)
     is_active: bool = True
-
-    @model_validator(mode="before")
-    @classmethod
-    def sync_create_amounts(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            if "balance" in data and data["balance"] is not None:
-                if "target_amount" not in data or data["target_amount"] == 0:
-                    data["target_amount"] = data["balance"]
-            elif "target_amount" in data and ("balance" not in data or data["balance"] is None):
-                data["balance"] = data["target_amount"]
-        return data
 
     @field_validator("role", mode="before")
     @classmethod
@@ -71,18 +61,6 @@ class PocketTargetUpdate(BaseModel):
     balance: Optional[int] = Field(None, ge=0)
     target_amount: Optional[int] = Field(None, ge=0)
     is_active: Optional[bool] = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def sync_target_amount(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            if "target_amount" not in data or data["target_amount"] is None:
-                if "balance" in data and data["balance"] is not None:
-                    data["target_amount"] = data["balance"]
-            elif "balance" not in data or data["balance"] is None:
-                if "target_amount" in data and data["target_amount"] is not None:
-                    data["balance"] = data["target_amount"]
-        return data
 
     @field_validator("role", mode="before")
     @classmethod
@@ -148,6 +126,7 @@ class PocketItemResponse(BaseModel):
     role: str = "operasional"
     balance: int = 0
     current_balance: int = 0
+    allocation_amount: int = 0
     target_amount: int = 0
     spent_amount: int = 0
     remaining_amount: int = 0

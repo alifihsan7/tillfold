@@ -14,7 +14,6 @@ export const updateJagoPockets = updatePockets;
 
 export interface EditPocketsModalProps {
   accountId?: number;
-  accountName?: string;
   isOpen: boolean;
   pockets: PocketItem[];
   formatRupiah: (val: number) => string;
@@ -26,7 +25,6 @@ export type EditJagoPocketsModalProps = EditPocketsModalProps;
 
 export function EditPocketsModal({
   accountId,
-  accountName,
   isOpen,
   pockets,
   formatRupiah,
@@ -98,11 +96,7 @@ export function EditPocketsModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Atur target kantong"
-      subtitle={
-        accountName
-          ? `Atur target komitmen sinking fund dalam ${accountName}`
-          : "Perbarui target komitmen kantong rekening"
-      }
+      subtitle="Target adalah patokan. Dana yang sudah dialokasikan tetap sama."
       icon={<Landmark className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
       maxWidth="lg"

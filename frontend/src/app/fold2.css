@@ -606,6 +606,72 @@
 .fold-hero.fold-loading { gap: 20px; }
 .fold-hero .animate-pulse { background: rgb(255 255 255 / .16); }
 
+@media (prefers-reduced-motion: no-preference) {
+  /* Move the heading into place first, then reveal the page without shifting its controls. */
+  .fold-content > .fold-heading { animation: fold-heading-enter 240ms var(--luma-motion-out); }
+  .fold-content > .animate-fadeIn:not(.fold-heading) { animation: fold-content-enter 300ms ease-out; }
+  .fold-content [role="tabpanel"].animate-fadeIn,
+  .fold-content .transaction-calendar-grid,
+  .luma-dialog-panel [role="tabpanel"] {
+    animation: fold-content-enter var(--luma-motion-panel) ease-out;
+  }
+
+  :is(.tillfold-fold, .ai7-select-menu, .tillfold-calendar) button {
+    transition-property: background-color, color, border-color, filter, opacity, box-shadow;
+    transition-duration: var(--luma-motion-quick);
+    transition-timing-function: ease-out;
+  }
+  :is(.tillfold-fold, .ai7-select-menu, .tillfold-calendar) button:not(:disabled):active {
+    transform: none;
+    scale: none;
+    transition-duration: 60ms;
+  }
+  .tillfold-fold :is(.luma-period-selector > button, .luma-toolbar button[aria-expanded]) svg:last-child,
+  .luma-sidebar-toggle > svg {
+    transition: transform var(--luma-motion-panel) var(--luma-motion-out);
+  }
+  .fold-theme-toggle svg { animation: fold-icon-enter 240ms var(--luma-motion-out); }
+  .fold-mobile-drawer { animation: fold-drawer-enter 280ms var(--luma-motion-out); }
+  .fold-mobile-drawer-scrim { animation: fold-content-enter 200ms ease-out; }
+
+  /* Bars grow from their baseline to make a new period or amount easy to track. */
+  .fold-gauge-fill {
+    animation: fold-gauge-enter 640ms var(--luma-motion-out);
+    transition: stroke-dasharray 540ms var(--luma-motion-out), stroke var(--luma-motion-quick) ease-out;
+  }
+  .fold-ratio, .fold-cycle > span, .fold-allocation-bar {
+    transform-origin: left;
+    animation: fold-meter-enter 460ms var(--luma-motion-out);
+  }
+  .fold-cycle > span { transition: width 380ms var(--luma-motion-out); }
+  .fold-allocation-bar > div { transition: flex-grow 420ms var(--luma-motion-out); }
+  .fold-ratio > span { transition: flex-grow 420ms var(--luma-motion-out); }
+  .fold-report-chart > div > div, .fold-burn-actual {
+    transform-origin: bottom;
+    animation: fold-chart-enter 520ms var(--luma-motion-out);
+    transition: height 420ms var(--luma-motion-out);
+  }
+  .fold-burn-detail > * { animation: fold-content-enter 200ms ease-out; }
+  .fold-burn-day, .fold-transaction {
+    transition: background-color var(--luma-motion-quick) ease-out;
+  }
+  :is(.fold-transaction, .ai7-ledger-table [data-new-transaction])[data-new-transaction="true"] {
+    animation: fold-new-entry 640ms ease-out;
+  }
+
+  @keyframes fold-heading-enter {
+    from { opacity: 0; translate: 0 8px; }
+    to { opacity: 1; translate: none; }
+  }
+  @keyframes fold-content-enter { from { opacity: .25; } }
+  @keyframes fold-icon-enter { from { opacity: .25; rotate: -20deg; } }
+  @keyframes fold-drawer-enter { from { translate: -100% 0; } }
+  @keyframes fold-gauge-enter { from { stroke-dasharray: 0 100; } }
+  @keyframes fold-meter-enter { from { scale: 0 1; } }
+  @keyframes fold-chart-enter { from { scale: 1 0; } }
+  @keyframes fold-new-entry { from { background-color: rgb(var(--fold-positive-rgb) / .24); } }
+}
+
 @media (max-width: 1023px) {
   .fold-grid, .fold-lists { grid-template-columns: minmax(0, 1fr); }
 }

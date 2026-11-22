@@ -45,7 +45,7 @@ export function ThemeToggle({
       onClick={toggleTheme}
       title={isLight ? "Beralih ke Obsidian Dark (Mode Gelap)" : "Beralih ke Clean Light (Mode Terang)"}
       aria-label={isLight ? "Beralih ke Mode Gelap" : "Beralih ke Mode Terang"}
-      className={`relative ${sizeClasses} rounded-full flex items-center justify-center transition-colors group cursor-pointer shrink-0 select-none ${
+      className={`fold-theme-toggle relative ${sizeClasses} rounded-full flex items-center justify-center transition-colors group cursor-pointer shrink-0 select-none ${
         isLight
           ? "bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline hover:border-luma-smoke text-luma-ivory"
           : "bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline hover:border-amberGold/50 text-amberGold shadow-xs"

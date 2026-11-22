@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -25,15 +25,41 @@ export function CustomModal({
   mobileSheet = false,
 }: CustomModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const dismissAnimations = useRef<Animation[]>([]);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
+  const dismiss = useCallback(() => {
+    if (dismissAnimations.current.length) return;
+    const panel = dialogRef.current;
+    const backdrop = backdropRef.current;
+    if (!panel?.animate || !backdrop?.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onCloseRef.current();
+      return;
+    }
+    const sheet = panel.classList.contains("fold-sheet-panel") && window.matchMedia("(max-width: 767px)").matches;
+    const duration = 150;
+    const slide = panel.animate(
+      [{ transform: "none" }, { transform: `translateY(${sheet ? 22 : 7}px)` }],
+      { duration, easing: "ease-in" },
+    );
+    const fade = backdrop.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing: "ease-in" });
+    dismissAnimations.current = [slide, fade];
+    fade.onfinish = () => {
+      dismissAnimations.current = [];
+      onCloseRef.current();
+    };
+  }, []);
+
   useEffect(() => {
+    if (!isOpen) return;
     const previousFocus = document.activeElement as HTMLElement | null;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onCloseRef.current();
+      if (e.key === "Escape" && !e.defaultPrevented) {
+        dismiss();
       }
-      if (e.key === "Tab" && isOpen && dialogRef.current) {
+      if (e.key === "Tab" && dialogRef.current) {
         const focusRoot = dialogRef.current.closest('[role="dialog"]') || dialogRef.current;
         const controls = Array.from(focusRoot.querySelectorAll<HTMLElement>(
           'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
@@ -44,17 +70,18 @@ export function CustomModal({
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
     };
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-      dialogRef.current?.querySelector<HTMLElement>("button")?.focus();
-    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    dialogRef.current?.querySelector<HTMLElement>("button")?.focus();
     return () => {
-      document.body.style.overflow = "unset";
+      for (const animation of dismissAnimations.current) animation.cancel();
+      dismissAnimations.current = [];
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
-      if (isOpen) previousFocus?.focus();
+      previousFocus?.focus();
     };
-  }, [isOpen]);
+  }, [dismiss, isOpen]);
 
   if (!isOpen || typeof document === "undefined") return null;
 
@@ -67,12 +94,13 @@ export function CustomModal({
 
   return createPortal(
     <div
+      ref={backdropRef}
       role="dialog"
       aria-modal="true"
       aria-label={title}
       className={`luma-dialog-backdrop fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3 sm:p-5 overflow-y-auto ${mobileSheet ? "fold-sheet-backdrop" : ""}`}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) dismiss();
       }}
     >
       <div
@@ -82,7 +110,7 @@ export function CustomModal({
         {/* Close Button — 44x44 touch target */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={dismiss}
           aria-label="Tutup dialog"
           className="absolute top-3 sm:top-4 right-3 sm:right-4 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[var(--ai7-radius-control)] text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal transition-colors duration-150 z-20 touch-manipulation cursor-pointer"
         >

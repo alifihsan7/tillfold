@@ -74,8 +74,8 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
 
       {selected && (
         <div className="fold-burn-detail luma-inset p-4" aria-live="polite">
-          <p className="font-semibold">Hari {selected.day} · {formatShortDate(selected.date)}</p>
-          <dl>
+          <p key={selected.date} className="font-semibold">Hari {selected.day} · {formatShortDate(selected.date)}</p>
+          <dl key={`amounts-${selected.date}`}>
             <div><dt>Pengeluaran</dt><dd>{formatRupiah(selected.spent)}</dd></div>
             <div><dt>Kumulatif</dt><dd>{formatRupiah(selected.cumulative_spent)}</dd></div>
             <div><dt>Batas ideal</dt><dd>{formatRupiah(selected.ideal_pace)}</dd></div>

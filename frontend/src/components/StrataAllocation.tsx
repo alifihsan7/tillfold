@@ -92,7 +92,7 @@ export function StrataAllocationBar({
       </div>
 
       <div
-        className="flex gap-0.5 min-h-[44px] rounded-xl overflow-hidden p-1 bg-luma-charcoal border border-luma-smokeline"
+        className="fold-allocation-bar flex gap-0.5 min-h-[44px] rounded-xl overflow-hidden p-1 bg-luma-charcoal border border-luma-smokeline"
         role="img"
         aria-label={`Proporsi alokasi: ${activeBuckets.map((b) => `${b.account} ${b.percentage.toFixed(1)} persen`).join(", ")}`}
       >

@@ -1340,12 +1340,12 @@ export default function FinanceDashboard() {
         <div className="fixed inset-0 z-50 md:hidden flex">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity"
+            className="fold-mobile-drawer-scrim fixed inset-0 bg-black/80 backdrop-blur-xs"
             onClick={() => setIsMobileDrawerOpen(false)}
           />
 
           {/* Drawer Content */}
-          <div className="relative w-[280px] max-w-[85vw] bg-luma-charcoal border-r border-luma-smokeline/60 p-5 flex flex-col justify-between h-full z-10 overflow-y-auto">
+          <div className="fold-mobile-drawer relative w-[280px] max-w-[85vw] bg-luma-charcoal border-r border-luma-smokeline/60 p-5 flex flex-col justify-between h-full z-10 overflow-y-auto">
             <div>
               {/* Header with Close */}
               <div className="flex items-center justify-between pb-4 border-b border-luma-smokeline">

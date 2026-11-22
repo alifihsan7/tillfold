@@ -100,7 +100,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nama rekening / akun *
           </label>
           <input
@@ -115,7 +115,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Tipe rekening
             </label>
             <CustomSelect
@@ -125,7 +125,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Warna
             </label>
             <CustomSelect
@@ -137,7 +137,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Label singkat
           </label>
           <input
@@ -150,7 +150,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Saldo awal (opsional)
           </label>
           <CurrencyInput
@@ -158,7 +158,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
             onChange={setInitialBalance}
             placeholder="0"
           />
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-luma-smoke mt-1">
             Jika diisi lebih dari Rp 0, sistem otomatis mencatat transaksi pemasukan &ldquo;Saldo awal&rdquo; di riwayat Transaksi.
           </p>
         </div>

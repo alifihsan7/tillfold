@@ -112,7 +112,7 @@ export function CustomModal({
           type="button"
           onClick={dismiss}
           aria-label="Tutup dialog"
-          className="absolute top-3 sm:top-4 right-3 sm:right-4 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[var(--ai7-radius-control)] text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal transition-colors duration-150 z-20 touch-manipulation cursor-pointer"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal transition-colors duration-150 z-20 touch-manipulation cursor-pointer"
         >
           <X className="w-5 h-5" aria-hidden="true" />
         </button>
@@ -122,7 +122,7 @@ export function CustomModal({
           <div className="flex items-start gap-3.5 pr-12 sm:pr-14">
             {icon && (
               <div
-                className="ai7-dialog-icon p-2.5 rounded-[var(--ai7-radius-control)] shrink-0"
+                className="ai7-dialog-icon p-2.5 rounded-xl shrink-0"
               >
                 {icon}
               </div>

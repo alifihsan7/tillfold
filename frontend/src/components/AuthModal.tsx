@@ -250,7 +250,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
               mode === "login"
                 ? "ui-selected"
-                : "text-zinc-400 hover:text-white border border-transparent"
+                : "text-luma-smoke hover:text-white border border-transparent"
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
@@ -262,7 +262,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
               mode === "register"
                 ? "ui-selected"
-                : "text-zinc-400 hover:text-white border border-transparent"
+                : "text-luma-smoke hover:text-white border border-transparent"
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -289,7 +289,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 type="button"
                 onClick={() => setGoogleHelpOpen(!googleHelpOpen)}
-                className="w-full py-2.5 px-4 rounded-2xl bg-obsidian-card hover:bg-white/[0.04] border border-luma-smokeline text-zinc-200 text-xs font-medium flex items-center justify-between transition group cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-2xl bg-obsidian-card hover:bg-white/[0.04] border border-luma-smokeline text-luma-ivory text-xs font-medium flex items-center justify-between transition group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
@@ -318,12 +318,12 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               </button>
 
               {googleHelpOpen && (
-                <div className="mt-2.5 p-3.5 rounded-2xl bg-obsidian-panel border border-luma-smokeline text-xs text-zinc-300 space-y-2 animate-fadeIn">
+                <div className="mt-2.5 p-3.5 rounded-2xl bg-obsidian-panel border border-luma-smokeline text-xs text-luma-secondary space-y-2 animate-fadeIn">
                   <div className="flex items-center gap-1.5 text-luma-ivory font-medium text-xs">
                     <Info className="w-3.5 h-3.5" />
                     <span>Langkah menghubungkan Google OAuth:</span>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1 text-xs text-zinc-400 leading-relaxed">
+                  <ol className="list-decimal list-inside space-y-1 text-xs text-luma-smoke leading-relaxed">
                     <li>Buka <b>Google Cloud Console</b> &rarr; APIs & Services &rarr; Credentials.</li>
                     <li>Buat <b>OAuth Client ID</b> (Type: <i>Web application</i>).</li>
                     <li>Tambahkan Authorized Javascript Origins:
@@ -340,7 +340,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
           <div className="flex items-center gap-3 pt-1">
             <div className="h-px bg-white/[0.08] flex-1" />
-            <span className="text-xs text-zinc-400 font-semibold">
+            <span className="text-xs text-luma-smoke font-semibold">
               atau dengan username & password
             </span>
             <div className="h-px bg-white/[0.08] flex-1" />
@@ -359,36 +359,36 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         {mode === "login" ? (
           <form key="login-form" onSubmit={handleLogin} className="space-y-3.5 animate-fadeIn duration-150">
             <div>
-              <label htmlFor="auth-login-id" className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="auth-login-id" className="block text-xs font-medium text-luma-secondary mb-1.5">
                 Username atau email
               </label>
               <div className="relative">
-                <AtSign className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <AtSign className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-login-id"
                   type="text"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   placeholder="username atau email@domain.com"
-                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="auth-login-password" className="block text-xs font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="auth-login-password" className="block text-xs font-medium text-luma-secondary mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <KeyRound className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <KeyRound className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-login-password"
                   type="password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />
               </div>
@@ -418,44 +418,44 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           /* Register Form */
           <form key="register-form" onSubmit={handleRegister} className="space-y-3 animate-fadeIn duration-150">
             <div>
-              <label htmlFor="auth-register-name" className="block text-xs font-medium text-zinc-300 mb-1">
+              <label htmlFor="auth-register-name" className="block text-xs font-medium text-luma-secondary mb-1">
                 Nama lengkap
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <User className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-register-name"
                   type="text"
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
                   placeholder="Nama lengkap"
-                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="auth-register-username" className="block text-xs font-medium text-zinc-300 mb-1">
+              <label htmlFor="auth-register-username" className="block text-xs font-medium text-luma-secondary mb-1">
                 Username
               </label>
               <div className="relative">
-                <AtSign className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <AtSign className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-register-username"
                   type="text"
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                   placeholder="contoh: user_baru"
-                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="auth-register-email" className="block text-xs font-medium text-zinc-300 mb-1">
-                Email <span className="text-zinc-400 font-normal">(Opsional)</span>
+              <label htmlFor="auth-register-email" className="block text-xs font-medium text-luma-secondary mb-1">
+                Email <span className="text-luma-smoke font-normal">(Opsional)</span>
               </label>
               <input
                 id="auth-register-email"
@@ -463,13 +463,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl px-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl px-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label htmlFor="auth-register-password" className="block text-xs font-medium text-zinc-300 mb-1">
+                <label htmlFor="auth-register-password" className="block text-xs font-medium text-luma-secondary mb-1">
                   Password
                 </label>
                 <input
@@ -478,12 +478,12 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                   placeholder="Min 6 karakter"
-                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="auth-register-confirm" className="block text-xs font-medium text-zinc-300 mb-1">
+                <label htmlFor="auth-register-confirm" className="block text-xs font-medium text-luma-secondary mb-1">
                   Konfirmasi
                 </label>
                 <input
@@ -492,7 +492,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   value={regConfirmPassword}
                   onChange={(e) => setRegConfirmPassword(e.target.value)}
                   placeholder="Ulangi password"
-                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-zinc-400 rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
+                  className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />
               </div>

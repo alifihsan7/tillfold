@@ -274,7 +274,7 @@ export function UserProfileModal({
     }
   };
 
-  const fieldClass = "w-full min-h-11 rounded-[var(--ai7-radius-control)] border border-luma-smokeline bg-luma-coal px-3 text-base text-luma-ivory focus:border-luma-ember focus:outline-none transition-colors";
+  const fieldClass = "w-full min-h-11 rounded-xl border border-luma-smokeline bg-luma-coal px-3 text-base text-luma-ivory focus:border-luma-ember focus:outline-none transition-colors";
 
   return (
     <CustomModal
@@ -406,7 +406,7 @@ export function UserProfileModal({
         {/* Tab 2: Telegram */}
         {activeTab === "telegram" && (
           <div role="tabpanel" id="telegram-panel" aria-labelledby="telegram-tab" className="space-y-4">
-            <div className="space-y-2 rounded-[var(--ai7-radius-panel)] luma-inset p-5">
+            <div className="space-y-2 rounded-3xl luma-inset p-5">
               <h3 className="font-medium">Bot Tillfold</h3>
               <p className="text-luma-smoke">Catat transaksi, kirim struk, dan cek saldo lewat Telegram. Semua pengguna memakai satu bot dengan akun keuangan masing-masing.</p>
               <p className={isConnected ? "text-mintRise" : "text-luma-smoke"}>{isConnected ? "Terhubung · ID " + user.telegram_chat_id : "Belum terhubung"}</p>
@@ -461,7 +461,7 @@ export function UserProfileModal({
         {/* Tab 3: Google Sheets */}
         {activeTab === "sheets" && (
           <div role="tabpanel" id="sheets-panel" aria-labelledby="sheets-tab" className="space-y-4">
-            <div className="space-y-3 rounded-[var(--ai7-radius-panel)] luma-inset p-5">
+            <div className="space-y-3 rounded-3xl luma-inset p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-medium text-luma-ivory">Laporan di Google Sheets</h3>
@@ -501,11 +501,11 @@ export function UserProfileModal({
             </div>
 
             {/* Microcopy: Editor Access */}
-            <div className="rounded-[var(--ai7-radius-panel)] luma-inset p-4 space-y-2.5">
+            <div className="rounded-3xl luma-inset p-4 space-y-2.5">
               <p className="text-xs text-luma-smoke">
                 Bagikan akses <span className="text-luma-ivory font-medium">Editor</span> pada spreadsheet-mu ke:
               </p>
-              <div className="flex items-center justify-between gap-2 rounded-[var(--ai7-radius-control)] luma-readout px-3 py-2">
+              <div className="flex items-center justify-between gap-2 rounded-xl luma-readout px-3 py-2">
                 <code className="text-xs font-mono text-luma-sage select-all break-all">
                   {SERVICE_ACCOUNT_EMAIL}
                 </code>

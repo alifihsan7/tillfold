@@ -108,7 +108,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nama rekening / akun *
           </label>
           <input
@@ -128,7 +128,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Tipe rekening
             </label>
             <CustomSelect
@@ -138,7 +138,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Warna
             </label>
             <CustomSelect
@@ -150,7 +150,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Label singkat
           </label>
           <input

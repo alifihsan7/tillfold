@@ -85,7 +85,7 @@ export function BillPaymentModal({ subscriptionId, onClose, onChanged }: {
     <div className="space-y-4 text-sm text-luma-ivory">
       {!data && !error && <p role="status">Memuat tagihan…</p>}
       {data && <>
-        <dl className="space-y-3 rounded-[var(--ai7-radius-panel)] border border-luma-smokeline bg-luma-coal p-4">
+        <dl className="space-y-3 rounded-3xl border border-luma-smokeline bg-luma-coal p-4">
           <div className="flex flex-wrap justify-between gap-2"><dt>Nominal</dt><dd className="font-medium tabular-nums">{rupiah(data.is_paid ? data.paid_amount ?? data.amount : data.amount)}</dd></div>
           <div className="flex flex-wrap justify-between gap-2"><dt>Rekening</dt><dd>{data.account}</dd></div>
           <div className="flex flex-wrap justify-between gap-2"><dt>Jatuh tempo periode ini</dt><dd>{data.payment_due_date || "Belum diatur"}</dd></div>

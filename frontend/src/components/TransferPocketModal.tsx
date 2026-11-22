@@ -193,7 +193,7 @@ export function TransferPocketModal({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-300">
+              <label className="text-xs font-semibold text-luma-secondary">
                 Dari kantong
               </label>
               {sourcePocket && (
@@ -232,7 +232,7 @@ export function TransferPocketModal({
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-300">
+              <label className="text-xs font-semibold text-luma-secondary">
                 Ke kantong
               </label>
               {targetPocket && (
@@ -242,7 +242,7 @@ export function TransferPocketModal({
                     {formatRupiah(targetBalance)}
                   </strong>
                   {targetPocket.target_amount > 0 && (
-                    <span className="text-zinc-500">
+                    <span className="text-luma-smoke">
                       {" "}
                       / Target {formatRupiah(targetPocket.target_amount)}
                     </span>
@@ -266,7 +266,7 @@ export function TransferPocketModal({
         {/* Nominal with CurrencyInput */}
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-zinc-300">
+            <label className="text-xs font-semibold text-luma-secondary">
               Nominal
             </label>
             {sourceBalance > 0 && (
@@ -296,12 +296,12 @@ export function TransferPocketModal({
         {/* Real-time Balance Preview */}
         {numericAmount > 0 && sourcePocket && targetPocket && fromPocketId !== toPocketId && (
           <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-2">
-            <span className="text-xs text-zinc-400 font-medium block">
+            <span className="text-xs text-luma-smoke font-medium block">
               Saldo setelah dipindah
             </span>
             <div className="grid grid-cols-2 gap-3 text-xs tabular-nums">
               <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
-                <span className="text-zinc-400 block truncate">{sourcePocket.name}</span>
+                <span className="text-luma-smoke block truncate">{sourcePocket.name}</span>
                 <span
                   className={`font-semibold block mt-0.5 ${
                     sourceBalance - numericAmount < 0 ? "text-luma-coral" : "text-luma-ivory"
@@ -311,7 +311,7 @@ export function TransferPocketModal({
                 </span>
               </div>
               <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
-                <span className="text-zinc-400 block truncate">{targetPocket.name}</span>
+                <span className="text-luma-smoke block truncate">{targetPocket.name}</span>
                 <span className="font-semibold text-luma-sage block mt-0.5">
                   {formatRupiah(targetBalance + numericAmount)}
                 </span>
@@ -322,7 +322,7 @@ export function TransferPocketModal({
 
         {/* Keterangan / Note (Optional) */}
         <div className="space-y-1.5">
-          <label htmlFor="pocket-transfer-note" className="text-xs font-semibold text-zinc-300">
+          <label htmlFor="pocket-transfer-note" className="text-xs font-semibold text-luma-secondary">
             Catatan (opsional)
           </label>
           <input
@@ -333,7 +333,7 @@ export function TransferPocketModal({
             onChange={(e) => setNote(e.target.value)}
             disabled={loading}
             placeholder="Contoh: Alokasi iuran bulanan gym"
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-luma-ivory placeholder-zinc-500 focus:outline-none focus:border-luma-ember transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-luma-ivory placeholder-luma-smoke focus:outline-none focus:border-luma-ember transition"
           />
         </div>
 

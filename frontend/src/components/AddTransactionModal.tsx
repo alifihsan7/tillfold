@@ -188,7 +188,7 @@ export function AddTransactionModal({
 
         {/* Amount */}
         <div>
-          <label htmlFor="add-transaction-amount" className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label htmlFor="add-transaction-amount" className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nominal transaksi
           </label>
           <CurrencyInput
@@ -208,7 +208,7 @@ export function AddTransactionModal({
 
         {/* Description */}
         <div>
-          <label htmlFor="add-transaction-description" className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label htmlFor="add-transaction-description" className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Keterangan
           </label>
           <input
@@ -218,14 +218,14 @@ export function AddTransactionModal({
             placeholder="Contoh: Nasi Padang + Es Teh"
             value={formDesc}
             onChange={(e) => setFormDesc(e.target.value)}
-            className="w-full min-h-[44px] bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-zinc-400"
+            className="w-full min-h-[44px] bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-luma-smoke"
           />
         </div>
 
         {/* Account and Category */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Akun rekening
             </label>
             <CustomSelect
@@ -235,7 +235,7 @@ export function AddTransactionModal({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Kategori
             </label>
             <CustomSelect
@@ -248,7 +248,7 @@ export function AddTransactionModal({
 
         {/* Date */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Tanggal transaksi
           </label>
           <DateField label="Tanggal transaksi"

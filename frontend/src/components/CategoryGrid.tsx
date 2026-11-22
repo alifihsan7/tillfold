@@ -343,7 +343,7 @@ export function CategoryGrid({
               Kategori Belanja & Pemasukan
             </h2>
           </div>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-luma-smoke mt-0.5">
             Daftar pos alokasi transaksi beserta nominal belanja periode ini.
           </p>
         </div>
@@ -358,7 +358,7 @@ export function CategoryGrid({
               className={`px-3 py-1 rounded-full transition cursor-pointer min-h-[32px] ${
                 filterTab === "all"
                   ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-luma-smoke hover:text-white"
               }`}
             >
               Semua ({combinedCards.length})
@@ -370,7 +370,7 @@ export function CategoryGrid({
               className={`px-3 py-1 rounded-full transition cursor-pointer min-h-[32px] ${
                 filterTab === "expense"
                   ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-luma-smoke hover:text-white"
               }`}
             >
               Belanja ({expenseCount})
@@ -382,7 +382,7 @@ export function CategoryGrid({
               className={`px-3 py-1 rounded-full transition cursor-pointer min-h-[32px] ${
                 filterTab === "income"
                   ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-luma-smoke hover:text-white"
               }`}
             >
               Masuk ({incomeCount})
@@ -428,7 +428,7 @@ export function CategoryGrid({
           ))}
         </div>
       ) : filteredList.length === 0 ? (
-        <div className="p-8 sm:p-10 text-center bg-obsidian-card/40 rounded-2xl border border-luma-smokeline text-zinc-400 text-xs sm:text-sm space-y-3">
+        <div className="p-8 sm:p-10 text-center bg-obsidian-card/40 rounded-2xl border border-luma-smokeline text-luma-smoke text-xs sm:text-sm space-y-3">
           <p>Belum ada kategori yang sesuai dengan filter ini.</p>
           <button
             type="button"
@@ -470,11 +470,11 @@ export function CategoryGrid({
                         <span className="font-semibold text-sm text-white block truncate" title={c.name}>
                           {c.name}
                         </span>
-                        <div className="flex items-center gap-1.5 text-xs font-sans text-zinc-400 mt-0.5">
+                        <div className="flex items-center gap-1.5 text-xs font-sans text-luma-smoke mt-0.5">
                           <span
                             className={`px-1.5 py-0.2 rounded text-xs font-semibold ${
                               isExpense
-                                ? "bg-white/[0.06] text-zinc-400"
+                                ? "bg-white/[0.06] text-luma-smoke"
                                 : "bg-mintRise/15 text-mintRise"
                             }`}
                           >
@@ -492,7 +492,7 @@ export function CategoryGrid({
                       </div>
                       <span
                         className={`text-xs font-sans font-semibold ${
-                          c.percentage > 0 ? colorDef.badgeText : "text-zinc-400"
+                          c.percentage > 0 ? colorDef.badgeText : "text-luma-smoke"
                         }`}
                       >
                         {c.percentage > 0 ? `${c.percentage.toFixed(1)}%` : "0% total"}
@@ -501,7 +501,7 @@ export function CategoryGrid({
                   </div>
 
                   {/* Transaction metadata or subtitle + Tactile In-Card Action Buttons */}
-                  <div className="text-xs font-sans text-zinc-400 flex items-center justify-between pt-1">
+                  <div className="text-xs font-sans text-luma-smoke flex items-center justify-between pt-1">
                     <span className="truncate pr-2">
                       {c.count > 0
                         ? `Rata-rata ${formatRupiah(avgSpend)}/tx`
@@ -571,7 +571,7 @@ export function CategoryGrid({
         <form onSubmit={handleAddCategory} className="space-y-4">
           {/* Tipe Selector: Expense vs Income */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Tipe kategori</label>
+            <label className="text-xs font-semibold text-luma-secondary">Tipe kategori</label>
             <SegmentedControl fill label="Tipe kategori" value={addType} onChange={setAddType} options={[
               { value: "expense", label: "Pengeluaran", tone: "expense" },
               { value: "income", label: "Pemasukan", tone: "income" },
@@ -580,20 +580,20 @@ export function CategoryGrid({
 
           {/* Nama Kategori */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Nama kategori</label>
+            <label className="text-xs font-semibold text-luma-secondary">Nama kategori</label>
             <input
               type="text"
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
               placeholder="Contoh: Makan Harian, Langganan AI, Hiburan"
-              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-luma-ember/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-400 outline-none transition"
+              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-luma-ember/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-luma-smoke outline-none transition"
               autoFocus
             />
           </div>
 
           {/* Pilihan Warna */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Warna aksen</label>
+            <label className="text-xs font-semibold text-luma-secondary">Warna aksen</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((col) => {
                 const isSelected = addColor === col.id;
@@ -605,7 +605,7 @@ export function CategoryGrid({
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
                         ? "ui-selected"
-                        : "border-luma-smokeline bg-obsidian-card text-zinc-400 hover:text-white hover:border-white/[0.2]"
+                        : "border-luma-smokeline bg-obsidian-card text-luma-smoke hover:text-white hover:border-white/[0.2]"
                     }`}
                   >
                     <span className={`w-3 h-3 rounded-full shrink-0 ${col.dotClass}`} />
@@ -662,7 +662,7 @@ export function CategoryGrid({
         <form onSubmit={handleUpdateCategory} className="space-y-4">
           {/* Tipe Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Tipe kategori</label>
+            <label className="text-xs font-semibold text-luma-secondary">Tipe kategori</label>
             <SegmentedControl fill label="Tipe kategori" value={editType} onChange={setEditType} options={[
               { value: "expense", label: "Pengeluaran", tone: "expense" },
               { value: "income", label: "Pemasukan", tone: "income" },
@@ -671,19 +671,19 @@ export function CategoryGrid({
 
           {/* Nama Kategori */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Nama kategori</label>
+            <label className="text-xs font-semibold text-luma-secondary">Nama kategori</label>
             <input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder="Nama kategori"
-              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-luma-ember/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-400 outline-none transition"
+              className="w-full bg-obsidian-card border border-luma-smokeline focus:border-luma-ember/60 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-luma-smoke outline-none transition"
             />
           </div>
 
           {/* Pilihan Warna */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-300">Warna aksen</label>
+            <label className="text-xs font-semibold text-luma-secondary">Warna aksen</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((col) => {
                 const isSelected = editColor === col.id;
@@ -695,7 +695,7 @@ export function CategoryGrid({
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
                         ? "ui-selected"
-                        : "border-luma-smokeline bg-obsidian-card text-zinc-400 hover:text-white hover:border-white/[0.2]"
+                        : "border-luma-smokeline bg-obsidian-card text-luma-smoke hover:text-white hover:border-white/[0.2]"
                     }`}
                   >
                     <span className={`w-3 h-3 rounded-full shrink-0 ${col.dotClass}`} />
@@ -752,7 +752,7 @@ export function CategoryGrid({
         <div className="space-y-4">
           <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline flex items-center justify-between">
             <div>
-              <div className="text-xs text-zinc-400">Kategori tujuan</div>
+              <div className="text-xs text-luma-smoke">Kategori tujuan</div>
               <div className="text-sm font-semibold text-white mt-0.5">{deletingCat?.name}</div>
             </div>
             <span
@@ -776,7 +776,7 @@ export function CategoryGrid({
                 </span>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Pindahkan transaksi ke</label>
+                <label className="text-xs font-semibold text-luma-secondary">Pindahkan transaksi ke</label>
                 <CustomSelect
                   value={fallbackCategory}
                   onChange={(val) => setFallbackCategory(val)}
@@ -786,7 +786,7 @@ export function CategoryGrid({
               </div>
             </div>
           ) : (
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-luma-smoke leading-relaxed">
               Kategori ini belum memiliki transaksi pada periode aktif. Apakah Anda yakin ingin menghapus kategori <strong>{deletingCat?.name}</strong> secara permanen?
             </p>
           )}

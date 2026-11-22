@@ -124,7 +124,7 @@ export function EditPocketsModal({
               <div className="flex items-center justify-between gap-2">
                 <label
                   htmlFor={`pocket-target-${pocket.slug}`}
-                  className="text-xs font-semibold text-zinc-300"
+                  className="text-xs font-semibold text-luma-secondary"
                 >
                   {pocket.name}
                 </label>
@@ -158,7 +158,7 @@ export function EditPocketsModal({
         </div>
 
         <div className="flex items-center justify-between gap-2 px-1 text-xs font-sans">
-          <span className="text-zinc-400">Total target komitmen</span>
+          <span className="text-luma-smoke">Total target komitmen</span>
           <span className="font-semibold text-luma-ivory tabular-nums">
             {formatRupiah(totalDraft)}
           </span>

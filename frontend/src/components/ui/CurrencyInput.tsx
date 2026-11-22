@@ -60,7 +60,7 @@ export function CurrencyInput({
           value={formatDisplay(value)}
           onChange={handleInputChange}
           placeholder={placeholder}
-          className="w-full bg-transparent px-3.5 py-2.5 text-slateText-primary font-sans font-semibold text-base sm:text-lg focus:outline-none placeholder:text-zinc-400 placeholder:font-normal"
+          className="w-full bg-transparent px-3.5 py-2.5 text-slateText-primary font-sans font-semibold text-base sm:text-lg focus:outline-none placeholder:text-luma-smoke placeholder:font-normal"
         />
       </div>
 

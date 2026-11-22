@@ -415,7 +415,7 @@ export function CreateInternalLoanModal({
             onChange={(e) => setNote(e.target.value)}
             placeholder="Contoh: Talangi makan siang tim, Beli bensin, Tiket konser..."
             maxLength={255}
-            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-ember rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-zinc-500 outline-none transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-ember rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-luma-smoke outline-none transition"
           />
         </div>
 

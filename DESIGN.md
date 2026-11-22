@@ -118,11 +118,21 @@ Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-moti
 
 ## Scope and known deviations
 
-This document describes the target. Resolved on 2026-11-22: radius tokens now live only in `globals.css` (28 / 14 / 999 px), nothing below 12 px except the allocation bar labels (they scale with their segment), amounts no longer use `font-mono`, and browser, PWA and Telegram chrome colors follow `--fold-canvas` through `CHROME_COLOR` in `ThemeProvider.tsx`. Still diverging and worth fixing rather than copying:
+This document describes the target. Resolved on 2026-11-22:
 
-- Legacy color tokens in `globals.css` (bluish light palette, #3c3c46 balance gradient, warm hex values in `.luma-guest-*`) still exist beside the Fold tokens.
-- Many components use raw `rounded-xl`, `rounded-2xl`, `rounded-3xl`, `text-zinc-*` and `bg-white/[...]` instead of tokens, and rely on CSS overrides to look right.
-- Two button systems coexist: `.fold-action` (overview) and `.ui-btn` / `.luma-action-*` (elsewhere).
+- Radius tokens live only in `globals.css` (28 / 14 / 999 px). Tailwind `rounded-xl` maps to the control radius and `rounded-2xl` / `rounded-3xl` to the panel radius, so raw classes land on the Fold scale.
+- The Fold color remap applies at `:root` as well as `.tillfold-fold`, so `body`, scrollbars and portaled menus share the Fold palette. The legacy Ink & Silver and bluish light values were removed from `globals.css`; only `--luma-ember`, gold, transfer and a few accent tokens remain there.
+- `text-zinc-*` classes were replaced with `text-luma-ivory`, `text-luma-secondary` and `text-luma-smoke`.
+- One button voice: weight 600, 44 px for touch and 36 px for a fine pointer on desktop. `.fold-action`, `.ui-btn` and `.luma-action-*` share this geometry.
+- Nothing renders below 12 px except the allocation bar labels, which scale with their segment. Amounts no longer use `font-mono`.
+- Browser, PWA and Telegram chrome colors follow `--fold-canvas` through `CHROME_COLOR` in `ThemeProvider.tsx`.
+- The unused legacy hero (`LumaHeroGrid`, `LumaHeroCard`, `.luma-balance-*`, `.luma-guest-panel` and related CSS) was deleted.
+
+Still diverging and worth fixing rather than copying:
+
+- `bg-white/[...]` tints are used for subtle fills; light mode remaps them to the Fold text color at 4–7 % opacity.
+- `rounded-md` and `rounded-lg` remain on small icon boxes and skeletons.
 - `font-mono` remains only for identifiers and code (loan number, spreadsheet ID, webhook strings).
+- Category and account color pickers use raw Tailwind palette classes by design, since users choose those colors.
 
 No change to financial calculations or production hosting is implied by this document.

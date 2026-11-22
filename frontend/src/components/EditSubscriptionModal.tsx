@@ -137,7 +137,7 @@ export function EditSubscriptionModal({
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nama tagihan / layanan
           </label>
           <input
@@ -151,7 +151,7 @@ export function EditSubscriptionModal({
 
         {/* Pilihan Mode Siklus */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-2">
+          <label className="block text-xs font-semibold text-luma-smoke mb-2">
             Metode perhitungan jatuh tempo
           </label>
           <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
@@ -162,7 +162,7 @@ export function EditSubscriptionModal({
               className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 billingType === "fixed_day"
                   ? "ui-selected"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-luma-smoke hover:text-white"
               }`}
             >
               <Clock className="w-3.5 h-3.5 shrink-0" />
@@ -182,7 +182,7 @@ export function EditSubscriptionModal({
               className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 billingType === "exact_date"
                   ? "ui-selected"
-                  : "text-zinc-400 hover:text-white"
+                  : "text-luma-smoke hover:text-white"
               }`}
             >
               <Calendar className="w-3.5 h-3.5 shrink-0" />
@@ -201,7 +201,7 @@ export function EditSubscriptionModal({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Nominal / periode
             </label>
             <CurrencyInput
@@ -216,7 +216,7 @@ export function EditSubscriptionModal({
 
           {billingType === "fixed_day" ? (
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                 Jatuh tempo (tgl 1-31)
               </label>
               <input
@@ -232,7 +232,7 @@ export function EditSubscriptionModal({
           ) : (
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-semibold text-zinc-400 ">
+                <label className="block text-xs font-semibold text-luma-smoke ">
                   {billingType === "yearly" ? "Tanggal tagihan tahunan" : "Tanggal jatuh tempo"}
                 </label>
                 <div className="flex gap-1">
@@ -257,7 +257,7 @@ export function EditSubscriptionModal({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Kategori
             </label>
             <CustomSelect
@@ -267,7 +267,7 @@ export function EditSubscriptionModal({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Rekening pembayaran
             </label>
             <CustomSelect
@@ -281,7 +281,7 @@ export function EditSubscriptionModal({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Catatan tambahan (opsional)
           </label>
           <input

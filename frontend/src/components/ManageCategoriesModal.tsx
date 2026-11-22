@@ -324,7 +324,7 @@ export function ManageCategoriesModal({
             className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === "expense"
                 ? "bg-coralFall text-slate-950 font-semibold shadow-sm"
-                : "text-zinc-400 hover:text-white"
+                : "text-luma-smoke hover:text-white"
             }`}
           >
             <span>Pengeluaran</span>
@@ -332,7 +332,7 @@ export function ManageCategoriesModal({
               className={`text-xs font-sans px-2 py-0.5 rounded-full ${
                 activeTab === "expense"
                   ? "bg-slate-950/25 text-slate-950 font-semibold"
-                  : "bg-white/[0.06] text-zinc-400"
+                  : "bg-white/[0.06] text-luma-smoke"
               }`}
             >
               {expenseCategories.length}
@@ -349,7 +349,7 @@ export function ManageCategoriesModal({
             className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === "income"
                 ? "bg-mintRise text-slate-950 font-semibold shadow-sm"
-                : "text-zinc-400 hover:text-white"
+                : "text-luma-smoke hover:text-white"
             }`}
           >
             <span>Pemasukan</span>
@@ -357,7 +357,7 @@ export function ManageCategoriesModal({
               className={`text-xs font-sans px-2 py-0.5 rounded-full ${
                 activeTab === "income"
                   ? "bg-slate-950/25 text-slate-950 font-semibold"
-                  : "bg-white/[0.06] text-zinc-400"
+                  : "bg-white/[0.06] text-luma-smoke"
               }`}
             >
               {incomeCategories.length}
@@ -371,12 +371,12 @@ export function ManageCategoriesModal({
           className="luma-inset rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-luma-secondary flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5 text-luma-smoke" aria-hidden="true" />
               Tambah kategori {activeTab === "expense" ? "Pengeluaran" : "Pemasukan"}
             </span>
-            <span className="text-xs text-zinc-400 font-sans">
-              Badge: <span className="text-zinc-300">{getCategoryColorDef(newColor).name}</span>
+            <span className="text-xs text-luma-smoke font-sans">
+              Badge: <span className="text-luma-secondary">{getCategoryColorDef(newColor).name}</span>
             </span>
           </div>
 
@@ -394,13 +394,13 @@ export function ManageCategoriesModal({
                   ? "Contoh: Jajanan Sore, Skincare, Alat Kantor..."
                   : "Contoh: Gaji Tambahan, Dividen, Freelance..."
               }
-              className="w-full bg-obsidian-card border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-luma-ember transition"
+              className="w-full bg-obsidian-card border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-luma-smoke focus:outline-none focus:border-luma-ember transition"
             />
           </div>
 
           {/* Color Badge Picker */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+            <label className="block text-xs font-medium text-luma-smoke mb-1.5">
               Warna label
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -414,7 +414,7 @@ export function ManageCategoriesModal({
                     className={`py-1.5 px-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition cursor-pointer ${
                       isSelected
                         ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-2 ring-luma-ember/60 font-semibold shadow-xs`
-                        : "bg-obsidian-card/60 border-luma-smokeline text-zinc-400 hover:text-white hover:border-white/[0.12]"
+                        : "bg-obsidian-card/60 border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.12]"
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${c.dotClass} shrink-0`} />
@@ -459,12 +459,12 @@ export function ManageCategoriesModal({
         {/* DAFTAR KATEGORI AKTIF */}
         <div className="space-y-2.5">
           <div className="flex items-center justify-between px-1">
-            <h4 className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-zinc-400" />
+            <h4 className="text-xs font-semibold text-luma-smoke flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-luma-smoke" />
               Daftar Kategori {activeTab === "expense" ? "Pengeluaran" : "Pemasukan"} ({currentList.length})
             </h4>
             {loading && (
-              <span className="text-xs text-zinc-400 font-sans flex items-center gap-1">
+              <span className="text-xs text-luma-smoke font-sans flex items-center gap-1">
                 <Loader2 className="w-3 h-3 animate-spin text-luma-smoke" /> Memuat...
               </span>
             )}
@@ -480,7 +480,7 @@ export function ManageCategoriesModal({
           {/* Category List Scrollable Container */}
           <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
             {currentList.length === 0 && !loading ? (
-              <div className="p-8 text-center bg-obsidian-panel/50 rounded-2xl border border-luma-smokeline text-zinc-400 text-xs">
+              <div className="p-8 text-center bg-obsidian-panel/50 rounded-2xl border border-luma-smokeline text-luma-smoke text-xs">
                 Belum ada kategori {activeTab === "expense" ? "pengeluaran" : "pemasukan"}. Buat kategori baru di atas.
               </div>
             ) : (
@@ -521,7 +521,7 @@ export function ManageCategoriesModal({
                               className={`py-1 px-1.5 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition cursor-pointer ${
                                 isSel
                                   ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-2 ring-luma-ember/60 font-semibold`
-                                  : "bg-obsidian-card/70 border-luma-smokeline text-zinc-400 hover:text-white"
+                                  : "bg-obsidian-card/70 border-luma-smokeline text-luma-smoke hover:text-white"
                               }`}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${c.dotClass}`} />
@@ -579,7 +579,7 @@ export function ManageCategoriesModal({
                       </span>
 
                       <span
-                        className="text-xs font-sans text-zinc-400 bg-white/[0.03] px-2 py-0.5 rounded-md border border-luma-smokeline shrink-0"
+                        className="text-xs font-sans text-luma-smoke bg-white/[0.03] px-2 py-0.5 rounded-md border border-luma-smokeline shrink-0"
                         title={`${txCount} transaksi tercatat dengan kategori ini`}
                       >
                         {txCount} tx
@@ -592,7 +592,7 @@ export function ManageCategoriesModal({
                         type="button"
                         onClick={() => startEdit(cat)}
                         title="Edit kategori"
-                        className="p-1.5 rounded-xl text-zinc-400 hover:text-luma-ivory hover:bg-luma-coal border border-transparent transition cursor-pointer"
+                        className="p-1.5 rounded-xl text-luma-smoke hover:text-luma-ivory hover:bg-luma-coal border border-transparent transition cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -601,7 +601,7 @@ export function ManageCategoriesModal({
                         type="button"
                         onClick={() => initiateDelete(cat)}
                         title="Hapus kategori"
-                        className="p-1.5 rounded-xl text-zinc-400 hover:text-coralFall hover:bg-coralFall/10 border border-transparent hover:border-coralFall/20 transition cursor-pointer"
+                        className="p-1.5 rounded-xl text-luma-smoke hover:text-coralFall hover:bg-coralFall/10 border border-transparent hover:border-coralFall/20 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -618,7 +618,7 @@ export function ManageCategoriesModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-zinc-300 hover:text-white bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline rounded-2xl transition cursor-pointer"
+            className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-luma-secondary hover:text-white bg-obsidian-card hover:bg-obsidian-hover border border-luma-smokeline rounded-2xl transition cursor-pointer"
           >
             Selesai
           </button>
@@ -637,7 +637,7 @@ export function ManageCategoriesModal({
                 <h3 className="ai7-type-card text-white">
                   Hapus kategori &quot;{deletingCat.name}&quot;?
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-luma-smoke mt-0.5">
                   {getTxCount(deletingCat.name) > 0 ? (
                     <span>
                       Kategori ini digunakan oleh{" "}
@@ -656,7 +656,7 @@ export function ManageCategoriesModal({
             {/* If transactions exist, show fallback target selector */}
             {getTxCount(deletingCat.name) > 0 && (
               <div className="space-y-2 bg-obsidian-panel p-3.5 rounded-2xl border border-luma-smokeline">
-                <label className="block text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                <label className="block text-xs font-semibold text-luma-secondary flex items-center gap-1.5">
                   <ArrowRight className="w-3.5 h-3.5 text-luma-smoke" aria-hidden="true" />
                   Pindahkan transaksi ke kategori
                 </label>
@@ -670,7 +670,7 @@ export function ManageCategoriesModal({
                   accent="amber"
                   placeholder="Pilih kategori tujuan..."
                 />
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-luma-smoke">
                   Transaksi, tagihan rutin, atau target tabungan yang memakai &quot;{deletingCat.name}&quot; akan dialihkan ke &quot;{fallbackCategory}&quot;.
                 </p>
               </div>

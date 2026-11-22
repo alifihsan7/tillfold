@@ -35,7 +35,7 @@ export function ConfirmModal({
       maxWidth="sm"
     >
       <div className="space-y-5">
-        <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+        <p className="text-xs sm:text-sm text-luma-secondary leading-relaxed">
           {message}
         </p>
 

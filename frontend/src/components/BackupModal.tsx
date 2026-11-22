@@ -131,7 +131,7 @@ export function BackupModal({ isOpen, onClose, onRestored }: {
             aria-label="File backup Tillfold" disabled={busy} onChange={event => inspectFile(event.target.files?.[0])} />
           <button type="button" onClick={() => fileInput.current?.click()} disabled={busy} className="luma-action-secondary"><Upload size={16} />Pilih file backup</button>
           {filename && <p className="break-all text-xs text-luma-smoke">{filename}</p>}
-          {preview && <div className="space-y-4 rounded-[var(--ai7-radius-panel)] border border-luma-smokeline bg-luma-coal p-4">
+          {preview && <div className="space-y-4 rounded-3xl border border-luma-smokeline bg-luma-coal p-4">
             <dl className="grid grid-cols-2 gap-3">
               {Object.entries(preview.counts).map(([key, count]) => <div key={key}><dt className="text-xs text-luma-smoke">{labels[key] || key}</dt><dd className="font-medium">{count.toLocaleString("id-ID")}</dd></div>)}
             </dl>

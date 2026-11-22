@@ -74,7 +74,7 @@ export function SubscriptionsView({
             <h3 className="ai7-type-card text-white">
               Daftar tagihan
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-luma-smoke mt-0.5">
               {subsData.items.length} tagihan terdaftar
             </p>
           </div>
@@ -126,12 +126,12 @@ export function SubscriptionsView({
                         {sub.name}
                       </span>
                     </div>
-                    <span className="text-xs text-zinc-400 font-sans truncate block mt-0.5">{sub.category}</span>
+                    <span className="text-xs text-luma-smoke font-sans truncate block mt-0.5">{sub.category}</span>
                   </div>
                   <span
                     className={`text-xs font-sans px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap ${
                       sub.is_paid ? "bg-mintRise/10 border-mintRise/30 text-mintRise" : !sub.is_active
-                        ? "bg-white/[0.04] border-luma-smokeline text-zinc-400"
+                        ? "bg-white/[0.04] border-luma-smokeline text-luma-smoke"
                         : isExpired
                         ? "bg-coralFall/20 border-coralFall/40 text-coralFall font-semibold"
                         : isToday
@@ -156,11 +156,11 @@ export function SubscriptionsView({
                 <div>
                   <div className="ai7-type-metric text-white tracking-tight truncate">
                     {formatRupiah(sub.amount)}
-                    <span className="text-xs font-normal text-zinc-400 font-sans">
+                    <span className="text-xs font-normal text-luma-smoke font-sans">
                       {isExact ? " / periode" : isYearly ? " / tahun" : " / bulan"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-sans mt-1 truncate">
+                  <div className="flex items-center gap-1.5 text-xs text-luma-smoke font-sans mt-1 truncate">
                     {isExact ? (
                       <>
                         <Clock className="w-3.5 h-3.5 text-amberGold shrink-0" />
@@ -180,7 +180,7 @@ export function SubscriptionsView({
                 </div>
 
                 {sub.notes && (
-                  <div className="text-xs text-zinc-400 luma-readout p-2.5 rounded-xl font-sans">
+                  <div className="text-xs text-luma-smoke luma-readout p-2.5 rounded-xl font-sans">
                     {sub.notes}
                   </div>
                 )}

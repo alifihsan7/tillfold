@@ -1645,7 +1645,7 @@ export default function FinanceDashboard() {
                     {currentUser && <button type="button" role="menuitem" onClick={() => {
                       setIsBackupModalOpen(true);
                       setIsUtilitiesMenuOpen(false);
-                    }} className="luma-touch w-full flex items-center gap-2.5 rounded-[var(--ai7-radius-control)] px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer">
+                    }} className="luma-touch w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer">
                       <Download className="h-4 w-4 shrink-0" />
                       <span className="text-xs font-semibold">Backup &amp; restore</span>
                     </button>}
@@ -1661,7 +1661,7 @@ export default function FinanceDashboard() {
                               setIsUtilitiesMenuOpen(false);
                               handleSyncSheets();
                             }}
-                            className="luma-touch w-full flex items-center gap-2.5 rounded-[var(--ai7-radius-control)] px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer disabled:opacity-50 border-t border-luma-smokeline"
+                            className="luma-touch w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-luma-ivory hover:bg-white/[0.06] cursor-pointer disabled:opacity-50 border-t border-luma-smokeline"
                           >
                             <RefreshCw className={`h-4 w-4 shrink-0 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
                             <div className="text-left min-w-0">
@@ -2486,7 +2486,7 @@ export default function FinanceDashboard() {
                   <h2 className="ai7-type-section text-white tracking-tight">
                     Rekening &amp; dompet
                   </h2>
-                  <p className="text-xs text-zinc-400 mt-0.5">
+                  <p className="text-xs text-luma-smoke mt-0.5">
                     Daftar rekening bank fisik, dompet digital, dan pos simpanan kas aktif.
                   </p>
                 </div>
@@ -2733,7 +2733,7 @@ export default function FinanceDashboard() {
             </div>
             {/* Seksi 3: Navigasi CTA ke Transaksi */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border border-luma-smokeline bg-obsidian-panel/60 backdrop-blur-xs">
-              <div className="text-sm text-zinc-400">
+              <div className="text-sm text-luma-smoke">
                 Ingin melihat seluruh mutasi dan riwayat transaksi kas?
               </div>
               <button
@@ -2782,7 +2782,7 @@ export default function FinanceDashboard() {
       >
         <form onSubmit={handleCreateSubscription} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Nama tagihan / layanan
             </label>
             <input
@@ -2797,7 +2797,7 @@ export default function FinanceDashboard() {
 
           {/* Switch Mode Siklus */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold text-luma-smoke mb-2">
               Metode perhitungan jatuh tempo
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
@@ -2808,7 +2808,7 @@ export default function FinanceDashboard() {
                 className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   subBillingType === "fixed_day"
                     ? "ui-selected"
-                    : "text-zinc-400 hover:text-white"
+                    : "text-luma-smoke hover:text-white"
                 }`}
               >
                 <Clock className="w-3.5 h-3.5 shrink-0" />
@@ -2828,7 +2828,7 @@ export default function FinanceDashboard() {
                 className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   subBillingType === "exact_date"
                     ? "ui-selected"
-                    : "text-zinc-400 hover:text-white"
+                    : "text-luma-smoke hover:text-white"
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
@@ -2847,7 +2847,7 @@ export default function FinanceDashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                 Nominal / periode
               </label>
               <CurrencyInput
@@ -2862,7 +2862,7 @@ export default function FinanceDashboard() {
 
             {subBillingType === "fixed_day" ? (
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+                <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                   Jatuh tempo (tgl 1-31)
                 </label>
                 <input
@@ -2878,7 +2878,7 @@ export default function FinanceDashboard() {
               </div>
             ) : (
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+                <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                   {subBillingType === "yearly" ? "Tanggal tagihan tahunan" : "Tanggal jatuh tempo"}
                 </label>
                 <DateField label="Tanggal jatuh tempo"
@@ -2892,7 +2892,7 @@ export default function FinanceDashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                 Kategori
               </label>
               <CustomSelect
@@ -2902,7 +2902,7 @@ export default function FinanceDashboard() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                 Rekening pembayaran
               </label>
               <CustomSelect
@@ -2915,7 +2915,7 @@ export default function FinanceDashboard() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Catatan tambahan (opsional)
             </label>
             <input
@@ -2923,7 +2923,7 @@ export default function FinanceDashboard() {
               placeholder="Contoh: Dibayar otomatis"
               value={subNotes}
               onChange={(e) => setSubNotes(e.target.value)}
-              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition placeholder:text-zinc-400"
+              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition placeholder:text-luma-smoke"
             />
           </div>
 
@@ -2931,7 +2931,7 @@ export default function FinanceDashboard() {
             <button
               type="button"
               onClick={() => setIsSubModalOpen(false)}
-              className="px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-400 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
+              className="px-4 py-2.5 text-xs sm:text-sm font-medium text-luma-smoke hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
             >
               Batal
             </button>
@@ -3147,13 +3147,13 @@ export default function FinanceDashboard() {
           <div className="w-7 h-7 rounded-xl bg-amberGold/15 border border-amberGold/30 flex items-center justify-center text-amberGold shrink-0">
             <CheckCircle2 className="w-4 h-4" />
           </div>
-          <div className="text-xs sm:text-sm font-medium text-zinc-100 pr-2">
+          <div className="text-xs sm:text-sm font-medium text-luma-ivory pr-2">
             {toastMessage}
           </div>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg transition"
+            className="text-luma-smoke hover:text-luma-ivory p-1 rounded-lg transition"
           >
             <X className="w-3.5 h-3.5" />
           </button>

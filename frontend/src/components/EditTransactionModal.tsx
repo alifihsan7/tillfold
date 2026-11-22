@@ -115,7 +115,7 @@ export function EditTransactionModal({
         )}
 
         <div>
-          <label className="block text-xs font-sans text-zinc-400 mb-2">
+          <label className="block text-xs font-sans text-luma-smoke mb-2">
             Tipe transaksi
           </label>
           {isTransfer ? <p className="text-sm text-luma-smoke">{type === "transfer_in" ? "Transfer masuk" : "Transfer keluar"}. Nominal dan tanggal akan diperbarui pada kedua sisi transfer.</p> : <SegmentedControl fill label="Jenis transaksi" value={type === "income" ? "income" : "expense"} onChange={setType} options={[
@@ -125,7 +125,7 @@ export function EditTransactionModal({
         </div>
 
         <div>
-          <label className="block text-xs font-sans text-zinc-400 mb-1.5">
+          <label className="block text-xs font-sans text-luma-smoke mb-1.5">
             Nominal transaksi
           </label>
           <CurrencyInput
@@ -138,7 +138,7 @@ export function EditTransactionModal({
         </div>
 
         <div>
-          <label className="block text-xs font-sans text-zinc-400 mb-1.5">
+          <label className="block text-xs font-sans text-luma-smoke mb-1.5">
             Tanggal transaksi
           </label>
           <DateField label="Tanggal transaksi"
@@ -149,7 +149,7 @@ export function EditTransactionModal({
         </div>
 
         <div>
-          <label className="block text-xs font-sans text-zinc-400 mb-1.5">
+          <label className="block text-xs font-sans text-luma-smoke mb-1.5">
             Rekening
           </label>
           <CustomSelect
@@ -160,7 +160,7 @@ export function EditTransactionModal({
         </div>
 
         <div>
-          <label className="block text-xs font-sans text-zinc-400 mb-1.5">
+          <label className="block text-xs font-sans text-luma-smoke mb-1.5">
             Kategori
           </label>
           <CustomSelect
@@ -172,7 +172,7 @@ export function EditTransactionModal({
         </div>
 
         <div>
-          <label className="block text-xs font-sans text-zinc-400 mb-1.5">
+          <label className="block text-xs font-sans text-luma-smoke mb-1.5">
             Keterangan
           </label>
           <input

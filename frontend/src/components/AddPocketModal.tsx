@@ -58,7 +58,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
           </div>
         )}
         <div className="space-y-1.5">
-          <label htmlFor="pocket-name" className="text-xs font-semibold text-zinc-300">
+          <label htmlFor="pocket-name" className="text-xs font-semibold text-luma-secondary">
             Nama kantong
           </label>
           <input
@@ -73,7 +73,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
           />
         </div>
         <fieldset disabled={saving} className="space-y-1.5">
-          <legend className="text-xs font-semibold text-zinc-300">Jenis kantong</legend>
+          <legend className="text-xs font-semibold text-luma-secondary">Jenis kantong</legend>
           <CustomSelect
             value={role}
             onChange={setRole}
@@ -88,7 +88,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
           />
         </fieldset>
         <fieldset disabled={saving} className="space-y-1.5">
-          <legend className="text-xs font-semibold text-zinc-300">Alokasi awal</legend>
+          <legend className="text-xs font-semibold text-luma-secondary">Alokasi awal</legend>
           <CurrencyInput value={amount} onChange={setAmount} placeholder="0" accent="amber" />
           <p className="text-xs text-luma-smoke mt-1.5">
             Nominal ini ikut berubah saat saldo dipindahkan antar-kantong.

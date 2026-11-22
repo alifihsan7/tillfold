@@ -453,7 +453,7 @@ export default function PaycheckModal({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                 Total uang masuk
               </label>
               <CurrencyInput
@@ -466,7 +466,7 @@ export default function PaycheckModal({
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="paycheck-cycle-date" className="block text-xs font-semibold text-zinc-400">
+                <label htmlFor="paycheck-cycle-date" className="block text-xs font-semibold text-luma-smoke">
                   Tanggal gajian
                 </label>
               </div>
@@ -530,17 +530,17 @@ export default function PaycheckModal({
           <div className="p-5 rounded-3xl luma-inset space-y-3.5 shadow-sm">
             <div className="flex justify-between items-center pb-3 border-b border-luma-smokeline">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-zinc-400 ">
+                <span className="text-xs font-semibold text-luma-smoke ">
                   Pembagian (bisa diubah)
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-sans font-semibold bg-obsidian-card text-zinc-300 border border-luma-smokeline">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-sans font-semibold bg-obsidian-card text-luma-secondary border border-luma-smokeline">
                   {buckets.length} Pos
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => initAmounts(numTotal, buckets)}
-                className="text-xs font-medium text-zinc-400 hover:text-mintRise flex items-center gap-1 transition cursor-pointer"
+                className="text-xs font-medium text-luma-smoke hover:text-mintRise flex items-center gap-1 transition cursor-pointer"
                 title="Kembalikan ke formula persentase standar"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -563,7 +563,7 @@ export default function PaycheckModal({
                           <span className="font-semibold text-sm text-white truncate">
                             {b.account}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full text-xs font-sans text-zinc-400 bg-obsidian-panel border border-luma-smokeline">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-sans text-luma-smoke bg-obsidian-panel border border-luma-smokeline">
                             {b.percentage}%
                           </span>
                           {config.use_gate && b.via_gate && (
@@ -572,7 +572,7 @@ export default function PaycheckModal({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-zinc-400 truncate mt-0.5">
+                        <p className="text-xs text-luma-smoke truncate mt-0.5">
                           {b.purpose}
                         </p>
                       </div>
@@ -597,11 +597,11 @@ export default function PaycheckModal({
             {/* Total Balance Status Banner */}
             <div className="pt-3 border-t border-luma-smokeline flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-400">Total terbagi:</span>
+                <span className="text-xs text-luma-smoke">Total terbagi:</span>
                 <span className="font-sans font-semibold text-sm text-white">
                   Rp {totalAllocated.toLocaleString("id-ID")}
                 </span>
-                <span className="text-xs text-zinc-400">/ Rp {numTotal.toLocaleString("id-ID")}</span>
+                <span className="text-xs text-luma-smoke">/ Rp {numTotal.toLocaleString("id-ID")}</span>
               </div>
 
               <div>
@@ -632,9 +632,9 @@ export default function PaycheckModal({
                 setErrorMsg(null);
                 setView("customize");
               }}
-              className="text-xs font-semibold text-zinc-300 hover:text-white flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border border-luma-smokeline hover:border-white/[0.16] transition cursor-pointer"
+              className="text-xs font-semibold text-luma-secondary hover:text-white flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border border-luma-smokeline hover:border-white/[0.16] transition cursor-pointer"
             >
-              <Settings2 className="w-4 h-4 text-zinc-400" />
+              <Settings2 className="w-4 h-4 text-luma-smoke" />
               <span>Ubah alokasi</span>
             </button>
 
@@ -667,14 +667,14 @@ export default function PaycheckModal({
           <div className="p-5 rounded-3xl luma-inset space-y-3 shadow-sm">
             <div className="flex justify-between items-center">
               <div>
-                <span className="text-xs font-semibold text-zinc-400 ">
+                <span className="text-xs font-semibold text-luma-smoke ">
                   Status pembagian
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="font-sans font-semibold text-lg sm:text-xl text-white">
                     Rp {activeSession.total_amount.toLocaleString("id-ID")}
                   </span>
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-xs text-luma-smoke">
                     • Siklus {activeSession.date}
                   </span>
                 </div>
@@ -683,7 +683,7 @@ export default function PaycheckModal({
                 <span className="text-xs font-semibold font-sans text-mintRise">
                   {activeSession.completed_steps} / {activeSession.total_steps} Selesai
                 </span>
-                <div className="text-xs text-zinc-400">
+                <div className="text-xs text-luma-smoke">
                   {activeSession.progress_percentage}% terdistribusi
                 </div>
               </div>
@@ -707,7 +707,7 @@ export default function PaycheckModal({
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm text-mintRise">Pembagian gaji selesai</h4>
-                  <p className="text-xs text-zinc-300 mt-0.5">
+                  <p className="text-xs text-luma-secondary mt-0.5">
                     Seluruh transfer alokasi berhasil dicatat ke saldo rekening.
                   </p>
                 </div>
@@ -785,14 +785,14 @@ export default function PaycheckModal({
                                 <span
                                   className={`font-semibold text-sm truncate ${
                                     step.is_done
-                                      ? "text-zinc-400 line-through"
+                                      ? "text-luma-smoke line-through"
                                       : "text-white"
                                   }`}
                                 >
                                   {step.title}
                                 </span>
                                 {step.badge && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-obsidian-panel border border-luma-smokeline text-zinc-300 shrink-0">
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-obsidian-panel border border-luma-smokeline text-luma-secondary shrink-0">
                                     {step.badge}
                                   </span>
                                 )}
@@ -802,7 +802,7 @@ export default function PaycheckModal({
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-zinc-400 truncate mt-0.5">
+                              <p className="text-xs text-luma-smoke truncate mt-0.5">
                                 {step.description}
                               </p>
                             </div>
@@ -813,7 +813,7 @@ export default function PaycheckModal({
                             <span
                               className={`font-sans font-semibold text-sm ${
                                 step.is_done
-                                  ? "text-zinc-400"
+                                  ? "text-luma-smoke"
                                   : "text-mintRise"
                               }`}
                             >
@@ -848,7 +848,7 @@ export default function PaycheckModal({
                   type="button"
                   onClick={handleCompleteAll}
                   disabled={loading}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-300 hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-luma-secondary hover:text-white border border-luma-smokeline hover:border-white/[0.16] rounded-2xl transition cursor-pointer"
                 >
                   Tandai semua selesai
                 </button>
@@ -893,7 +893,7 @@ export default function PaycheckModal({
           {/* Buckets Editor */}
           <div className="p-5 rounded-3xl luma-inset space-y-3 shadow-sm">
             <div className="flex justify-between items-center pb-2 border-b border-luma-smokeline">
-              <span className="text-xs font-semibold text-zinc-400 ">
+              <span className="text-xs font-semibold text-luma-smoke ">
                 Pembagian gaji
               </span>
               <button
@@ -921,7 +921,7 @@ export default function PaycheckModal({
               {customBuckets.map((b, idx) => (
                 <div
                   key={idx}
-                  className="space-y-2 rounded-[var(--ai7-radius-control)] border border-luma-smokeline p-3"
+                  className="space-y-2 rounded-xl border border-luma-smokeline p-3"
                 >
                   <div className="grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,7rem)] gap-2 sm:grid-cols-[minmax(0,1.2fr)_6rem_minmax(0,1fr)]">
                     <label className="block min-w-0 space-y-1">
@@ -975,7 +975,7 @@ export default function PaycheckModal({
                   </div>
 
                   <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                    {customConfig.use_gate && <label className="text-xs text-zinc-400 flex items-center gap-1 cursor-pointer">
+                    {customConfig.use_gate && <label className="text-xs text-luma-smoke flex items-center gap-1 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={b.via_gate}
@@ -994,7 +994,7 @@ export default function PaycheckModal({
                       onClick={() => {
                         setCustomBuckets(customBuckets.filter((_, i) => i !== idx));
                       }}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-coralFall transition cursor-pointer"
+                      className="p-1.5 rounded-lg text-luma-smoke hover:text-coralFall transition cursor-pointer"
                       aria-label={`Hapus alokasi ${b.account || idx + 1}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />

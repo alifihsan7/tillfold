@@ -17,6 +17,7 @@ const config: Config = {
           ivory: "rgb(var(--luma-ivory-rgb) / <alpha-value>)",
           ember: "rgb(var(--luma-ember-rgb) / <alpha-value>)",
           smoke: "rgb(var(--luma-smoke-rgb) / <alpha-value>)",
+          secondary: "var(--fold-overview-secondary)",
           smokeline: "rgb(var(--luma-smokeline-rgb) / <alpha-value>)",
           sage: "rgb(var(--luma-sage-rgb) / <alpha-value>)",
           coral: "rgb(var(--luma-coral-rgb) / <alpha-value>)",

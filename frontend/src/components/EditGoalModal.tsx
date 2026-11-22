@@ -192,7 +192,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
 
         {/* Nama Target */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nama target <span className="text-coralFall">*</span>
           </label>
           <input
@@ -206,7 +206,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
 
         {/* Nominal Target */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nominal target (Rp) <span className="text-coralFall">*</span>
           </label>
           <CurrencyInput
@@ -222,7 +222,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
         {/* 2 Kolom: Rekening & Kategori */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Sinkronisasi rekening
             </label>
             <CustomSelect
@@ -234,7 +234,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Kategori
             </label>
             <CustomSelect
@@ -247,7 +247,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
 
         {!linkedAccount && (
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Saldo terkumpul saat ini (Rp)
             </label>
             <CurrencyInput
@@ -261,7 +261,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
 
         {/* Tema Warna - Grid 5 Kolom Proporsional */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Tema warna aksen
           </label>
           <div className="grid grid-cols-5 gap-2 pt-0.5">
@@ -273,7 +273,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
                 className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-2xl border text-xs font-medium transition cursor-pointer ${
                   color === c.value
                     ? "ui-selected"
-                    : "bg-obsidian-panel border-luma-smokeline text-zinc-400 hover:text-white hover:border-white/[0.16]"
+                    : "bg-obsidian-panel border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.16]"
                 }`}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${c.dot} shrink-0`} />
@@ -286,7 +286,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
 
         {/* Pilih Ikon */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Pilih ikon
           </label>
           <div className="grid grid-cols-6 gap-2 pt-0.5">
@@ -302,7 +302,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
                   className={`h-11 rounded-2xl flex items-center justify-center transition cursor-pointer ${
                     isSelected
                       ? "ui-selected"
-                      : "bg-obsidian-panel border border-luma-smokeline text-zinc-400 hover:text-white hover:border-white/[0.16]"
+                      : "bg-obsidian-panel border border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.16]"
                   }`}
                 >
                   <IconComp className="w-5 h-5" />
@@ -315,7 +315,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
         {/* 2 Kolom: Tanggal & Catatan */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Target tanggal (opsional)
             </label>
             <DateField label="Target tanggal"
@@ -325,7 +325,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Catatan / rencana (opsional)
             </label>
             <input
@@ -333,7 +333,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
               placeholder="Strategi alokasi atau tujuan..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-zinc-400"
+              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-luma-smoke"
             />
           </div>
         </div>

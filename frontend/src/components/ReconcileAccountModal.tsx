@@ -96,11 +96,11 @@ export function ReconcileAccountModal({ accountId, onClose, onSuccess }: {
             </label>
             <div className="space-y-2"><label htmlFor="reconcile-note">Catatan penyesuaian</label>
               <textarea id="reconcile-note" value={note} onChange={event => setNote(event.target.value)} maxLength={120} required
-                className="w-full rounded-[var(--ai7-radius-control)] border border-luma-smokeline bg-luma-coal p-3 text-base" /></div>
+                className="w-full rounded-xl border border-luma-smokeline bg-luma-coal p-3 text-base" /></div>
             <p className="text-xs text-luma-smoke">Penyesuaian disimpan di riwayat. Koreksi berikutnya dilakukan lewat rekonsiliasi baru.</p>
             <button type="submit" disabled={!valid || !note.trim()} className="luma-action-primary">Periksa selisih</button>
           </form> : <div className="space-y-4">
-            <dl className="space-y-3 rounded-[var(--ai7-radius-panel)] border border-luma-smokeline bg-luma-coal p-4">
+            <dl className="space-y-3 rounded-3xl border border-luma-smokeline bg-luma-coal p-4">
               <div className="flex flex-wrap justify-between gap-2"><dt>Saldo aktual</dt><dd className="font-medium tabular-nums">{rupiah(actual)}</dd></div>
               <div className="flex flex-wrap justify-between gap-2"><dt>Selisih</dt><dd className="font-medium tabular-nums">{difference > 0 ? "+" : ""}{rupiah(difference)}</dd></div>
             </dl>

@@ -187,7 +187,7 @@ export function InternalLoansWidget({
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-[10px] bg-luma-coal border border-luma-smokeline flex items-center justify-center text-luma-smoke shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-luma-coal border border-luma-smokeline flex items-center justify-center text-luma-smoke shrink-0">
             <HandCoins className="w-5 h-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">

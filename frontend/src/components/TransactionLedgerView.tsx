@@ -222,7 +222,7 @@ export function TransactionLedgerView({
       <div className="fold-metric-grid ai7-metric-grid grid gap-4">
         {/* Total Transaksi */}
         <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-zinc-400">
+          <div className="flex items-center justify-between gap-2 text-luma-smoke">
             <span className="text-xs font-medium truncate">Total transaksi</span>
             <Receipt className="w-4 h-4 text-luma-smoke shrink-0" />
           </div>
@@ -232,10 +232,10 @@ export function TransactionLedgerView({
             ) : (
               <div className="ai7-type-metric text-white tracking-tight">
                 {stats.count}{" "}
-                <span className="text-xs font-normal text-zinc-400">item</span>
+                <span className="text-xs font-normal text-luma-smoke">item</span>
               </div>
             )}
-            <p className="text-xs text-zinc-400 mt-0.5 truncate">
+            <p className="text-xs text-luma-smoke mt-0.5 truncate">
               {activeFiltersCount > 0 ? "Berdasarkan filter aktif" : "Seluruh catatan kas"}
             </p>
           </div>
@@ -243,7 +243,7 @@ export function TransactionLedgerView({
 
         {/* Total Pemasukan */}
         <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-zinc-400">
+          <div className="flex items-center justify-between gap-2 text-luma-smoke">
             <span className="text-xs font-medium truncate">Total pemasukan</span>
             <div className="w-6 h-6 rounded-full bg-mintRise/15 border border-mintRise/30 flex items-center justify-center text-mintRise shrink-0">
               <ArrowDownRight className="w-3.5 h-3.5" />
@@ -257,7 +257,7 @@ export function TransactionLedgerView({
                 +{formatRupiah(stats.income)}
               </div>
             )}
-            <p className="text-xs text-zinc-400 mt-0.5 truncate">
+            <p className="text-xs text-luma-smoke mt-0.5 truncate">
               {stats.opening > 0 ? `Tanpa saldo awal ${formatRupiah(stats.opening)}` : "Pemasukan sesuai filter"}
             </p>
           </div>
@@ -265,7 +265,7 @@ export function TransactionLedgerView({
 
         {/* Total Pengeluaran */}
         <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-zinc-400">
+          <div className="flex items-center justify-between gap-2 text-luma-smoke">
             <span className="text-xs font-medium truncate">Total pengeluaran</span>
             <div className="w-6 h-6 rounded-full bg-coralFall/15 border border-coralFall/30 flex items-center justify-center text-coralFall shrink-0">
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ export function TransactionLedgerView({
                 -{formatRupiah(stats.expense)}
               </div>
             )}
-            <p className="text-xs text-zinc-400 mt-0.5 truncate">
+            <p className="text-xs text-luma-smoke mt-0.5 truncate">
               Pengeluaran sesuai filter
             </p>
           </div>
@@ -287,7 +287,7 @@ export function TransactionLedgerView({
 
         {/* Arus Kas Bersih (Net Flow) */}
         <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-zinc-400">
+          <div className="flex items-center justify-between gap-2 text-luma-smoke">
             <span className="text-xs font-medium truncate">Arus kas bersih</span>
             <div className="w-6 h-6 rounded-full bg-cyanHub/15 border border-cyanHub/30 flex items-center justify-center text-cyanHub shrink-0">
               <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -305,7 +305,7 @@ export function TransactionLedgerView({
                 {formatSignedRupiah(stats.net, stats.net >= 0, formatRupiah)}
               </div>
             )}
-            <p className="text-xs text-zinc-400 mt-0.5 truncate">
+            <p className="text-xs text-luma-smoke mt-0.5 truncate">
               {stats.net >= 0 ? "Surplus kas terfilter" : "Defisit kas terfilter"}
             </p>
           </div>
@@ -329,7 +329,7 @@ export function TransactionLedgerView({
           {/* Search Bar & Quick Add */}
           <div className="flex items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
             <div className="relative flex-1 lg:w-64">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
@@ -338,13 +338,13 @@ export function TransactionLedgerView({
                   setCurrentPage(1);
                 }}
                 placeholder="Cari transaksi, ket, atau akun..."
-                className="w-full bg-obsidian-card border border-luma-smokeline rounded-2xl pl-10 pr-8 py-2 text-xs sm:text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-amberGold transition font-sans"
+                className="w-full bg-obsidian-card border border-luma-smokeline rounded-2xl pl-10 pr-8 py-2 text-xs sm:text-sm text-white placeholder-luma-smoke focus:outline-none focus:border-amberGold transition font-sans"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-0.5 rounded cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-luma-smoke hover:text-white p-0.5 rounded cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -358,7 +358,7 @@ export function TransactionLedgerView({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-luma-smokeline">
           {/* Filter Tipe Transaksi */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-xs font-medium text-luma-smoke mb-1">
               Tipe transaksi
             </label>
             <CustomSelect
@@ -375,7 +375,7 @@ export function TransactionLedgerView({
 
           {/* Filter Kategori */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-xs font-medium text-luma-smoke mb-1">
               Kategori
             </label>
             <CustomSelect
@@ -392,7 +392,7 @@ export function TransactionLedgerView({
 
           {/* Filter Rentang Tanggal */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-xs font-medium text-luma-smoke mb-1">
               Rentang waktu
             </label>
             <CustomSelect
@@ -409,7 +409,7 @@ export function TransactionLedgerView({
 
           {/* Pengurutan (Sort By) */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">
+            <label className="block text-xs font-medium text-luma-smoke mb-1">
               Urutkan berdasarkan
             </label>
             <CustomSelect
@@ -428,7 +428,7 @@ export function TransactionLedgerView({
         {/* Conditional Custom Date Range Picker */}
         {dateFilter === "custom" && (
           <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-xs text-zinc-300">
+            <div className="flex items-center gap-2 text-xs text-luma-secondary">
               <Calendar className="w-4 h-4 text-amberGold shrink-0" />
               <span className="font-medium">Rentang Tanggal Kustom:</span>
             </div>
@@ -440,7 +440,7 @@ export function TransactionLedgerView({
                   setCurrentPage(1);
                 }}
               />
-              <span className="text-zinc-400 text-xs">s/d</span>
+              <span className="text-luma-smoke text-xs">s/d</span>
               <DateField label="Tanggal selesai"
                 value={customEndDate}
                 onChange={(dateValue) => {
@@ -455,7 +455,7 @@ export function TransactionLedgerView({
         {/* Active Filters Bar & Reset Action */}
         {activeFiltersCount > 0 && (
           <div className="flex items-center justify-between pt-1 text-xs">
-            <div className="flex items-center gap-2 text-zinc-400 font-medium">
+            <div className="flex items-center gap-2 text-luma-smoke font-medium">
               <Filter className="w-3.5 h-3.5 text-amberGold" />
               <span>
                 Menampilkan hasil dengan{" "}
@@ -465,7 +465,7 @@ export function TransactionLedgerView({
             <button
               type="button"
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-zinc-300 hover:text-coralFall hover:bg-coralFall/10 border border-luma-smokeline hover:border-coralFall/30 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-luma-secondary hover:text-coralFall hover:bg-coralFall/10 border border-luma-smokeline hover:border-coralFall/30 transition cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
               Reset semua filter
@@ -487,7 +487,7 @@ export function TransactionLedgerView({
 
         {/* 4. PAGINATION FOOTER */}
         {history.total > pageSize && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 pt-1 text-xs text-zinc-400 font-sans">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 pt-1 text-xs text-luma-smoke font-sans">
             <div>
               Menampilkan{" "}
               <strong className="text-white">

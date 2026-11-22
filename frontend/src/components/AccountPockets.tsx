@@ -447,7 +447,7 @@ export function Pockets({
                           className={`h-full transition-all duration-500 rounded-full ${status.bar}`}
                         />
                       </div>
-                      <div className="text-xs text-zinc-400 tabular-nums">
+                      <div className="text-xs text-luma-smoke tabular-nums">
                         {balance >= target ? (
                           <span className="text-luma-sage font-medium">
                             Target terpenuhi penuh
@@ -498,7 +498,7 @@ export function Pockets({
                     <button
                       type="button"
                       onClick={() => setLinkPocketId(pocket.id)}
-                      className="text-right text-zinc-500 hover:text-luma-ivory transition cursor-pointer"
+                      className="text-right text-luma-smoke hover:text-luma-ivory transition cursor-pointer"
                       aria-label={`Atur hubungan tagihan ${pocket.name}`}
                     >
                       {pocket.subscription_id ? "Atur tagihan" : "Hubungkan"}

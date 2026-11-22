@@ -63,10 +63,10 @@ export function getCategoryColorDef(colorKey?: string | null): CategoryColorDef 
     return {
       id: "slateText",
       name: "Muted Slate",
-      dotClass: "bg-zinc-400",
+      dotClass: "bg-luma-smoke",
       badgeBg: "bg-white/[0.06]",
       badgeBorder: "border-white/[0.12]",
-      badgeText: "text-zinc-300",
+      badgeText: "text-luma-secondary",
     };
   }
 
@@ -89,10 +89,10 @@ export function getCategoryColorDef(colorKey?: string | null): CategoryColorDef 
   return {
     id: "slateText",
     name: "Muted Slate",
-    dotClass: "bg-zinc-400",
+    dotClass: "bg-luma-smoke",
     badgeBg: "bg-white/[0.06]",
     badgeBorder: "border-white/[0.12]",
-    badgeText: "text-zinc-300",
+    badgeText: "text-luma-secondary",
   };
 }
 

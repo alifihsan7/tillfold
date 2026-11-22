@@ -155,7 +155,7 @@ export function SmartBudgetEnvelopes({
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span
                       aria-hidden="true"
-                      className="w-8 h-8 rounded-[var(--ai7-radius-control)] bg-luma-coal border border-luma-smokeline flex items-center justify-center shrink-0"
+                      className="w-8 h-8 rounded-xl bg-luma-coal border border-luma-smokeline flex items-center justify-center shrink-0"
                     >
                       <Wallet className={`w-3.5 h-3.5 ${isIcon ? "text-luma-ember" : "text-luma-smoke"}`} />
                     </span>

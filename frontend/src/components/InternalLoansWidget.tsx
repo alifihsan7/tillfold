@@ -295,25 +295,25 @@ export function InternalLoansWidget({
                       <span className="text-xs font-semibold text-luma-smoke font-mono">
                         #{loan.id}
                       </span>
-                      <span className="text-[11px] text-luma-smoke">
+                      <span className="text-xs text-luma-smoke">
                         {formatDateIndo(loan.created_at)}
                       </span>
                     </div>
 
                     <div>
                       {isActive && (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-luma-gold/15 text-luma-gold border border-luma-gold/30">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-luma-gold/15 text-luma-gold border border-luma-gold/30">
                           Aktif Terutang
                         </span>
                       )}
                       {isSettled && (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-luma-sage/15 text-luma-sage border border-luma-sage/30 flex items-center gap-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-luma-sage/15 text-luma-sage border border-luma-sage/30 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
                           <span>Lunas</span>
                         </span>
                       )}
                       {isCancelled && (
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/[0.06] text-luma-smoke border border-luma-smokeline flex items-center gap-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/[0.06] text-luma-smoke border border-luma-smokeline flex items-center gap-1">
                           <Ban className="w-3 h-3" />
                           <span>Dibatalkan</span>
                         </span>
@@ -325,14 +325,14 @@ export function InternalLoansWidget({
                   <div className="p-3 rounded-xl bg-black/20 border border-luma-smokeline/40 flex items-center justify-between gap-2">
                     {/* Sumber / Kreditor */}
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] uppercase font-semibold text-luma-smoke tracking-wider block">
+                      <span className="text-xs uppercase font-semibold text-luma-smoke tracking-wider block">
                         Asal (Kreditor)
                       </span>
                       <p className="text-xs sm:text-sm font-semibold text-luma-ivory truncate mt-0.5">
                         {loan.source_account_name}
                       </p>
                       {loan.source_pocket_name && (
-                        <span className="text-[11px] text-luma-smoke truncate block">
+                        <span className="text-xs text-luma-smoke truncate block">
                           Kantong: {loan.source_pocket_name}
                         </span>
                       )}
@@ -344,14 +344,14 @@ export function InternalLoansWidget({
 
                     {/* Peminjam / Debitur */}
                     <div className="min-w-0 flex-1 text-right">
-                      <span className="text-[10px] uppercase font-semibold text-luma-smoke tracking-wider block">
+                      <span className="text-xs uppercase font-semibold text-luma-smoke tracking-wider block">
                         Tujuan (Debitur)
                       </span>
                       <p className="text-xs sm:text-sm font-semibold text-luma-ivory truncate mt-0.5">
                         {loan.target_account_name}
                       </p>
                       {loan.target_pocket_name && (
-                        <span className="text-[11px] text-luma-smoke truncate block">
+                        <span className="text-xs text-luma-smoke truncate block">
                           Kantong: {loan.target_pocket_name}
                         </span>
                       )}
@@ -362,12 +362,12 @@ export function InternalLoansWidget({
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-baseline gap-2">
                       <span className="text-xs text-luma-smoke">Sisa pinjaman</span>
-                      <span className="text-base sm:text-lg font-mono font-bold text-luma-ivory tabular-nums">
+                      <span className="text-base sm:text-lg font-bold text-luma-ivory tabular-nums">
                         {formatRupiah(loan.remaining_amount)}
                       </span>
                     </div>
 
-                    <div className="flex justify-between text-xs text-luma-smoke font-mono tabular-nums">
+                    <div className="flex justify-between text-xs text-luma-smoke tabular-nums">
                       <span>Total Awal: {formatRupiah(loan.amount)}</span>
                       {settledPct > 0 && <span>{settledPct}% Terlunasi</span>}
                     </div>
@@ -404,7 +404,7 @@ export function InternalLoansWidget({
 
                 {/* Actions row */}
                 <div className="pt-3 border-t border-luma-smokeline/60 flex items-center justify-between gap-2 mt-2">
-                  <div className="text-[11px] text-luma-smoke">
+                  <div className="text-xs text-luma-smoke">
                     {loan.settled_at && (
                       <span className="flex items-center gap-1 text-luma-sage">
                         <Clock className="w-3 h-3" />

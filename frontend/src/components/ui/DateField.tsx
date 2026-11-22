@@ -171,7 +171,7 @@ export function DateField({ id, label, value, onChange, min, max, required }: Pr
             </div>
           )}
           {view === "days" && <div className="grid grid-cols-7 gap-px text-center">
-            {["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"].map((day) => <span key={day} aria-hidden="true" className="py-1 text-[10px] text-luma-smoke">{day}</span>)}
+            {["Sn", "Sl", "Rb", "Km", "Jm", "Sb", "Mg"].map((day) => <span key={day} aria-hidden="true" className="py-1 text-xs text-luma-smoke">{day}</span>)}
             {Array.from({ length: offset }, (_, index) => <span key={`blank-${index}`} />)}
             {Array.from({ length: days.getUTCDate() }, (_, index) => {
               const day = index + 1;

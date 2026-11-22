@@ -1,37 +1,128 @@
-# ai7.finance design direction
+# Tillfold design direction: Fold 2
 
-Reading this as: a personal-finance dashboard for daily spending decisions, using the owner's Ink & Silver palette choice and glass reference. ENERGY 1 / RHYTHM 2 / MOTION 1.
+Tillfold is a personal-finance dashboard for daily spending decisions. Fold 2 is the live design language. It replaced the earlier Ink & Silver direction (glass inset, 20 px panels, no entrance motion). The legacy tokens in `globals.css` still exist as a compatibility layer, but Fold 2 values win inside `.tillfold-fold`.
 
-The owner's reference and Luma design system in this conversation supply the direction. Anti-slop filters the implementation without replacing that direction.
+Source of truth: `frontend/src/app/fold2.css` for tokens and Fold components, `frontend/src/app/globals.css` for legacy tokens, type roles and motion tokens. If this document and the CSS disagree, fix the CSS or this document in the same change.
 
-| Decision | Purpose |
+## Principles
+
+- Neutral surfaces; semantic color only for money direction and status.
+- Pill-shaped actions, large soft containers, flat panels. Elevation belongs to overlays and the stacked wallet.
+- Missing data must never look like a real zero balance or a safe spending recommendation. Guest, loading, failure and unset-budget states stay explicit.
+- Motion confirms a change or orients the reader. It never moves financial figures while they are being read.
+
+## Color
+
+All Fold colors are `--fold-*` tokens defined on `:root` (dark) and `.light`. Components use the tokens, or the legacy aliases that Fold 2 remaps (`--luma-*`, `--obsidian-*`, `--slate-*`). Do not hardcode hex values in components.
+
+| Role | Dark | Light |
+| --- | --- | --- |
+| Canvas `--fold-canvas` | #171a1f | #e4e7eb |
+| Surface `--fold-surface` (panels, dialogs) | #23272e | #ffffff |
+| Panel `--fold-panel` (insets, rows on hover, chips) | #2d323a | #f2f4f6 |
+| Edge `--fold-edge` (dividers) | #3b424d | #d6dbe1 |
+| Selected `--fold-selected` | #3b414a | #eceff2 |
+| Text `--fold-overview-text` | #f3f5f7 | #111419 |
+| Secondary / muted text | #d5dae1 / #aab2bd | #48505b / #5a626d |
+| Positive (income) | #b9dfc9 | #147a46 |
+| Negative (expense) | #ff9e96 | #b3352e |
+| Primary action `--fold-primary` / text | #eef1f4 / #15181d | #15181d / #ffffff |
+| Field fill / edge | #2c323a / #858d99 | #f0f2f5 / #a2aab5 |
+| Focus ring `--fold-focus` | #a8c0ff | #2d5ad6 |
+
+The hero panel is always ink (`--fold-ink` #15181d, text `--fold-on-ink`) in both themes, with a folded top-right corner (`--fold-corner`). Mint and coral inside it use `--fold-mint` and `--fold-coral`.
+
+Account colors appear only as a small identifying dot. User-selected category colors keep their meaning. Both themes share the same semantic roles.
+
+## Shape
+
+| Element | Radius |
 | --- | --- |
-| Ink canvas #151517, pale text #f3f3f5 | Keep the app neutral and financial values readable. |
-| Sidebar #0e0e10, panels #232326, balance gradient #393940 to #29292f | Separate navigation and supporting information, with a subtle silver sheen marking the primary balance. |
-| Silver #d4d5dc for selected navigation; green #abd5bd for income and coral #e9a79f for expenses | Keep interface accents neutral and reserve semantic color for financial direction and status. |
-| One glass inset within the balance panel | Group income and expense as context for the balance, without blurring every surface. |
-| Existing local Geist Sans, weights 400 / 500 / 600 | Keep labels and long rupiah amounts readable, without another font download. Tabular numerals align amounts; interface text and money do not use monospace. |
-| Balance, daily spending, account strip, transaction list | Answer what is available, what can be spent, where it is, and what changed. |
-| 28 px main panel, 20 px supporting panels, 10 px controls | Distinguish containers from controls; avoid making every element a pill. |
-| 8 / 12 / 16 / 24 / 32 px spacing | Keep related amounts close and independent decisions apart. |
-| Eye toggle, plus, ledger direction icons | Communicate privacy, adding an entry, and money direction. Other button arrows are unnecessary. |
-| Hover and pressed feedback, no entrance animation | Confirm actions without moving financial information while it is being read. |
-| Phone stack, tablet pair, desktop balance and side column | Reflow when financial labels and amounts stop fitting. |
-| Initial-based avatar and product-name wordmark | Identify the signed-in person and product without inventing a logo or portrait. |
-| Guest, loading, failure, unset-budget states | Missing data must not look like a real zero balance or a safe spending recommendation. |
+| Hero panel | 30 px (26 px on phones) |
+| Panels, cards, data states | 28 px |
+| Dialogs and bottom sheets | 32 px (sheets round the top corners only) |
+| Menus, popups, calendar | 20 px |
+| Inset readouts and legends | 14–20 px |
+| Fields, selects, date and currency wrappers | 14 px |
+| Buttons, chips, segments, icon buttons, badges, topbar | 999 px |
+| Segmented and tab group frames | 22 px (inner tabs are pills) |
+| Transaction rows | 18 px |
+| Avatars, progress tracks | circular |
 
-Light mode uses neutral paper #f3f3f5, ink #24242b and solid surfaces. The balance panel uses silver #dcdce3. Both themes share the same semantic color roles.
+Borders are mostly absent: panels sit on the canvas with no border and no shadow. Form fields are the exception and always carry a visible `--fold-field-edge` border drawn on the outermost wrapper.
 
-Scope of this iteration: dashboard overview, its navigation chrome and shared dialog accessibility. No change to financial calculations or production hosting.
+Shadows: `--fold-overlay-shadow` for menus, dialogs and toasts; `--fold-sheet-shadow` for the stacked wallet sheets. Nothing else casts a shadow.
 
-The application fills the viewport without an outer frame or content width cap. The sidebar is a separate rounded panel inset 16 px from the screen edges. A 44 px toggle switches between labeled navigation and an icon rail; the browser remembers the choice. Internal panels retain their spacing and radii for readability.
+## Typography
 
-Shared controls use 10 px radii, 44 px minimum targets and neutral silver focus states. Dialogs and supporting cards use 20 px radii without decorative accent strips. Currency prefixes and selectors remain neutral; financial direction, status and user-selected category colors retain their meaning. Account colors remain visible as a small identifying dot. Account cards reflow from a 300 px preferred minimum instead of forcing five cards across a narrow content region; category cards prefer 320 px to fit labels and amounts. Category filters use a selected underline and explicit pressed state. Exact legacy primary-button classes share the same neutral hover treatment across forms and pages.
+- Interface font: Plus Jakarta Sans (`--font-plus-jakarta`) through `--ai7-font-ui`. Geist stays as the fallback and as the `body` font outside `.tillfold-fold`. Geist Mono is used only for code-like values such as tokens and webhook strings.
+- Money and metrics use tabular numerals. Never use a monospace face for amounts.
+- Headings use weight 750 with negative tracking (`-.015em` to `-.05em`, tighter as the size grows).
 
-Typography uses explicit roles: page title 30 px (24 px on phones), section title 18 px/600, card title 16 px/500, body and controls 14 px, metadata 12 px, inputs 16 px, summary metrics 28 px/600 (24 px on phones), primary balance 36 px/500 (28 px on phones). Long metrics wrap instead of hiding digits. New roles replace page-specific font classes; do not restore heavy monospace figures or 9–11 px metadata. Keep line heights at 1.2 for metrics/titles and 1.4–1.5 for supporting text.
+| Role | Size | Weight |
+| --- | --- | --- |
+| Primary balance | `clamp(27px, 10.2cqi, 60px)` (26–42 px on phones) | 750 |
+| Summary metric | 28 px (24 px on phones) | 750 |
+| Page title | 30 px (24 px on phones) | 750 |
+| Section title | 16–18 px | 750 |
+| Card title | 16 px | 750 |
+| Body and controls | 13–14 px | 400–700 |
+| Metadata | 12 px | 400–650 |
+| Inputs | 16 px (prevents iOS zoom) | 400 |
 
-Component consistency: supporting panels and dialogs use the shared 20 px radius, controls 10 px, and compact status/category badges 6 px. The primary balance keeps its 28 px radius; avatars and progress tracks remain circular. Neutral dividers and surface borders share `luma-smokeline`; form boundaries use the stronger field-border token. Status colors retain their meaning. Controls have a minimum 44 px target. Summary grids use one column on phones, two at medium widths, and four from 1440 px so amounts stay readable. Related controls use 8 px gaps, fields/cards 16 px gaps, and panel padding 20–24 px.
+Nothing renders below 12 px. Metric lines use line-height 1.1–1.2, supporting text 1.4–1.5. Long amounts wrap (`overflow-wrap: anywhere`) instead of hiding digits.
 
-Use sentence case for interface headings, labels, buttons, and status badges (for example, “Total pemasukan” and “Catat transaksi”). Preserve acronyms, product names, user-entered names, and internal values. Capitalization is presentation only and must not change account/category identifiers.
+Use sentence case for headings, labels, buttons and badges ("Total pemasukan", "Catat transaksi"). Preserve acronyms, product names and user-entered values. Capitalization is presentation only.
 
-Nested tab frames follow the inner control geometry: 10 px control radius + 4 px inset + 1 px outer border = 15 px outer radius. Use the shared tab-group rule for Rencana and Pengaturan rather than the panel radius, so the curves stay concentric.
+## Spacing
+
+8 / 12 / 16 / 24 / 32 px scale. Related controls 8 px apart, cards and fields 16 px, page sections 24 px (16 px on phones), panel padding 20–28 px. The wallet stack overlaps pockets by 20 px on purpose.
+
+## Controls
+
+- Primary action: `--fold-primary` fill, pill, 42 px tall on desktop. Secondary: `--fold-panel` fill. Inside the ink hero, actions invert (light fill) and secondary actions use a white 9 % tint.
+- Icon buttons and links are 36 px on desktop and 44 px below 768 px. Form controls, dialog buttons and navigation are 44 px at every width. Primary pressed state darkens the fill; buttons never gain a border on press.
+- Chips: selected state is the inverted primary fill with `aria-pressed`. Segments: selected state is a surface-colored pill inside a `--fold-selected` frame. Income and expense segments tint with their semantic color at 12 %.
+- Selected rows in menus and the calendar use `--fold-selected` with weight 700. Selected calendar day: bottom inset line in `--fold-focus`.
+- Focus: every interactive element shows a 2 px outline in `--fold-focus`. Elements that sit on ink or inside a clipped group use an inset bottom line instead.
+- Status and category badges use the badge radius (pill) and weight 650.
+- Checkboxes: field fill unchecked, primary fill checked.
+
+## Layout
+
+- The app fills the viewport. The sidebar is a separate rounded panel inset 16 px from the screen edge, 244 px wide, collapsible to an icon rail with a 44 px toggle. The browser remembers the choice.
+- The topbar is a pill containing the period selector, the theme toggle and other global actions. At 1130 px and wider the page title moves into the topbar and the in-page title becomes screen-reader-only.
+- Below 768 px: bottom navigation, a drawer for secondary pages, bottom sheets for dialogs with safe-area padding.
+- Overview grid is 1.62 fr main column plus 1 fr side column, stacking below 1024 px. Summary grids use one column on phones, two at medium widths, four from 1440 px.
+- The period selector is a single popup with Siklus, Minggu, Bulan and Kustom tabs, a list of recent periods, and a history link. It keeps legible contrast on ink while expanded.
+
+## Motion
+
+Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-motion-meter` 360 ms, easing `--luma-motion-out` `cubic-bezier(.22, 1, .36, 1)`.
+
+- Page heading slides up 8 px (240 ms), then content fades in from 25 % opacity (300 ms). No translation of financial figures.
+- Button color, border and shadow changes use the quick duration; pressed state has no scale or translation.
+- Gauges, ratio bars, cycle bars and chart bars grow from their baseline (460–640 ms) and animate again when the period or amount changes.
+- A newly added transaction highlights in positive color and fades out (640 ms).
+- Dialogs fade; bottom sheets slide up 24 px on phones; the mobile drawer slides in from the left.
+- Everything is wrapped in `prefers-reduced-motion: no-preference`.
+
+## Components
+
+- **Hero balance**: ink panel, balance, income/expense ratio bar with legend, then actions. The eye toggle hides amounts (`HiddenAmount`).
+- **Budget gauge**: ring gauge with daily allowance; switches to negative color when the pace is `warning`.
+- **Cash wallet**: stacked pocket sheets that darken with depth; the selected account comes to the front and shows chips and actions (reconcile, transfer).
+- **Transactions**: 38 px round icon, two-line copy, amount, row actions. Phones drop actions to a second row.
+- **Ledger and calendar**: table header on `--fold-panel`, row hover `--fold-row-hover`, calendar days tinted by expense level.
+- **Nested tab frames**: inner pill tabs sit in a 4 px inset frame with a 22 px radius.
+
+## Scope and known deviations
+
+This document describes the target. Resolved on 2026-11-22: radius tokens now live only in `globals.css` (28 / 14 / 999 px), nothing below 12 px except the allocation bar labels (they scale with their segment), amounts no longer use `font-mono`, and browser, PWA and Telegram chrome colors follow `--fold-canvas` through `CHROME_COLOR` in `ThemeProvider.tsx`. Still diverging and worth fixing rather than copying:
+
+- Legacy color tokens in `globals.css` (bluish light palette, #3c3c46 balance gradient, warm hex values in `.luma-guest-*`) still exist beside the Fold tokens.
+- Many components use raw `rounded-xl`, `rounded-2xl`, `rounded-3xl`, `text-zinc-*` and `bg-white/[...]` instead of tokens, and rely on CSS overrides to look right.
+- Two button systems coexist: `.fold-action` (overview) and `.ui-btn` / `.luma-action-*` (elsewhere).
+- `font-mono` remains only for identifiers and code (loan number, spreadsheet ID, webhook strings).
+
+No change to financial calculations or production hosting is implied by this document.

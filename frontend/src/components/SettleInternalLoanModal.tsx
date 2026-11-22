@@ -127,14 +127,14 @@ export function SettleInternalLoanModal({
           <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-black/20 border border-luma-smokeline/40">
             {/* Debtor (Yang membayar balik) */}
             <div className="min-w-0">
-              <span className="text-[10px] uppercase font-semibold text-luma-smoke tracking-wider block">
+              <span className="text-xs uppercase font-semibold text-luma-smoke tracking-wider block">
                 Peminjam (Membayar)
               </span>
               <p className="text-xs sm:text-sm font-semibold text-luma-ivory truncate mt-0.5">
                 {loan.target_account_name}
               </p>
               {loan.target_pocket_name && (
-                <span className="text-[11px] text-luma-smoke block truncate">
+                <span className="text-xs text-luma-smoke block truncate">
                   Kantong: {loan.target_pocket_name}
                 </span>
               )}
@@ -146,14 +146,14 @@ export function SettleInternalLoanModal({
 
             {/* Creditor (Yang menerima pelunasan) */}
             <div className="min-w-0 text-right">
-              <span className="text-[10px] uppercase font-semibold text-luma-smoke tracking-wider block">
+              <span className="text-xs uppercase font-semibold text-luma-smoke tracking-wider block">
                 Rekening pemberi pinjaman
               </span>
               <p className="text-xs sm:text-sm font-semibold text-luma-ivory truncate mt-0.5">
                 {loan.source_account_name}
               </p>
               {loan.source_pocket_name && (
-                <span className="text-[11px] text-luma-smoke block truncate">
+                <span className="text-xs text-luma-smoke block truncate">
                   Kantong: {loan.source_pocket_name}
                 </span>
               )}
@@ -163,8 +163,8 @@ export function SettleInternalLoanModal({
           {/* Balance comparison */}
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="p-2.5 rounded-xl bg-white/[0.02] border border-luma-smokeline/40">
-              <span className="text-[11px] text-luma-smoke block">Pinjaman awal</span>
-              <p className="text-xs sm:text-sm font-mono font-medium text-luma-smoke mt-0.5 tabular-nums">
+              <span className="text-xs text-luma-smoke block">Pinjaman awal</span>
+              <p className="text-xs sm:text-sm font-medium text-luma-smoke mt-0.5 tabular-nums">
                 {formatRupiah(loan.amount)}
               </p>
             </div>
@@ -273,7 +273,7 @@ export function SettleInternalLoanModal({
         </div>
 
         {/* Invariant guarantee footnote */}
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-[11px] text-luma-smoke flex items-center gap-2">
+        <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-xs text-luma-smoke flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-luma-sage shrink-0" />
           <span>
             Dana akan dipindahkan dari {loan.target_account_name} kembali ke {loan.source_account_name} secara atomik.

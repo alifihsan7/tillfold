@@ -528,7 +528,7 @@ export function UserProfileModal({
                   )}
                 </button>
               </div>
-              <p className="text-[11px] text-luma-smoke leading-relaxed">
+              <p className="text-xs text-luma-smoke leading-relaxed">
                 Di Google Sheets: Klik <strong className="text-luma-ivory font-medium">Share</strong> (Bagikan), masukkan email di atas, atur peran sebagai <strong className="text-luma-ivory font-medium">Editor</strong>, lalu simpan.
               </p>
             </div>

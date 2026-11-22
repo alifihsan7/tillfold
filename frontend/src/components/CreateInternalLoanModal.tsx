@@ -420,7 +420,7 @@ export function CreateInternalLoanModal({
         </div>
 
         {/* Informational invariant disclaimer */}
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-[11px] text-luma-smoke flex items-center gap-2">
+        <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-xs text-luma-smoke flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-luma-sage shrink-0" />
           <span>
             Dicatat sebagai transfer antar-rekening, jadi total kekayaan Anda tidak berubah.

@@ -727,9 +727,9 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 /* Typography roles: shared sizes, not page-specific overrides. */
 :root {
   --ai7-font-ui: var(--font-geist-sans), system-ui, sans-serif;
-  --ai7-radius-panel: 20px;
-  --ai7-radius-control: 10px;
-  --ai7-radius-badge: 6px;
+  --ai7-radius-panel: 28px;
+  --ai7-radius-control: 14px;
+  --ai7-radius-badge: 999px;
   --ai7-text-page: 30px; --ai7-text-section: 18px; --ai7-text-card: 16px;
   --ai7-text-body: 14px; --ai7-text-meta: 12px; --ai7-text-input: 16px;
   --ai7-text-metric: 28px; --ai7-text-balance: clamp(28px, 10.5cqi, 64px);
@@ -895,7 +895,7 @@ textarea:focus-visible,
 }
 .transaction-finance-calendar .calendar-value-compact { display: block; }
 .transaction-finance-calendar .calendar-value-full { display: none; }
-.transaction-finance-calendar .calendar-day-amount { font-size: 10.5px; }
+.transaction-finance-calendar .calendar-day-amount { font-size: 12px; }
 @container (min-width: 420px) {
   .transaction-finance-calendar .calendar-day-amount { font-size: 12px; }
 }

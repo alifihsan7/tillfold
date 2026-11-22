@@ -14,6 +14,9 @@ interface ThemeContextType {
 
 const STORAGE_KEY = "ai7-finance-theme";
 
+/** Fold 2 canvas colors (--fold-canvas) for browser and Telegram chrome. */
+export const CHROME_COLOR: Record<"dark" | "light", string> = { dark: "#171a1f", light: "#e4e7eb" };
+
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -69,7 +72,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Sync theme-color meta tag for mobile browser chrome
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", effectiveTheme === "light" ? "#F8FAFC" : "#090A0D");
+      metaThemeColor.setAttribute("content", CHROME_COLOR[effectiveTheme]);
     }
 
     // Sync Telegram WebApp colors if running inside Telegram Mini App
@@ -77,10 +80,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const tg = (window as unknown as { Telegram: { WebApp: { setHeaderColor?: (c: string) => void; setBackgroundColor?: (c: string) => void } } }).Telegram.WebApp;
       try {
         if (typeof tg.setHeaderColor === "function") {
-          tg.setHeaderColor(effectiveTheme === "light" ? "#FFFFFF" : "#090A0D");
+          tg.setHeaderColor(CHROME_COLOR[effectiveTheme]);
         }
         if (typeof tg.setBackgroundColor === "function") {
-          tg.setBackgroundColor(effectiveTheme === "light" ? "#F8FAFC" : "#090A0D");
+          tg.setBackgroundColor(CHROME_COLOR[effectiveTheme]);
         }
       } catch {
         // Non-fatal if Telegram WebApp JS bridge isn't fully ready

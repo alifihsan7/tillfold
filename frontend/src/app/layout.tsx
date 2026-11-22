@@ -27,7 +27,7 @@ const jakartaSans = localFont({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#090A0D",
+  themeColor: "#171a1f",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

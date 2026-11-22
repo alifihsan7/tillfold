@@ -1,6 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
+import { CHROME_COLOR } from "@/components/ThemeProvider";
 import { useLatest } from "@/lib/useLatest";
 import { useTransactionHighlights } from "@/lib/useTransactionHighlights";
 import { todayWib } from "@/lib/transactionCalendar";
@@ -713,8 +714,8 @@ export default function FinanceDashboard() {
           try {
             tg.ready();
             tg.expand();
-            if (typeof tg.setHeaderColor === "function") tg.setHeaderColor("#090A0D");
-            if (typeof tg.setBackgroundColor === "function") tg.setBackgroundColor("#090A0D");
+            if (typeof tg.setHeaderColor === "function") tg.setHeaderColor(CHROME_COLOR.dark);
+            if (typeof tg.setBackgroundColor === "function") tg.setBackgroundColor(CHROME_COLOR.dark);
           } catch (e) {
             console.warn("Telegram WebApp init warning:", e);
           }
@@ -1456,7 +1457,7 @@ export default function FinanceDashboard() {
                           <RefreshCw className={`w-4 h-4 shrink-0 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
                           <span className="truncate">{isSyncingSheets ? "Menyinkronkan..." : "Sync Google Sheets"}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-luma-smoke">POST</span>
+                        <span className="text-xs font-mono text-luma-smoke">POST</span>
                       </button>
                       <a
                         href={`https://docs.google.com/spreadsheets/d/${currentUser.google_spreadsheet_id}`}
@@ -1486,7 +1487,7 @@ export default function FinanceDashboard() {
                         <FileSpreadsheet className="w-4 h-4 shrink-0 text-luma-smoke" />
                         <span className="truncate">Tautkan Google Sheets</span>
                       </div>
-                      <span className="text-[10px] uppercase font-semibold text-luma-sage bg-luma-sage/10 px-1.5 py-0.5 rounded">Setup</span>
+                      <span className="text-xs uppercase font-semibold text-luma-sage bg-luma-sage/10 px-1.5 py-0.5 rounded">Setup</span>
                     </button>
                   )
                 )}
@@ -1558,7 +1559,7 @@ export default function FinanceDashboard() {
               }`}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 leading-tight tracking-tight">{item.name}</span>
+              <span className="text-xs mt-1 leading-tight tracking-tight">{item.name}</span>
             </button>
           );
         })}
@@ -2709,17 +2710,17 @@ export default function FinanceDashboard() {
                             {copiedSettingsEmail ? (
                               <>
                                 <Check className="h-3 w-3 text-mintRise" />
-                                <span className="text-mintRise font-medium text-[11px]">Tersalin!</span>
+                                <span className="text-mintRise font-medium text-xs">Tersalin!</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="h-3 w-3 text-luma-smoke" />
-                                <span className="text-[11px]">Salin</span>
+                                <span className="text-xs">Salin</span>
                               </>
                             )}
                           </button>
                         </div>
-                        <p className="text-[11px] text-luma-smoke">
+                        <p className="text-xs text-luma-smoke">
                           Di Google Sheets: Klik <span className="text-luma-ivory font-medium">Bagikan</span>, tambahkan email bot di atas sebagai <span className="text-luma-ivory font-medium">Editor</span>, lalu simpan tautan sheet Anda di pengaturan.
                         </p>
                       </div>

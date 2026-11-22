@@ -4,8 +4,8 @@
   "description": "Sistem Manajemen Keuangan Pribadi",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#18181b",
-  "theme_color": "#18181b",
+  "background_color": "#171a1f",
+  "theme_color": "#171a1f",
   "orientation": "portrait-primary",
   "icons": [
     {

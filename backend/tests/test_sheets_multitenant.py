@@ -10,6 +10,7 @@ from gspread.exceptions import APIError, SpreadsheetNotFound
 from app.db.session import Base
 from app.models.user import User
 from app.models.account import Account
+from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.models.paycheck import PaycheckConfig
 from app.core.helpers import extract_spreadsheet_id
@@ -136,44 +137,77 @@ def test_sync_cycle_snapshot_multi_tenant_isolation(db_session):
         mock_client.open_by_key.assert_called_with("sheet_bbb")
 
 
-def test_snapshot_keeps_personal_tab_and_writes_cycle_transactions_as_values(db_session, test_user):
+def test_snapshot_keeps_personal_tab_and_writes_typed_cycle_rows(db_session, test_user):
     start = date(2026, 2, 25)
     test_user.google_spreadsheet_id = "test-sheet"
     db_session.add(PaycheckConfig(
         user_id=test_user.id, cycle_type="monthly_date", paycheck_day=25,
         cycle_days=14, pocket_account="Bank Uji",
     ))
+    account = Account(user_id=test_user.id, name="Bank Uji", type="operasional", initial_balance=0)
+    db_session.add(account)
+    db_session.flush()
+    pocket = Pocket(user_id=test_user.id, account_id=account.id, name="Makan", slug="makan",
+                    role="operasional", target_amount=500_000, allocation_amount=125_000)
+    db_session.add(pocket)
+    db_session.flush()
+    expense = Transaction(user_id=test_user.id, type="expense", amount=50_000, account="Bank Uji",
+                          category="Makan", description="=1+1", date=date(2026, 3, 24), pocket_id=pocket.id)
     db_session.add_all([
-        Transaction(user_id=test_user.id, type="expense", amount=50_000, account="Bank Uji",
-                    category="Makan", description="=1+1", date=date(2026, 3, 24)),
+        expense,
+        Transaction(user_id=test_user.id, type="income", amount=800_000, account="Bank Uji",
+                    category="Gaji", description="Gaji", date=start),
+        Transaction(user_id=test_user.id, type="income", amount=100_000, account="Bank Uji",
+                    category="Saldo Awal", description="Saldo awal", date=start),
+        Transaction(user_id=test_user.id, type="transfer_out", amount=200_000, account="Bank Uji",
+                    category="Transfer", description="Pindah saldo", date=start),
         Transaction(user_id=test_user.id, type="expense", amount=90_000, account="Bank Uji",
                     category="Makan", description="Di luar siklus", date=date(2026, 3, 25)),
     ])
     db_session.commit()
     personal = MagicMock(title="Sheet1")
-    report = MagicMock(id=2, row_count=100)
+    report = MagicMock(id=2, row_count=100, col_count=10)
     google = MagicMock()
     doc = google.open_by_key.return_value
     doc.worksheets.return_value = [personal]
-    doc.add_worksheet.return_value = report
+    date_serial = (expense.date - date(1899, 12, 30)).days
 
     with patch("app.services.sheets_sync.get_google_sheets_client", return_value=google):
         result = sync_cycle_snapshot(db_session, test_user.id, start)
-        doc.add_worksheet.assert_called_once_with(title=result["sheet_title"], rows=100, cols=10)
+        requests = doc.batch_update.call_args.args[0]["requests"]
+        created = requests[0]["addSheet"]["properties"]
+        assert created["title"] == result["sheet_title"]
+        assert created["gridProperties"] == {"rowCount": 100, "columnCount": 8, "frozenRowCount": 3}
+        assert result["spreadsheet_url"].endswith(f"#gid={created['sheetId']}")
         assert personal.mock_calls == []
-        assert result["transaction_count"] == 1
+        assert result["transaction_count"] == 4
         assert result["pocket_spent"] == 50_000
-        upload = report.update.call_args.kwargs
-        assert upload["value_input_option"] == "RAW"
-        assert ["", "2026-03-24", "=1+1", "Makan", "Bank Uji", "EXPENSE", -50_000] in upload["values"]
+        assert result["pocket_count"] == 1
+        write = next(req["updateCells"] for req in requests if "updateCells" in req)
+        cells = [row["values"] for row in write["rows"]]
+        data = [[next(iter(cell.get("userEnteredValue", {}).values()), None) for cell in row] for row in cells]
+        assert ["Pemasukan", 800_000] in data
+        assert ["Saldo awal tercatat", 100_000] in data
+        assert ["Anggaran belanja", 700_000] in data
+        assert ["Bank Uji", "Makan", "Operasional", 500_000, 125_000, 50_000, 75_000, None] in data
+        transaction = [date_serial, "=1+1", "Makan", "Bank Uji", "Pengeluaran", -50_000, "Makan", expense.id]
+        assert cells[data.index(transaction)][1] == {"userEnteredValue": {"stringValue": "=1+1"}}
+        assert all("Di luar siklus" not in row for row in data)
 
         report.title = result["sheet_title"]
+        report.get.return_value = [[], ["", "TILLFOLD — LAPORAN SIKLUS 28 HARI"]]
         doc.worksheets.return_value = [personal, report]
         sync_cycle_snapshot(db_session, test_user.id, start)
-        assert doc.add_worksheet.call_count == 1
-        report.unmerge_cells.assert_called_once_with("A1:G100")
-        report.batch_clear.assert_called_once_with(["A1:G100"])
+        refresh = doc.batch_update.call_args.args[0]["requests"]
+        assert not any("addSheet" in req for req in refresh)
+        assert refresh[1]["unmergeCells"]["range"]["sheetId"] == report.id
+        assert next(req["updateCells"] for req in refresh if "updateCells" in req)["range"]["endRowIndex"] == 100
         assert personal.mock_calls == []
+
+        report.get.return_value = [["Catatan pribadi"]]
+        result = sync_cycle_snapshot(db_session, test_user.id, start)
+        assert result["sheet_title"] == f"{report.title} · Tillfold"
+        assert "addSheet" in doc.batch_update.call_args.args[0]["requests"][0]
 
 
 # ============================================================================

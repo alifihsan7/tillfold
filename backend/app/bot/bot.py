@@ -1655,9 +1655,9 @@ def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_to
 • **Tab:** `{res['sheet_title']}`
 • **Periode:** `{res['cycle_range']}`
 • **Total Transaksi:** `{res['transaction_count']} catatan`
-• **Amplop Terpantau:** `{res['envelopes_count']} pos dinamis`
+• **Kantong:** `{res['pocket_count']}`
 • **Realisasi Belanja:** {format_rp(res['pocket_spent'])} (Sisa {format_rp(res['pocket_remaining'])})
-• **Total Net Worth:** {format_rp(res['total_balance'])}
+• **Total saldo rekening:** {format_rp(res['total_balance'])}
 
 🔗 [Buka Lembar Google Sheets]({res['spreadsheet_url']})"""
         send_message(chat_id, msg, bot_token=bot_token)

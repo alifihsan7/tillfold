@@ -1,577 +1,248 @@
 import os
+from secrets import randbelow
 import zoneinfo
-from datetime import datetime, date, timedelta
-from typing import Optional, Dict, Any, List
+from datetime import date, datetime, timedelta
 
 import gspread
 from google.oauth2.service_account import Credentials
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, desc
 
 from app.core.config import settings
-from app.models.transaction import Transaction
-from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
+from app.core.ledger import NEGATIVE_TYPES, OPENING_BALANCE_CATEGORY, POSITIVE_TYPES, signed_amount
 from app.models.account import Account
-from app.models.paycheck import PaycheckConfig, PaycheckBucket
+from app.models.paycheck import PaycheckConfig
+from app.models.pocket import Pocket
+from app.models.transaction import Transaction
 from app.models.user import User
+from app.services.analytics import compute_safe_to_spend_metrics
 from app.services.paycheck_cycles import recorded_cycle_ends
 
 WIB = zoneinfo.ZoneInfo(settings.TIMEZONE)
-
-# Indonesian month mapping
-MONTH_NAMES_ID = {
-    1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "Mei", 6: "Jun",
-    7: "Jul", 8: "Agu", 9: "Sep", 10: "Okt", 11: "Nov", 12: "Des"
+MONTH_NAMES_ID = ("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+REPORT_TITLE = "Tillfold · Laporan siklus"
+LEGACY_TITLE = "TILLFOLD — LAPORAN SIKLUS "
+COLUMN_WIDTHS = (175, 235, 155, 150, 150, 150, 145, 145)
+CURRENCY = {"type": "CURRENCY", "pattern": '"Rp "#,##0;-"Rp "#,##0'}
+DATE_FORMAT = {"type": "DATE", "pattern": "dd mmm yyyy"}
+SHEETS_EPOCH = date(1899, 12, 30)
+TRANSACTION_LABELS = {
+    "income": "Pemasukan", "expense": "Pengeluaran",
+    "transfer_in": "Transfer masuk", "transfer_out": "Transfer keluar",
+    "adjustment_in": "Penyesuaian masuk", "adjustment_out": "Penyesuaian keluar",
+}
+ROLES = {
+    "operasional": "Operasional", "gaji": "Gaji", "gajian": "Gajian", "tagihan": "Tagihan",
+    "darurat": "Dana darurat", "tabungan": "Tabungan", "investasi": "Investasi",
+    "ewallet": "Dompet digital", "e-wallet": "Dompet digital",
 }
 
-def format_date_id(d: date) -> str:
-    return f"{d.day} {MONTH_NAMES_ID[d.month]} {d.year}"
 
-def format_date_short_id(d: date) -> str:
-    return f"{d.day} {MONTH_NAMES_ID[d.month]}"
+def format_date_short_id(value: date) -> str:
+    return f"{value.day} {MONTH_NAMES_ID[value.month - 1]}"
 
-# Default envelope definitions for Mandiri
-DEFAULT_ENVELOPES = [
-    {"name": "Makan Harian", "categories": ["Makanan & Minuman", "Makan"], "limit": 450000},
-    {"name": "Jajan & Kopi", "categories": ["Jajan / Ngopi", "Jajan"], "limit": 100000},
-    {"name": "Laundry", "categories": ["Laundry"], "limit": 70000},
-    {"name": "Galon & Air", "categories": ["Galon / Air", "Galon"], "limit": 44000},
-]
 
-ACCOUNT_FUNCTIONS = {
-    "Bibit": "Portofolio Investasi Reksadana & Saham",
-    "BRI 2": "Tabungan Dana Dingin Terkunci",
-    "Mandiri": "Pos Belanja Operasional Harian",
-    "BRI 1": "Penampung Gaji Masuk (Income Hub)",
-    "Bank Jago": "Pos Tagihan Langganan Rutin & Gym"
-}
+def format_date_id(value: date) -> str:
+    return f"{format_date_short_id(value)} {value.year}"
+
 
 def get_google_sheets_client():
     creds_file = settings.GOOGLE_SERVICE_ACCOUNT_FILE
     if not os.path.exists(creds_file):
         raise FileNotFoundError(f"Service account file not found: {creds_file}")
-    
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    creds = Credentials.from_service_account_file(creds_file, scopes=scopes)
-    return gspread.authorize(creds)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    return gspread.authorize(Credentials.from_service_account_file(creds_file, scopes=scopes))
 
-def sync_cycle_snapshot(
-    db: Session,
-    user_id: int,
-    cycle_start_date: Optional[date] = None,
-    envelopes_config: Optional[List[Dict[str, Any]]] = None
-) -> Dict[str, Any]:
-    """
-    Export snapshot siklus anggaran ke Google Sheets.
-    Format Model C: Snapshot Dashboard Eksekutif.
-    """
-    now_wib = datetime.now(WIB)
-    today_wib = now_wib.date()
 
-    # 1. Tentukan tanggal siklus
-    cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
-    from app.api.v1.endpoints.pockets import get_current_cycle_bounds
+def sheet_value(value):
+    if isinstance(value, int):
+        return {"userEnteredValue": {"numberValue": value}}
+    if isinstance(value, date):
+        return {"userEnteredValue": {"numberValue": (value - SHEETS_EPOCH).days}}
+    if value is None or value == "":
+        return {}
+    return {"userEnteredValue": {"stringValue": str(value)}}
 
-    if cycle_start_date is None:
-        cycle_start_date, cycle_end_date = get_current_cycle_bounds(db, user_id, today_wib)
-    else:
-        cycle_end_date = recorded_cycle_ends(db, user_id).get(cycle_start_date)
-        if cycle_end_date is None:
-            start, end = get_current_cycle_bounds(db, user_id, cycle_start_date)
-            cycle_days = cfg.cycle_days if cfg and cfg.cycle_days and cfg.cycle_days > 0 else 14
-            cycle_end_date = end if start == cycle_start_date else cycle_start_date + timedelta(days=cycle_days - 1)
-    cycle_days = (cycle_end_date - cycle_start_date).days + 1
 
-    user_accounts = db.query(Account).filter(Account.user_id == user_id).order_by(Account.id).all()
-    pocket_account = cfg.pocket_account if cfg and cfg.pocket_account else next(
-        (account.name for account in user_accounts if account.type == "operasional" and not account.is_archived),
-        "",
-    )
-    spending_label = pocket_account or "Rekening belanja"
-    query_end_date = cycle_end_date + timedelta(days=1)
-    
-    sheet_title = f"Siklus {format_date_short_id(cycle_start_date)} - {format_date_id(cycle_end_date)}"
+def find_report_sheet(doc, title):
+    worksheets = {sheet.title: sheet for sheet in doc.worksheets()}
+    candidates = (title, f"{title} · Tillfold")
+    for candidate in candidates:
+        sheet = worksheets.get(candidate)
+        if sheet is None:
+            continue
+        top = sheet.get("A1:B2")
+        first = top[0][0] if top and top[0] else ""
+        legacy = top[1][1] if len(top) > 1 and len(top[1]) > 1 else ""
+        if first == REPORT_TITLE or (isinstance(legacy, str) and legacy.startswith(LEGACY_TITLE)):
+            return candidate, sheet
+    for candidate in candidates:
+        if candidate not in worksheets:
+            return candidate, None
+    raise ValueError("Nama tab laporan sudah dipakai. Ganti nama salah satu tab lalu sinkronkan ulang.")
 
-    # 2. Ambil data ringkasan siklus
-    income_sum, opening_sum, expense_sum = db.query(
-        func.coalesce(func.sum(case((is_earned_income(), Transaction.amount), else_=0)), 0),
-        func.coalesce(func.sum(case((is_opening_balance(), Transaction.amount), else_=0)), 0),
-        func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0)), 0),
-    ).filter(
-        Transaction.user_id == user_id,
-        Transaction.date >= cycle_start_date,
-        Transaction.date < query_end_date
-    ).one()
-    income_total = int(income_sum)
-    expense_total = int(expense_sum)
 
-    # Mandiri Safe to Spend
-    total_days = cycle_days
-    if today_wib < cycle_start_date:
-        day_of_cycle = 1
-        days_remaining = total_days
-    elif today_wib > cycle_end_date:
-        day_of_cycle = total_days
-        days_remaining = 0
-    else:
-        day_of_cycle = (today_wib - cycle_start_date).days + 1
-        days_remaining = max(1, total_days - day_of_cycle + 1)
+def sync_cycle_snapshot(db: Session, user_id: int, cycle_start_date: date | None = None) -> dict:
+    from app.api.v1.endpoints.pockets import compute_pockets_summary, get_current_cycle_bounds
 
-    pocket_spent_row = db.query(
-        func.coalesce(func.sum(Transaction.amount), 0).label("spent")
-    ).filter(
-        Transaction.user_id == user_id,
-        Transaction.account == pocket_account,
-        Transaction.type == "expense",
-        Transaction.date >= cycle_start_date,
-        Transaction.date <= cycle_end_date
-    ).first()
-    pocket_spent = int(pocket_spent_row.spent if pocket_spent_row else 0)
-    pocket_budget = int(getattr(cfg, "total_salary", 0) * 0.55) if cfg and getattr(cfg, "total_salary", None) else 825000
-    if cfg and cfg.id:
-        bucket_match = db.query(PaycheckBucket).join(
-            PaycheckConfig, PaycheckBucket.config_id == PaycheckConfig.id
-        ).filter(
-            PaycheckConfig.user_id == user_id,
-            PaycheckBucket.config_id == cfg.id,
-            PaycheckBucket.account == pocket_account
-        ).first()
-        if bucket_match and bucket_match.percentage > 0 and getattr(cfg, "total_salary", None):
-            pocket_budget = int(round(cfg.total_salary * (bucket_match.percentage / 100.0)))
-    pocket_remaining = max(0, pocket_budget - pocket_spent)
-    if days_remaining > 0:
-        safe_daily = int(pocket_remaining / days_remaining)
-    elif pocket_remaining > 0:
-        overdue_days = max(1, (today_wib - cycle_end_date).days)
-        grace_divisor = max(1, 3 - overdue_days + 1)
-        safe_daily = int(pocket_remaining / grace_divisor)
-    else:
-        safe_daily = 0
-
-    ideal_daily_rate = pocket_budget / total_days
-    ideal_pace_today = int(ideal_daily_rate * day_of_cycle)
-    if pocket_spent < ideal_pace_today * 0.9:
-        pace_status = "ON TRACK (Hemat)"
-    elif pocket_spent <= ideal_pace_today * 1.1:
-        pace_status = "ON TRACK (Aman)"
-    else:
-        pace_status = "PERINGATAN (Overbudget)"
-
-    # 3. Neraca Amplop Mandiri (Dinamis N Pos)
-    active_envelopes = envelopes_config or DEFAULT_ENVELOPES
-    envelope_results = []
-    for env in active_envelopes:
-        spent_row = db.query(
-            func.coalesce(func.sum(Transaction.amount), 0).label("spent")
-        ).filter(
-            Transaction.user_id == user_id,
-            Transaction.account == pocket_account,
-            Transaction.type == "expense",
-            Transaction.date >= cycle_start_date,
-            Transaction.date <= cycle_end_date,
-            Transaction.category.in_(env["categories"])
-        ).first()
-        sp = int(spent_row.spent if spent_row else 0)
-        lim = env["limit"]
-        rem = lim - sp
-        pct = (sp / lim) if lim > 0 else 0.0
-        
-        if pct > 0.85:
-            ev_status = "Peringatan"
-        elif pct > 0.5:
-            ev_status = "Wajar"
-        else:
-            ev_status = "Sangat Hemat"
-            
-        envelope_results.append({
-            "name": env["name"],
-            "limit": lim,
-            "spent": sp,
-            "remaining": rem,
-            "percentage": pct,
-            "status": ev_status
-        })
-
-    # 4. Saldo Seluruh Rekening (All-time Net Worth)
-    acc_rows = db.query(
-        Transaction.account,
-        func.sum(
-            case(
-                (Transaction.type.in_(POSITIVE_TYPES), Transaction.amount),
-                (Transaction.type.in_(NEGATIVE_TYPES), -Transaction.amount),
-                else_=0
-            )
-        ).label("balance")
-    ).filter(
-        Transaction.user_id == user_id
-    ).group_by(Transaction.account).order_by(
-        func.sum(
-            case(
-                (Transaction.type.in_(POSITIVE_TYPES), Transaction.amount),
-                (Transaction.type.in_(NEGATIVE_TYPES), -Transaction.amount),
-                else_=0
-            )
-        ).desc()
-    ).all()
-    account_tags = {acc.name: (acc.tag or ACCOUNT_FUNCTIONS.get(acc.name, "Pos Finansial")) for acc in user_accounts}
-
-    balance_map = {a.account: int(a.balance or 0) for a in acc_rows}
-    for acc in user_accounts:
-        if acc.name not in balance_map:
-            balance_map[acc.name] = 0
-
-    accounts = [{"account": name, "balance": bal} for name, bal in sorted(balance_map.items(), key=lambda x: x[1], reverse=True)]
-    total_balance = sum(a["balance"] for a in accounts)
-
-    # 5. Seluruh Transaksi dalam Siklus
-    tx_rows = db.query(Transaction).filter(
-        Transaction.user_id == user_id,
-        Transaction.date >= cycle_start_date,
-        Transaction.date <= cycle_end_date
-    ).order_by(desc(Transaction.date), desc(Transaction.id)).all()
-
-    # 6. Kirim ke Google Sheets
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or not user.google_spreadsheet_id or not user.google_spreadsheet_id.strip():
-        raise ValueError("Google Spreadsheet belum ditautkan. Kirim /set_sheet <link> di bot Telegram atau atur di menu Settings Web.")
+    spreadsheet_id = (user.google_spreadsheet_id or "").strip() if user else ""
+    if not spreadsheet_id:
+        raise ValueError("Google Spreadsheet belum ditautkan. Kirim /set_sheet <link> di Telegram atau atur di Pengaturan.")
 
-    spreadsheet_id = user.google_spreadsheet_id.strip()
-    client = get_google_sheets_client()
-    doc = client.open_by_key(spreadsheet_id)
-
-    # Siapkan baris data menggunakan NILAI NUMERIK RIIL (Mencegah Formula Syntax #ERROR!)
-    rows = []
-    # R1: kosong (index 0)
-    rows.append(["", "", "", "", "", "", ""])
-    # R2: Header Judul (index 1)
-    rows.append(["", f"TILLFOLD — LAPORAN SIKLUS {cycle_days} HARI", "", "", "", "", ""])
-    # R3: Sub Header (index 2)
-    rows.append(["", f"Periode: {format_date_id(cycle_start_date)} – {format_date_id(cycle_end_date)}  •  Status Pacing: {pace_status}  •  Sinkronisasi: {now_wib.strftime('%d %b %Y %H:%M')} WIB", "", "", "", "", ""])
-    # R4: Kosong (index 3)
-    rows.append(["", "", "", "", "", "", ""])
-
-    # R5: Seksi 1 Title (index 4)
-    sec1_title_idx = len(rows)
-    rows.append(["", "1. RINGKASAN EKSEKUTIF & PACING BELANJA", "", "", "", "", ""])
-    # Header Tabel Seksi 1
-    sec1_hdr_idx = len(rows)
-    rows.append(["", "Indikator Keuangan", "", "Nilai (IDR)", "", "Keterangan", ""])
-    # Data Seksi 1 (Numerik Riil)
-    sec1_data_start = len(rows)
-    rows.append(["", "Total Pemasukan Siklus", "", income_total, "", f"Gajian ({cycle_days} Hari) & Alokasi Pos", ""])
-    rows.append(["", f"Plafon Belanja · {spending_label}", "", pocket_budget, "", f"Pos Saku Operasional {cycle_days} Hari", ""])
-    rows.append(["", f"Realisasi Belanja · {spending_label}", "", pocket_spent, "", f"Hari ke-{day_of_cycle} dari {total_days} hari", ""])
-    rows.append(["", "Sisa Saldo Aman Belanja", "", pocket_remaining, "", f"Batas aman: Rp {safe_daily:,.0f}/hari".replace(",", "."), ""])
-    sec1_end_idx = len(rows) - 1
-
-    rows.append(["", "", "", "", "", "", ""])
-    rows.append(["", "", "", "", "", "", ""])
-
-    # Seksi 2: Neraca Amplop Mandiri (Dinamis N Pos)
-    num_envelopes = len(envelope_results)
-    sec2_title_idx = len(rows)
-    rows.append(["", f"2. ALOKASI BELANJA · {spending_label} ({num_envelopes} POS)", "", "", "", "", ""])
-    sec2_hdr_idx = len(rows)
-    rows.append(["", "Nama Amplop", "Plafon Standar", "Realisasi Belanja", "Sisa Saldo", "% Terpakai", "Evaluasi"])
-    sec2_data_start = len(rows)
-    for env in envelope_results:
-        rows.append([
-            "",
-            env["name"],
-            env["limit"],
-            env["spent"],
-            env["remaining"],
-            env["percentage"],
-            env["status"]
-        ])
-    sec2_end_idx = len(rows) - 1
-
-    rows.append(["", "", "", "", "", "", ""])
-    rows.append(["", "", "", "", "", "", ""])
-
-    # Seksi 3: Saldo Rekening & Net Worth
-    sec3_title_idx = len(rows)
-    rows.append(["", "3. SALDO SELURUH REKENING & PORTOFOLIO (NET WORTH)", "", "", "", "", ""])
-    sec3_hdr_idx = len(rows)
-    rows.append(["", "Nama Rekening / Pos", "", "Fungsi Alokasi", "", "Saldo Akhir", ""])
-    sec3_data_start = len(rows)
-    for acc in accounts:
-        f_desc = account_tags.get(acc["account"], ACCOUNT_FUNCTIONS.get(acc["account"], "Pos Finansial"))
-        rows.append([
-            "",
-            acc["account"],
-            "",
-            f_desc,
-            "",
-            acc["balance"],
-            ""
-        ])
-    sec3_data_end = len(rows) - 1
-    sec3_total_idx = len(rows)
-    rows.append(["", "TOTAL KEKAYAAN BERSIH (NET WORTH)", "", "", "", total_balance, ""])
-
-    rows.append(["", "", "", "", "", "", ""])
-    rows.append(["", "", "", "", "", "", ""])
-
-    # Seksi 4: Buku Kas Transaksi (Numerik Riil dengan Format Display)
-    sec4_title_idx = len(rows)
-    rows.append(["", f"4. BUKU KAS TRANSAKSI SIKLUS INI ({len(tx_rows)} CATATAN)", "", "", "", "", ""])
-    sec4_hdr_idx = len(rows)
-    rows.append(["", "Tanggal", "Keterangan", "Kategori", "Rekening", "Tipe", "Nominal"])
-    sec4_data_start = len(rows)
-    for tx in tx_rows:
-        num_val = tx.amount if tx.type in POSITIVE_TYPES else -tx.amount
-        rows.append([
-            "",
-            str(tx.date),
-            tx.description or "-",
-            tx.category or "-",
-            tx.account or "-",
-            tx.type.upper(),
-            num_val
-        ])
-    sec4_end_idx = len(rows) - 1
-
-    ws = next((sheet for sheet in doc.worksheets() if sheet.title == sheet_title), None)
-    if ws is None:
-        ws = doc.add_worksheet(title=sheet_title, rows=max(100, len(rows)), cols=10)
+    now = datetime.now(WIB)
+    cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
+    if cycle_start_date is None:
+        cycle_start, cycle_end = get_current_cycle_bounds(db, user_id, now.date())
     else:
-        if ws.row_count < len(rows):
-            ws.add_rows(len(rows) - ws.row_count)
-        report_range = f"A1:G{ws.row_count}"
-        ws.unmerge_cells(report_range)
-        ws.batch_clear([report_range])
+        cycle_start = cycle_start_date
+        cycle_end = recorded_cycle_ends(db, user_id).get(cycle_start)
+        if cycle_end is None:
+            start, end = get_current_cycle_bounds(db, user_id, cycle_start)
+            cycle_days = cfg.cycle_days if cfg and cfg.cycle_days and cfg.cycle_days > 0 else 14
+            cycle_end = end if start == cycle_start else cycle_start + timedelta(days=cycle_days - 1)
+    cycle_range = f"{format_date_id(cycle_start)} – {format_date_id(cycle_end)}"
 
-    ws.update(range_name="A1", values=rows, value_input_option="RAW")
+    accounts = db.query(Account).filter(Account.user_id == user_id).order_by(Account.name, Account.id).all()
+    metrics = compute_safe_to_spend_metrics(db, user_id, cycle_start, cycle_end, "cycle", now.date(), accounts, cfg)
+    transactions = db.query(Transaction).filter(
+        Transaction.user_id == user_id, Transaction.date.between(cycle_start, cycle_end),
+    ).order_by(Transaction.date.desc(), Transaction.id.desc()).all()
+    income = sum(tx.amount for tx in transactions if tx.type == "income" and tx.category != OPENING_BALANCE_CATEGORY)
+    opening = sum(tx.amount for tx in transactions if tx.type == "income" and tx.category == OPENING_BALANCE_CATEGORY)
+    expense = sum(tx.amount for tx in transactions if tx.type == "expense")
+    balances = {name: int(amount or 0) for name, amount in db.query(
+        Transaction.account, func.sum(signed_amount()),
+    ).filter(Transaction.user_id == user_id).group_by(Transaction.account)}
+    accounts_by_name = {account.name: account for account in accounts}
+    account_rows = []
+    for name in sorted(set(accounts_by_name) | set(balances), key=str.casefold):
+        account = accounts_by_name.get(name)
+        account_rows.append([
+            name, ROLES.get(account.type, account.type) if account else None,
+            balances.get(name, 0), "Diarsipkan" if account and account.is_archived else "Aktif" if account else "Riwayat",
+        ])
+    total_balance = sum(balances.values())
 
-    # Konfigurasi Dimensi & Margin Kolom
-    col_widths = {
-        0: 30,   # A: Margin
-        1: 130,  # B: Tanggal / Label
-        2: 240,  # C: Keterangan
-        3: 170,  # D: Kategori / Plafon
-        4: 150,  # E: Akun / Realisasi
-        5: 140,  # F: Tipe / Sisa
-        6: 150,  # G: Nominal / Status
-    }
-    batch_reqs = []
-    for col_idx, width in col_widths.items():
-        batch_reqs.append({
-            "updateDimensionProperties": {
-                "range": {
-                    "sheetId": ws.id,
-                    "dimension": "COLUMNS",
-                    "startIndex": col_idx,
-                    "endIndex": col_idx + 1
-                },
-                "properties": {"pixelSize": width},
-                "fields": "pixelSize"
-            }
-        })
+    pockets = db.query(Pocket).filter(Pocket.user_id == user_id).all()
+    pocket_names = {pocket.id: pocket.name for pocket in pockets}
+    pocket_account_ids = {pocket.account_id for pocket in pockets if pocket.is_active}
+    pocket_rows = []
+    for account in accounts:
+        if account.id not in pocket_account_ids:
+            continue
+        summary = compute_pockets_summary(db, user_id, account.id, cycle_start, cycle_end, persist=False)
+        pocket_rows.extend([
+            account.name, pocket.name, ROLES.get(pocket.role, pocket.role),
+            pocket.target_amount, pocket.allocation_amount, pocket.spent_amount, pocket.remaining_amount,
+            pocket.subscription_name,
+        ] for pocket in summary.pockets)
 
-    # Merged header ranges
-    merge_ranges = [
-        # Title B2:G2
-        {"startRowIndex": 1, "endRowIndex": 2, "startColumnIndex": 1, "endColumnIndex": 7},
-        # Subtitle B3:G3
-        {"startRowIndex": 2, "endRowIndex": 3, "startColumnIndex": 1, "endColumnIndex": 7},
-        # Section 1 Title
-        {"startRowIndex": sec1_title_idx, "endRowIndex": sec1_title_idx + 1, "startColumnIndex": 1, "endColumnIndex": 7},
-        # Section 2 Title
-        {"startRowIndex": sec2_title_idx, "endRowIndex": sec2_title_idx + 1, "startColumnIndex": 1, "endColumnIndex": 7},
-        # Section 3 Title
-        {"startRowIndex": sec3_title_idx, "endRowIndex": sec3_title_idx + 1, "startColumnIndex": 1, "endColumnIndex": 7},
-        # Section 3 Total Label
-        {"startRowIndex": sec3_total_idx, "endRowIndex": sec3_total_idx + 1, "startColumnIndex": 1, "endColumnIndex": 5},
-        {"startRowIndex": sec3_total_idx, "endRowIndex": sec3_total_idx + 1, "startColumnIndex": 5, "endColumnIndex": 7},
-        # Section 4 Title
-        {"startRowIndex": sec4_title_idx, "endRowIndex": sec4_title_idx + 1, "startColumnIndex": 1, "endColumnIndex": 7},
+    rows = [
+        [REPORT_TITLE], ["Periode", cycle_range],
+        ["Disinkronkan", f"{format_date_id(now.date())}, {now:%H:%M} WIB"],
     ]
+    sections = []
+    number_ranges = []
 
-    for mr in merge_ranges:
-        batch_reqs.append({
-            "mergeCells": {
-                "range": {
-                    "sheetId": ws.id,
-                    **mr
-                },
-                "mergeType": "MERGE_ALL"
-            }
-        })
+    def section(title, headers, data, formats=(), empty=None):
+        rows.append([])
+        sections.append(len(rows))
+        rows.extend([[title], headers])
+        start_row = len(rows)
+        rows.extend(data or ([[empty]] if empty else []))
+        if data:
+            number_ranges.extend((start_row, len(rows), first, last, fmt) for first, last, fmt in formats)
 
-    if batch_reqs:
-        doc.batch_update({"requests": batch_reqs})
+    section("Ringkasan siklus", ["Indikator", "Nilai"], [
+        ["Pemasukan", income], ["Saldo awal tercatat", opening], ["Pengeluaran", expense],
+        ["Arus kas bersih", income - expense],
+        ["Rekening belanja", metrics.pocket_account],
+        ["Anggaran belanja", metrics.pocket_budget],
+        ["Belanja operasional", metrics.pocket_spent],
+        ["Sisa anggaran", metrics.pocket_remaining],
+        ["Batas belanja per hari", metrics.safe_daily if cycle_start <= now.date() <= cycle_end else None],
+    ], ((1, 2, CURRENCY),))
+    section("Rekening · saldo saat sinkron", ["Rekening", "Jenis", "Saldo", "Status"],
+            account_rows + [["Total saldo rekening", None, total_balance]], ((2, 3, CURRENCY),))
+    section("Kantong · target dan alokasi saat sinkron",
+            ["Rekening", "Kantong", "Jenis", "Target", "Dialokasikan", "Belanja periode", "Saldo tersisa", "Tagihan"],
+            pocket_rows, ((3, 7, CURRENCY),), "Belum ada kantong.")
+    section("Transaksi siklus",
+            ["Tanggal", "Keterangan", "Kategori", "Rekening", "Tipe", "Nominal", "Kantong", "ID transaksi"], [
+                [tx.date, tx.description, tx.category, tx.account,
+                 "Saldo awal" if tx.type == "income" and tx.category == OPENING_BALANCE_CATEGORY else TRANSACTION_LABELS.get(tx.type, tx.type),
+                 tx.amount if tx.type in POSITIVE_TYPES else -tx.amount if tx.type in NEGATIVE_TYPES else 0,
+                 pocket_names.get(tx.pocket_id), tx.id]
+                for tx in transactions
+            ], ((0, 1, DATE_FORMAT), (5, 6, CURRENCY)), "Belum ada transaksi pada periode ini.")
 
-    # Batch formatting styling
-    formats = [
-        # 1. Main Title banner (Obsidian Dark)
-        {
-            "range": "B2:G2",
-            "format": {
-                "backgroundColor": {"red": 0.04, "green": 0.05, "blue": 0.07},
-                "textFormat": {"bold": True, "fontSize": 15, "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}},
-                "horizontalAlignment": "CENTER",
-                "verticalAlignment": "MIDDLE"
-            }
-        },
-        # 2. Subtitle banner
-        {
-            "range": "B3:G3",
-            "format": {
-                "backgroundColor": {"red": 0.10, "green": 0.12, "blue": 0.16},
-                "textFormat": {"italic": True, "fontSize": 9, "foregroundColor": {"red": 0.85, "green": 0.88, "blue": 0.92}},
-                "horizontalAlignment": "CENTER",
-                "verticalAlignment": "MIDDLE"
-            }
-        },
-        # 3. Section Titles
-        {
-            "range": f"B{sec1_title_idx + 1}:G{sec1_title_idx + 1}",
-            "format": {
-                "textFormat": {"bold": True, "fontSize": 12, "foregroundColor": {"red": 0.07, "green": 0.08, "blue": 0.11}},
-                "horizontalAlignment": "LEFT"
-            }
-        },
-        {
-            "range": f"B{sec2_title_idx + 1}:G{sec2_title_idx + 1}",
-            "format": {
-                "textFormat": {"bold": True, "fontSize": 12, "foregroundColor": {"red": 0.07, "green": 0.08, "blue": 0.11}},
-                "horizontalAlignment": "LEFT"
-            }
-        },
-        {
-            "range": f"B{sec3_title_idx + 1}:G{sec3_title_idx + 1}",
-            "format": {
-                "textFormat": {"bold": True, "fontSize": 12, "foregroundColor": {"red": 0.07, "green": 0.08, "blue": 0.11}},
-                "horizontalAlignment": "LEFT"
-            }
-        },
-        {
-            "range": f"B{sec4_title_idx + 1}:G{sec4_title_idx + 1}",
-            "format": {
-                "textFormat": {"bold": True, "fontSize": 12, "foregroundColor": {"red": 0.07, "green": 0.08, "blue": 0.11}},
-                "horizontalAlignment": "LEFT"
-            }
-        },
-        # 4. Table Headers (Dark Slate #1E2433 with White text)
-        {
-            "range": f"B{sec1_hdr_idx + 1}:G{sec1_hdr_idx + 1}",
-            "format": {
-                "backgroundColor": {"red": 0.12, "green": 0.14, "blue": 0.20},
-                "textFormat": {"bold": True, "fontSize": 10, "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}},
-                "horizontalAlignment": "CENTER",
-                "verticalAlignment": "MIDDLE"
-            }
-        },
-        {
-            "range": f"B{sec2_hdr_idx + 1}:G{sec2_hdr_idx + 1}",
-            "format": {
-                "backgroundColor": {"red": 0.12, "green": 0.14, "blue": 0.20},
-                "textFormat": {"bold": True, "fontSize": 10, "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}},
-                "horizontalAlignment": "CENTER",
-                "verticalAlignment": "MIDDLE"
-            }
-        },
-        {
-            "range": f"B{sec3_hdr_idx + 1}:G{sec3_hdr_idx + 1}",
-            "format": {
-                "backgroundColor": {"red": 0.12, "green": 0.14, "blue": 0.20},
-                "textFormat": {"bold": True, "fontSize": 10, "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}},
-                "horizontalAlignment": "CENTER",
-                "verticalAlignment": "MIDDLE"
-            }
-        },
-        {
-            "range": f"B{sec4_hdr_idx + 1}:G{sec4_hdr_idx + 1}",
-            "format": {
-                "backgroundColor": {"red": 0.12, "green": 0.14, "blue": 0.20},
-                "textFormat": {"bold": True, "fontSize": 10, "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0}},
-                "horizontalAlignment": "CENTER",
-                "verticalAlignment": "MIDDLE"
-            }
-        },
-        # 5. Section 1 Number Formatting (Currency Rp #,##0)
-        {
-            "range": f"D{sec1_data_start + 1}:D{sec1_end_idx + 1}",
-            "format": {
-                "numberFormat": {"type": "CURRENCY", "pattern": "\"Rp \"#,##0"},
-                "horizontalAlignment": "RIGHT",
-                "textFormat": {"bold": True}
-            }
-        },
-        # 6. Section 2 Number Formatting (Currency Rp #,##0 & Percent)
-        {
-            "range": f"C{sec2_data_start + 1}:E{sec2_end_idx + 1}",
-            "format": {
-                "numberFormat": {"type": "CURRENCY", "pattern": "\"Rp \"#,##0"},
-                "horizontalAlignment": "RIGHT"
-            }
-        },
-        {
-            "range": f"F{sec2_data_start + 1}:F{sec2_end_idx + 1}",
-            "format": {
-                "numberFormat": {"type": "PERCENT", "pattern": "0.0%"},
-                "horizontalAlignment": "CENTER",
-                "textFormat": {"bold": True}
-            }
-        },
-        {
-            "range": f"G{sec2_data_start + 1}:G{sec2_end_idx + 1}",
-            "format": {"horizontalAlignment": "CENTER", "textFormat": {"bold": True}}
-        },
-        # 7. Section 3 Number Formatting (Balances & Net Worth)
-        {
-            "range": f"F{sec3_data_start + 1}:F{sec3_data_end + 1}",
-            "format": {
-                "numberFormat": {"type": "CURRENCY", "pattern": "\"Rp \"#,##0"},
-                "horizontalAlignment": "RIGHT",
-                "textFormat": {"bold": True}
-            }
-        },
-        {
-            "range": f"B{sec3_total_idx + 1}:G{sec3_total_idx + 1}",
-            "format": {
-                "backgroundColor": {"red": 0.07, "green": 0.08, "blue": 0.11},
-                "textFormat": {"bold": True, "fontSize": 11, "foregroundColor": {"red": 0.96, "green": 0.62, "blue": 0.04}},
-                "horizontalAlignment": "RIGHT",
-                "verticalAlignment": "MIDDLE",
-                "numberFormat": {"type": "CURRENCY", "pattern": "\"Rp \"#,##0"}
-            }
-        },
-        # 8. Section 4 Alignments & Numeric Format with Sign Prefix (+ Rp ... / - Rp ...)
-        {
-            "range": f"B{sec4_data_start + 1}:B{sec4_end_idx + 1}",
-            "format": {"horizontalAlignment": "CENTER"}
-        },
-        {
-            "range": f"F{sec4_data_start + 1}:F{sec4_end_idx + 1}",
-            "format": {"horizontalAlignment": "CENTER", "textFormat": {"bold": True, "fontSize": 9}}
-        },
-        {
-            "range": f"G{sec4_data_start + 1}:G{sec4_end_idx + 1}",
-            "format": {
-                "numberFormat": {"type": "CURRENCY", "pattern": "\"+\" \"Rp \"#,##0;\"-\" \"Rp \"#,##0"},
-                "horizontalAlignment": "RIGHT",
-                "textFormat": {"bold": True}
-            }
-        }
-    ]
-    ws.batch_format(formats)
+    doc = get_google_sheets_client().open_by_key(spreadsheet_id)
+    title = f"Siklus {format_date_short_id(cycle_start)} - {format_date_id(cycle_end)}"
+    sheet_title, sheet = find_report_sheet(doc, title)
+    sheet_id = sheet.id if sheet is not None else randbelow(2**31 - 1) + 1
+    write_report(doc, sheet, sheet_id, sheet_title, rows, sections, number_ranges)
 
-    spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit#gid={ws.id}"
     return {
         "success": True,
         "sheet_title": sheet_title,
         "spreadsheet_id": spreadsheet_id,
-        "spreadsheet_url": spreadsheet_url,
-        "synced_at": now_wib.strftime("%d %b %Y %H:%M WIB"),
-        "cycle_range": f"{format_date_id(cycle_start_date)} s/d {format_date_id(cycle_end_date)}",
-        "transaction_count": len(tx_rows),
-        "envelopes_count": num_envelopes,
-        "pocket_spent": pocket_spent,
-        "pocket_remaining": pocket_remaining,
-        "total_balance": total_balance
+        "spreadsheet_url": f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit#gid={sheet_id}",
+        "synced_at": f"{format_date_id(now.date())} {now:%H:%M} WIB",
+        "cycle_range": cycle_range,
+        "transaction_count": len(transactions),
+        "pocket_count": len(pocket_rows),
+        "envelopes_count": len(pocket_rows),
+        "pocket_spent": metrics.pocket_spent,
+        "pocket_remaining": metrics.pocket_remaining,
+        "total_balance": total_balance,
     }
+
+
+def write_report(doc, sheet, sheet_id, title, rows, sections, number_ranges):
+    width = len(COLUMN_WIDTHS)
+    row_count = max(sheet.row_count if sheet is not None else 100, len(rows))
+
+    def grid(start, end, first=0, last=width):
+        return {"sheetId": sheet_id, "startRowIndex": start, "endRowIndex": end,
+                "startColumnIndex": first, "endColumnIndex": last}
+
+    def style(area, fmt, fields="userEnteredFormat"):
+        return {"repeatCell": {"range": area, "cell": {"userEnteredFormat": fmt}, "fields": fields}}
+
+    ink = {"red": .08, "green": .10, "blue": .13}
+    silver = {"red": .91, "green": .93, "blue": .95}
+    white = {"red": 1, "green": 1, "blue": 1}
+    props = {"sheetId": sheet_id, "gridProperties": {
+        "rowCount": row_count, "columnCount": max(sheet.col_count, width) if sheet is not None else width,
+        "frozenRowCount": 3,
+    }}
+    if sheet is None:
+        requests = [{"addSheet": {"properties": {**props, "title": title}}}]
+    else:
+        requests = [{"updateSheetProperties": {
+            "properties": props,
+            "fields": "gridProperties(rowCount,columnCount,frozenRowCount)",
+        }}, {"unmergeCells": {"range": grid(0, row_count)}}]
+    requests.append({"updateCells": {
+        "range": grid(0, row_count), "fields": "userEnteredValue,userEnteredFormat",
+        "rows": [{"values": [sheet_value(value) for value in row]} for row in rows],
+    }})
+    requests.append(style(grid(0, 1), {
+        "backgroundColor": ink, "textFormat": {"bold": True, "fontSize": 14, "foregroundColor": white},
+    }))
+    for start in sections:
+        requests.extend([
+            style(grid(start, start + 1), {
+                "backgroundColor": silver, "textFormat": {"bold": True, "foregroundColor": ink},
+            }),
+            style(grid(start + 1, start + 2), {"textFormat": {"bold": True}, "wrapStrategy": "WRAP"}),
+        ])
+    for start, end, first, last, fmt in number_ranges:
+        requests.append(style(grid(start, end, first, last), {"numberFormat": fmt}, "userEnteredFormat.numberFormat"))
+    for index, pixels in enumerate(COLUMN_WIDTHS):
+        requests.append({"updateDimensionProperties": {
+            "range": {"sheetId": sheet_id, "dimension": "COLUMNS", "startIndex": index, "endIndex": index + 1},
+            "properties": {"pixelSize": pixels}, "fields": "pixelSize",
+        }})
+    doc.batch_update({"requests": requests})

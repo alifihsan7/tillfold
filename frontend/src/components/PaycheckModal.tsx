@@ -527,7 +527,7 @@ export default function PaycheckModal({
           </p>
 
           {/* Allocation Breakdown Table */}
-          <div className="p-5 rounded-3xl bg-obsidian-panel border border-luma-smokeline space-y-3.5 shadow-sm">
+          <div className="p-5 rounded-3xl luma-inset space-y-3.5 shadow-sm">
             <div className="flex justify-between items-center pb-3 border-b border-luma-smokeline">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-zinc-400 ">
@@ -664,7 +664,7 @@ export default function PaycheckModal({
       {view === "checklist" && activeSession && (
         <div className="space-y-4">
           {/* Progress Header Card */}
-          <div className="p-5 rounded-3xl bg-obsidian-panel border border-luma-smokeline space-y-3 shadow-sm">
+          <div className="p-5 rounded-3xl luma-inset space-y-3 shadow-sm">
             <div className="flex justify-between items-center">
               <div>
                 <span className="text-xs font-semibold text-zinc-400 ">
@@ -891,7 +891,7 @@ export default function PaycheckModal({
           </fieldset>
 
           {/* Buckets Editor */}
-          <div className="p-5 rounded-3xl bg-obsidian-panel border border-luma-smokeline space-y-3 shadow-sm">
+          <div className="p-5 rounded-3xl luma-inset space-y-3 shadow-sm">
             <div className="flex justify-between items-center pb-2 border-b border-luma-smokeline">
               <span className="text-xs font-semibold text-zinc-400 ">
                 Pembagian gaji

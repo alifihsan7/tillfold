@@ -119,7 +119,7 @@ export function EditPocketsModal({
             <fieldset
               disabled={!!pocket.subscription_id || loading}
               key={pocket.slug}
-              className="bg-obsidian-panel border border-luma-smokeline rounded-2xl p-4 space-y-2.5"
+              className="luma-inset rounded-2xl p-4 space-y-2.5"
             >
               <div className="flex items-center justify-between gap-2">
                 <label

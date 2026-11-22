@@ -1520,7 +1520,7 @@ export default function FinanceDashboard() {
       </button>
 
       {/* MOBILE BOTTOM NAVIGATION BAR — 5 Core Menus */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-luma-charcoal border-t border-luma-smokeline px-1.5 py-1.5 flex items-center justify-around safe-bottom shadow-2xl" aria-label="Navigasi utama">
+      <nav className="luma-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-1.5 py-1.5 flex items-center justify-around safe-bottom shadow-2xl" aria-label="Navigasi utama">
         {[
           { name: "Ringkasan", slug: "#/overview", icon: LayoutDashboard },
           { name: "Transaksi", slug: "#/transactions", icon: Receipt },
@@ -1873,7 +1873,7 @@ export default function FinanceDashboard() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl bg-white/[0.04] border border-luma-smokeline p-4 space-y-3">
+                    <div key={i} className="rounded-2xl luma-inset p-4 space-y-3">
                       <div className="flex justify-between items-center gap-2">
                         <div className="h-4 w-24 rounded-full bg-white/[0.06] animate-pulse" />
                         <div className="h-4 w-10 rounded-full bg-white/[0.06] animate-pulse" />
@@ -1933,7 +1933,7 @@ export default function FinanceDashboard() {
                           setPlanSubTab("target");
                           window.location.hash = "#/plan";
                         }}
-                        className="rounded-2xl bg-white/[0.04] border border-luma-smokeline hover:border-white/[0.16] p-4 space-y-3 cursor-pointer transition-all duration-200 text-left"
+                        className="rounded-2xl luma-inset hover:bg-obsidian-hover p-4 space-y-3 cursor-pointer transition-all duration-200 text-left"
                       >
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-sm font-semibold text-luma-ivory truncate flex items-center gap-2 min-w-0">
@@ -2123,7 +2123,7 @@ export default function FinanceDashboard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-obsidian-panel border border-obsidian-border rounded-lg p-5 space-y-3">
+                <div className="luma-inset rounded-lg p-5 space-y-3">
                   <div className="flex justify-between items-center gap-2">
                     <span className="font-semibold text-slateText-primary text-sm truncate">Tagihan berjalan</span>
                     <span className="text-xs font-sans px-2 py-0.5 rounded bg-obsidian-card border border-obsidian-border text-mintRise shrink-0 whitespace-nowrap">
@@ -2142,7 +2142,7 @@ export default function FinanceDashboard() {
                   </div>
                 </div>
 
-                <div className="bg-obsidian-panel border border-obsidian-border rounded-lg p-5 space-y-3">
+                <div className="luma-inset rounded-lg p-5 space-y-3">
                   <div className="flex justify-between items-center gap-2">
                     <span className="font-semibold text-slateText-primary text-sm truncate">Investasi</span>
                   </div>
@@ -2555,7 +2555,7 @@ export default function FinanceDashboard() {
                             setProfileModalTab("profile");
                             setIsProfileModalOpen(true);
                           }}
-                          className="luma-touch min-h-[44px] px-4 py-2 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition cursor-pointer"
+                          className="luma-action-secondary text-xs"
                         >
                           Ubah Profil &amp; Telegram
                         </button>
@@ -2576,7 +2576,7 @@ export default function FinanceDashboard() {
                     <h3 className="ai7-type-card text-luma-ivory tracking-tight">
                       Preferensi antarmuka
                     </h3>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white/[0.03] border border-luma-smokeline">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl luma-inset">
                       <div>
                         <div className="text-xs font-semibold text-luma-ivory">Tema tampilan</div>
                         <div className="text-xs text-luma-smoke mt-0.5">
@@ -2608,7 +2608,7 @@ export default function FinanceDashboard() {
                       )}
                     </div>
 
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-4">
+                    <div className="p-4 sm:p-5 rounded-2xl luma-inset space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-2xl bg-luma-sage/15 border border-luma-sage/30 text-luma-sage flex items-center justify-center shrink-0">
@@ -2631,7 +2631,7 @@ export default function FinanceDashboard() {
                                 type="button"
                                 onClick={handleSyncSheets}
                                 disabled={isSyncingSheets}
-                                className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.12] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                className="luma-action-secondary text-xs disabled:opacity-50"
                               >
                                 <RefreshCw className={`w-3.5 h-3.5 text-luma-sage ${isSyncingSheets ? "animate-spin" : ""}`} />
                                 <span>{isSyncingSheets ? "Menyinkronkan..." : "Sinkronkan sekarang"}</span>
@@ -2657,7 +2657,7 @@ export default function FinanceDashboard() {
                                 setIsAuthModalOpen(true);
                               }
                             }}
-                            className="luma-touch min-h-[38px] px-3.5 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.10] text-luma-ivory border border-luma-smokeline text-xs font-semibold transition cursor-pointer"
+                            className="luma-action-secondary text-xs"
                           >
                             {currentUser?.google_spreadsheet_id ? "Atur spreadsheet" : "Tautkan Google Sheets"}
                           </button>
@@ -2665,11 +2665,11 @@ export default function FinanceDashboard() {
                       </div>
 
                       {/* Microcopy box with 1-click copy */}
-                      <div className="rounded-xl border border-luma-smokeline/70 bg-luma-coal/50 p-3 sm:p-3.5 space-y-2">
+                      <div className="rounded-xl luma-inset p-3 sm:p-3.5 space-y-2">
                         <p className="text-xs text-luma-smoke">
                           Bagikan akses <span className="text-luma-ivory font-medium">Editor</span> pada spreadsheet-mu ke:
                         </p>
-                        <div className="flex items-center justify-between gap-2 rounded-lg bg-black/40 border border-luma-smokeline px-3 py-1.5">
+                        <div className="flex items-center justify-between gap-2 rounded-lg luma-readout px-3 py-1.5">
                           <code className="text-xs font-mono text-luma-sage select-all break-all">
                             tillfold@tillfold.iam.gserviceaccount.com
                           </code>

@@ -368,7 +368,7 @@ export function ManageCategoriesModal({
         {/* FORM TAMBAH KATEGORI BARU */}
         <form
           onSubmit={handleCreateCategory}
-          className="bg-obsidian-panel/90 border border-luma-smokeline rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs"
+          className="luma-inset rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xs"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
@@ -493,7 +493,7 @@ export function ManageCategoriesModal({
                   return (
                     <div
                       key={cat.id}
-                      className="p-3 bg-obsidian-panel border border-luma-smokeline rounded-2xl space-y-3 animate-fadeIn"
+                      className="p-3 luma-inset rounded-2xl space-y-3 animate-fadeIn"
                     >
                       <div className="text-xs font-semibold text-luma-ivory flex items-center gap-1">
                         <Edit2 className="w-3 h-3" /> Edit kategori
@@ -567,7 +567,7 @@ export function ManageCategoriesModal({
                 return (
                   <div
                     key={cat.id}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-obsidian-panel/80 hover:bg-obsidian-panel border border-luma-smokeline hover:border-white/[0.12] transition group"
+                    className="flex items-center justify-between p-3 rounded-2xl luma-inset transition group"
                   >
                     {/* Left: Badge, Name, Tx Count */}
                     <div className="flex items-center gap-2.5 min-w-0 pr-2">

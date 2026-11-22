@@ -225,7 +225,7 @@ export function InternalLoansWidget({
       {loading ? (
         <div className="space-y-3 pt-1">
           {[1, 2].map((i) => (
-            <div key={i} className="p-4 rounded-2xl bg-white/[0.02] border border-luma-smokeline space-y-3">
+            <div key={i} className="p-4 rounded-2xl luma-inset space-y-3">
               <div className="flex justify-between items-center">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-4 w-20" />
@@ -251,7 +251,7 @@ export function InternalLoansWidget({
           </button>
         </div>
       ) : loans.length === 0 ? (
-        <div className="p-8 sm:p-10 rounded-2xl bg-white/[0.02] border border-luma-smokeline/70 text-center space-y-3">
+        <div className="p-8 sm:p-10 rounded-2xl luma-inset text-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-luma-smokeline flex items-center justify-center text-luma-smoke mx-auto">
             <ShieldCheck className="w-6 h-6 text-luma-sage" />
           </div>
@@ -286,7 +286,7 @@ export function InternalLoansWidget({
             return (
               <div
                 key={loan.id}
-                className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-luma-smokeline hover:border-white/[0.14] transition-all space-y-4 flex flex-col justify-between"
+                className="p-4 sm:p-5 rounded-2xl luma-inset transition-all space-y-4 flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   {/* Top line: Flow direction & Status badge */}

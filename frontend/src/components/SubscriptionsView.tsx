@@ -85,7 +85,7 @@ export function SubscriptionsView({
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 space-y-4 shadow-sm"
+                className="luma-matte p-5 space-y-4 shadow-sm"
               >
                 <div className="flex justify-between items-start">
                   <div className="space-y-1.5">
@@ -117,7 +117,7 @@ export function SubscriptionsView({
             return (
               <div
                 key={sub.id}
-                className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-5 space-y-4"
+                className="luma-matte p-5 space-y-4"
               >
                 <div className="flex flex-wrap justify-between items-start gap-3">
                   <div className="min-w-[min(100%,180px)] flex-1">
@@ -180,7 +180,7 @@ export function SubscriptionsView({
                 </div>
 
                 {sub.notes && (
-                  <div className="text-xs text-zinc-400 bg-obsidian-panel p-2.5 rounded-xl border border-luma-smokeline font-sans">
+                  <div className="text-xs text-zinc-400 luma-readout p-2.5 rounded-xl font-sans">
                     {sub.notes}
                   </div>
                 )}

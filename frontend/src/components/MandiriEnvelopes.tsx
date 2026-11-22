@@ -84,7 +84,7 @@ export function SmartBudgetEnvelopes({
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-white/[0.04] border border-luma-smokeline p-4 sm:p-5 space-y-4"
+              className="rounded-2xl luma-inset p-4 sm:p-5 space-y-4"
             >
               <div className="flex justify-between items-center gap-2">
                 <Skeleton className="w-24 h-4 rounded-full" />
@@ -148,7 +148,7 @@ export function SmartBudgetEnvelopes({
           return (
             <div
               key={env.title}
-              className="rounded-2xl bg-white/[0.04] border border-luma-smokeline hover:border-white/[0.16] p-4 sm:p-5 space-y-3.5 flex flex-col justify-between transition-all duration-200"
+              className="rounded-2xl luma-inset p-4 sm:p-5 space-y-3.5 flex flex-col justify-between transition-all duration-200"
             >
               <div className="space-y-3">
                 <div className="flex justify-between items-center gap-2">

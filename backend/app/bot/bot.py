@@ -1549,16 +1549,6 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
     db.add(cfg)
     db.commit()
 
-    # 5. Sheets auto-sync if user has configured google_spreadsheet_id
-    sheet_info = ""
-    if user and getattr(user, "google_spreadsheet_id", None):
-        try:
-            from app.services.sheets_sync import sync_cycle_snapshot
-            res = sync_cycle_snapshot(db, user_id=user_id, cycle_start_date=cycle_start)
-            sheet_info = f"\n\n📑 **Google Sheets:** Tab `{res['sheet_title']}` otomatis dibuat & disinkronkan!"
-        except Exception as e:
-            logger.warning(f"Sheets auto-sync error: {e}")
-
     # Build response message
     distrib_lines = []
     for b in buckets:
@@ -1594,7 +1584,7 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
 {distrib_str}
 {debt_section}
 ℹ️ _Pemasukan gaji dicatat utuh di rekening `{source_account}`. Alokasi transfer ke rekening/pos lain dapat dieksekusi terpisah via `/transfer` atau Checklist Dashboard._
-🌐 [Buka dashboard Tillfold]({settings.APP_BASE_URL}){sheet_info}"""
+🌐 [Buka dashboard Tillfold]({settings.APP_BASE_URL})"""
 
     send_message(chat_id, msg, bot_token=bot_token)
 
@@ -1646,20 +1636,15 @@ def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_to
         send_message(chat_id, msg, bot_token=bot_token)
         return
 
-    send_message(chat_id, "⏳ _Sedang menyinkronkan data snapshot siklus ke Google Sheets..._", bot_token=bot_token)
+    send_message(chat_id, "⏳ _Memeriksa semua siklus di Google Sheets..._", bot_token=bot_token)
     try:
         from app.services.sheets_sync import sync_cycle_snapshot
         res = sync_cycle_snapshot(db, user_id=user_id)
-        msg = f"""📑 **GOOGLE SHEETS DISINKRONKAN!**
+        msg = f"""📑 **Sinkronisasi Google Sheets selesai**
 
-• **Tab:** `{res['sheet_title']}`
-• **Periode:** `{res['cycle_range']}`
-• **Total Transaksi:** `{res['transaction_count']} catatan`
-• **Kantong:** `{res['pocket_count']}`
-• **Realisasi Belanja:** {format_rp(res['pocket_spent'])} (Sisa {format_rp(res['pocket_remaining'])})
-• **Total saldo rekening:** {format_rp(res['total_balance'])}
+{res['cycles_updated']} siklus diperbarui · {res['cycles_skipped']} dilewati
 
-🔗 [Buka Lembar Google Sheets]({res['spreadsheet_url']})"""
+🔗 [Buka Google Sheets]({res['spreadsheet_url']})"""
         send_message(chat_id, msg, bot_token=bot_token)
     except Exception as e:
         send_message(chat_id, f"❌ Gagal sinkronisasi ke Google Sheets: {str(e)}", bot_token=bot_token)
@@ -2468,6 +2453,7 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 def main():
     print("Connecting to PostgreSQL and creating tables if not exist...")
     from app.db.pocket_schema import ensure_pocket_schema
+    import app.models.sheets_cycle
     ensure_pocket_schema(engine)
     Base.metadata.create_all(bind=engine)
     from app.db.account_schema import ensure_account_archive_schema, ensure_user_spreadsheet_schema

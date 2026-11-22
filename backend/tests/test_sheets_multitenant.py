@@ -1,5 +1,5 @@
 import pytest
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import MagicMock, patch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -12,10 +12,10 @@ from app.models.user import User
 from app.models.account import Account
 from app.models.pocket import Pocket
 from app.models.transaction import Transaction
-from app.models.paycheck import PaycheckConfig
+from app.models.paycheck import LegacyPaycheckCycle, PaycheckConfig
 from app.core.helpers import extract_spreadsheet_id
 from app.db.user_schema import ensure_user_spreadsheet_schema
-from app.services.sheets_sync import sync_cycle_snapshot
+from app.services.sheets_sync import REPORT_TITLE, WIB, sync_all_cycles, sync_cycle_snapshot
 from app.bot.bot import handle_set_sheet, handle_sheets
 from app.api.deps import get_db, get_strict_current_user, get_current_user
 from main import app
@@ -165,7 +165,7 @@ def test_snapshot_keeps_personal_tab_and_writes_typed_cycle_rows(db_session, tes
                     category="Makan", description="Di luar siklus", date=date(2026, 3, 25)),
     ])
     db_session.commit()
-    personal = MagicMock(title="Sheet1")
+    personal = MagicMock(title="Sheet1", id=1)
     report = MagicMock(id=2, row_count=100, col_count=10)
     google = MagicMock()
     doc = google.open_by_key.return_value
@@ -190,6 +190,14 @@ def test_snapshot_keeps_personal_tab_and_writes_typed_cycle_rows(db_session, tes
         assert ["Saldo awal tercatat", 100_000] in data
         assert ["Anggaran belanja", 700_000] in data
         assert ["Bank Uji", "Makan", "Operasional", 500_000, 125_000, 50_000, 75_000, None] in data
+        assert ["Pemasukan", "Gaji", 800_000, 1] in data
+        assert ["Pengeluaran", "Makan", 50_000, 1] in data
+        assert ["Pemasukan", "Saldo Awal", 100_000, 1] not in data
+        assert ["Pengeluaran", "Transfer", 200_000, 1] not in data
+        accent_bands = [req["repeatCell"]["cell"]["userEnteredFormat"]["backgroundColor"]
+                        for req in requests if "repeatCell" in req
+                        and "backgroundColor" in req["repeatCell"]["cell"]["userEnteredFormat"]]
+        assert len({tuple(color.values()) for color in accent_bands}) == 7
         transaction = [date_serial, "=1+1", "Makan", "Bank Uji", "Pengeluaran", -50_000, "Makan", expense.id]
         assert cells[data.index(transaction)][1] == {"userEnteredValue": {"stringValue": "=1+1"}}
         assert all("Di luar siklus" not in row for row in data)
@@ -204,10 +212,80 @@ def test_snapshot_keeps_personal_tab_and_writes_typed_cycle_rows(db_session, tes
         assert next(req["updateCells"] for req in refresh if "updateCells" in req)["range"]["endRowIndex"] == 100
         assert personal.mock_calls == []
 
+        report.id = 3
         report.get.return_value = [["Catatan pribadi"]]
         result = sync_cycle_snapshot(db_session, test_user.id, start)
         assert result["sheet_title"] == f"{report.title} · Tillfold"
         assert "addSheet" in doc.batch_update.call_args.args[0]["requests"][0]
+
+
+def test_sync_all_cycles_skips_unchanged_tabs_and_freezes_closed_pockets(db_session, test_user):
+    test_user.google_spreadsheet_id = "cycle-history-sheet"
+    bank = Account(user_id=test_user.id, name="Bank Uji", type="operasional", initial_balance=0)
+    db_session.add(bank)
+    db_session.flush()
+    pocket = Pocket(user_id=test_user.id, account_id=bank.id, name="Liburan", slug="liburan",
+                    role="tabungan", target_amount=500_000, allocation_amount=125_000)
+    old_start, old_end = date(2026, 2, 1), date(2026, 2, 28)
+    current_start, current_end = date(2026, 3, 1), date(2026, 3, 31)
+    old_tx = Transaction(user_id=test_user.id, type="income", amount=1_000_000, account=bank.name,
+                         category="Gaji", description="Bulan lalu", date=old_start)
+    db_session.add_all([
+        pocket, old_tx,
+        Transaction(user_id=test_user.id, type="income", amount=2_000_000, account=bank.name,
+                    category="Gaji", description="Bulan ini", date=current_start),
+        LegacyPaycheckCycle(user_id=test_user.id, start_date=old_start, end_date=old_end),
+        LegacyPaycheckCycle(user_id=test_user.id, start_date=current_start, end_date=current_end),
+    ])
+    db_session.commit()
+
+    google = MagicMock()
+    doc = google.open_by_key.return_value
+    sheets = []
+    writes = {}
+    doc.worksheets.side_effect = lambda: list(sheets)
+
+    def apply_batch(body):
+        requests = body["requests"]
+        if "addSheet" in requests[0]:
+            props = requests[0]["addSheet"]["properties"]
+            sheet = MagicMock(title=props["title"], id=props["sheetId"], row_count=100, col_count=8)
+            sheet.get.return_value = [[REPORT_TITLE]]
+            sheets.append(sheet)
+        update = next(req["updateCells"] for req in requests if "updateCells" in req)
+        writes[update["range"]["sheetId"]] = [
+            [next(iter(cell.get("userEnteredValue", {}).values()), None) for cell in row["values"]]
+            for row in update["rows"]
+        ]
+
+    doc.batch_update.side_effect = apply_batch
+    close_day = datetime(2026, 3, 1, 1, tzinfo=WIB)
+    with patch("app.services.sheets_sync.get_google_sheets_client", return_value=google):
+        closed = sync_all_cycles(db_session, test_user.id, closed_only=True, now=close_day)
+        assert closed["cycles_updated"] == 1
+        closed_sheet = sheets[0]
+        assert ["Bank Uji", "Operasional", 1_000_000, "Aktif"] in writes[closed_sheet.id]
+        assert ["Kantong · saat siklus ditutup"] in writes[closed_sheet.id]
+        assert sync_all_cycles(db_session, test_user.id, closed_only=True, now=close_day)["cycles_checked"] == 0
+        assert sync_all_cycles(db_session, test_user.id, now=close_day)["cycles_updated"] == 1
+        assert len(sheets) == 2
+        repeat = sync_all_cycles(db_session, test_user.id, now=close_day.replace(hour=3))
+        assert (repeat["cycles_updated"], repeat["cycles_skipped"]) == (0, 2)
+        assert doc.batch_update.call_count == 2
+
+        old_tx.category = "Honor"
+        db_session.commit()
+        edited = sync_all_cycles(db_session, test_user.id, now=close_day)
+        assert (edited["cycles_updated"], edited["cycles_skipped"]) == (1, 1)
+        assert ["Pemasukan", "Honor", 1_000_000, 1] in writes[closed_sheet.id]
+
+        pocket.target_amount = 600_000
+        db_session.commit()
+        changed = sync_all_cycles(db_session, test_user.id, now=close_day)
+        assert changed["cycles_updated"] == 1
+        assert ["Pemasukan", "Honor", 1_000_000, 1] in writes[closed_sheet.id]
+        assert ["Bank Uji", "Liburan", "Tabungan", 500_000, 125_000, 0, 125_000, None] in writes[closed_sheet.id]
+        assert ["Bank Uji", "Liburan", "Tabungan", 600_000, 125_000, 0, 125_000, None] in writes[sheets[1].id]
 
 
 # ============================================================================

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy, Check, RefreshCw } from "lucide-react";
 import { CustomModal } from "./ui/CustomModal";
-import { authFetch, setStoredUser, UserProfile, syncGoogleSheets } from "@/lib/api";
+import { authFetch, setStoredUser, UserProfile, syncGoogleSheets, sheetsSyncMessage } from "@/lib/api";
 
 const SERVICE_ACCOUNT_EMAIL = "tillfold@tillfold.iam.gserviceaccount.com";
 
@@ -178,7 +178,7 @@ export function UserProfileModal({
       const res = await syncGoogleSheets();
       setMsg({
         type: "success",
-        text: `Sinkronisasi berhasil! Lembar: ${res.sheet_title || "Snapshot"} (${res.transaction_count ?? 0} transaksi disinkronkan).`,
+        text: sheetsSyncMessage(res),
       });
     } catch (error) {
       setMsg({ type: "error", text: error instanceof Error ? error.message : "Gagal menyinkronkan data ke Google Sheets." });
@@ -564,7 +564,7 @@ export function UserProfileModal({
                     className="luma-action-secondary cursor-pointer"
                   >
                     <RefreshCw className={`h-4 w-4 text-luma-sage ${isSyncing ? "animate-spin" : ""}`} />
-                    {isSyncing ? "Menyinkronkan…" : "Sync sekarang"}
+                    {isSyncing ? "Menyinkronkan…" : "Sinkronkan semua siklus"}
                   </button>
                 )}
               </div>

@@ -84,6 +84,7 @@ import {
   UserProfile,
   PocketsSummaryResponse,
   syncGoogleSheets,
+  sheetsSyncMessage,
 } from "@/lib/api";
 import { DashboardLoadError, loadDashboardData } from "@/lib/dashboardData";
 import { getCategoryColorDef } from "@/lib/categoryColors";
@@ -398,7 +399,7 @@ export default function FinanceDashboard() {
     setIsSyncingSheets(true);
     try {
       const res = await syncGoogleSheets();
-      showToast(`Google Sheets berhasil disinkronkan (${res.sheet_title || "Snapshot"}).`);
+      showToast(sheetsSyncMessage(res));
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Gagal menyinkronkan data ke Google Sheets.");
     } finally {

@@ -1,4 +1,7 @@
+import asyncio
+import logging
 import os
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -17,6 +20,7 @@ import app.models.paycheck
 import app.models.user
 import app.models.category
 import app.models.pocket
+import app.models.sheets_cycle
 import app.models.jago_pocket
 import app.models.internal_loan
 
@@ -33,7 +37,30 @@ ensure_internal_loan_schema(engine)
 
 IS_PROD = os.getenv("ENVIRONMENT", "production").lower() == "production"
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    from app.services.sheets_sync import sync_closed_cycles
+
+    async def sync_loop():
+        while True:
+            try:
+                await asyncio.to_thread(sync_closed_cycles)
+            except Exception:
+                logging.getLogger(__name__).exception("Sheets cycle check failed")
+            await asyncio.sleep(3600)
+
+    task = asyncio.create_task(sync_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=None if IS_PROD else f"{settings.API_V1_STR}/openapi.json",

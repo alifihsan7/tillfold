@@ -258,11 +258,18 @@ export interface SheetsSyncResponse {
   spreadsheet_url: string;
   synced_at: string;
   cycle_range: string;
+  cycles_updated: number;
+  cycles_skipped: number;
   transaction_count: number;
   envelopes_count: number;
   pocket_spent: number;
   pocket_remaining: number;
   total_balance: number;
+}
+
+export function sheetsSyncMessage(result: SheetsSyncResponse): string {
+  if (result.cycles_updated === 0) return "Google Sheets sudah terbaru.";
+  return `${result.cycles_updated} siklus diperbarui · ${result.cycles_skipped} dilewati.`;
 }
 
 export async function syncGoogleSheets(cycleStart?: string): Promise<SheetsSyncResponse> {

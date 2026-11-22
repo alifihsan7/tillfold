@@ -90,15 +90,8 @@ def get_monthly_date_bounds(ref_date: date, payday: int) -> tuple[date, date]:
     end_date = date(next_year, next_month, min(payday, max_days_next)) - timedelta(days=1)
     return start_date, end_date
 
-@router.get("/periods")
-def get_available_periods(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    now_wib = datetime.now(WIB)
-    today_wib = now_wib.date()
-
-    cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == current_user.id).first()
+def list_available_cycles(db: Session, user_id: int, today_wib: date) -> list[dict]:
+    cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
     cycle_days = cfg.cycle_days if cfg and cfg.cycle_days > 0 else 14
     cycle_type = cfg.cycle_type if cfg and cfg.cycle_type else "biweekly"
     anchor_start = cfg.cycle_start_date if cfg and cfg.cycle_start_date else None
@@ -108,13 +101,13 @@ def get_available_periods(
 
     # 1. Ambil semua gajian unik milik user
     paycheck_rows = db.query(Transaction.date).filter(
-        Transaction.user_id == current_user.id,
+        Transaction.user_id == user_id,
         Transaction.type == "income",
-        ~legacy_cycle_covers(db, current_user.id),
+        ~legacy_cycle_covers(db, user_id),
         Transaction.category.in_(["Gajian", "Gaji", "Pemasukan", "Uang Saku Ortu", "Income"]) | Transaction.description.ilike("%gajian%") | Transaction.description.ilike("%pemasukan%")
     ).order_by(Transaction.date.desc()).distinct().all()
 
-    cycle_ends = recorded_cycle_ends(db, current_user.id)
+    cycle_ends = recorded_cycle_ends(db, user_id)
     paycheck_dates = sorted({row.date for row in paycheck_rows} | cycle_ends.keys(), reverse=True)
     cycles = []
     # Jika tidak ada riwayat gajian, gunakan anchor onboarding atau hari ini
@@ -164,6 +157,17 @@ def get_available_periods(
     if current_cycle:
         current_cycle["is_current"] = True
         current_cycle["label"] += " · berjalan"
+    return cycles
+
+
+@router.get("/periods")
+def get_available_periods(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    now_wib = datetime.now(WIB)
+    today_wib = now_wib.date()
+    cycles = list_available_cycles(db, current_user.id, today_wib)
 
     # 2. Minggu ini & minggu lalu
     this_week_start = today_wib - timedelta(days=today_wib.weekday())

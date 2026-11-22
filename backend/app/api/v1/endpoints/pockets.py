@@ -281,8 +281,8 @@ def ensure_default_pockets(db: Session, user_id: int, account_id: Optional[int] 
     return list(existing_map.values())
 
 
-def _get_ledger_balance(db: Session, user_id: int, account_names: List[str]) -> Optional[int]:
-    tx_balance = db.query(
+def _get_ledger_balance(db: Session, user_id: int, account_names: List[str], through: Optional[date] = None) -> Optional[int]:
+    query = db.query(
         func.sum(
             case(
                 (Transaction.type.in_(POSITIVE_TYPES), Transaction.amount),
@@ -293,7 +293,10 @@ def _get_ledger_balance(db: Session, user_id: int, account_names: List[str]) -> 
     ).filter(
         Transaction.user_id == user_id,
         func.lower(Transaction.account).in_(account_names),
-    ).scalar()
+    )
+    if through is not None:
+        query = query.filter(Transaction.date <= through)
+    tx_balance = query.scalar()
     return int(tx_balance) if tx_balance is not None else None
 
 
@@ -411,6 +414,7 @@ def compute_pockets_summary(
     cycle_end: Optional[date] = None,
     *,
     persist: bool = True,
+    balance_through: Optional[date] = None,
 ) -> PocketSummaryResponse:
     """Computes comprehensive summary, auto-deduction metrics, and balance for pockets of an account."""
     if persist:
@@ -464,9 +468,9 @@ def compute_pockets_summary(
             if p.slug not in slug_order and p not in ordered_pockets:
                 ordered_pockets.append(p)
 
-    total_balance = _get_ledger_balance(db, user_id, target_account_names)
+    total_balance = _get_ledger_balance(db, user_id, target_account_names, balance_through)
     if total_balance is None:
-        total_balance = max(0, int(acc.initial_balance)) if acc else 0
+        total_balance = max(0, int(acc.initial_balance)) if acc and balance_through is None else 0
 
     expenses = db.query(Transaction).filter(
         Transaction.user_id == user_id,

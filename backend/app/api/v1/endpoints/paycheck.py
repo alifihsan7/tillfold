@@ -763,13 +763,6 @@ def toggle_paycheck_step(
         if cfg:
             cfg.cycle_start_date = session.date
             db.add(cfg)
-        # Auto sync Google Sheets snapshot in background (User #1 only)
-        if current_user.id == 1:
-            try:
-                from app.services.sheets_sync import sync_cycle_snapshot
-                sync_cycle_snapshot(db, user_id=current_user.id, cycle_start_date=session.date)
-            except Exception as e:
-                print(f"[Paycheck Sync Warning] Failed to auto sync sheets: {e}")
     else:
         session.status = "in_progress"
 
@@ -820,13 +813,6 @@ def complete_all_paycheck_steps(
         db.add(cfg)
     db.commit()
     db.refresh(session)
-
-    if current_user.id == 1:
-        try:
-            from app.services.sheets_sync import sync_cycle_snapshot
-            sync_cycle_snapshot(db, user_id=current_user.id, cycle_start_date=session.date)
-        except Exception as e:
-            print(f"[Paycheck Sync Warning] Failed to auto sync sheets: {e}")
 
     return format_session_out(session)
 

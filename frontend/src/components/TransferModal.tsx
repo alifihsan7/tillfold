@@ -10,6 +10,7 @@ interface TransferModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialFromAccount?: string;
   accountOptions?: { value: string; label: string; color?: string; description?: string }[];
 }
 
@@ -20,10 +21,13 @@ const ACCOUNT_OPTIONS = [
   { value: "Uang Tunai (Cash)", label: "Uang Tunai (Cash)", color: "bg-amber-500", description: "Uang tunai fisik" },
 ];
 
-export function TransferModal({ isOpen, onClose, onSuccess, accountOptions }: TransferModalProps) {
+export function TransferModal({ isOpen, onClose, onSuccess, accountOptions, initialFromAccount }: TransferModalProps) {
   const options = accountOptions && accountOptions.length > 0 ? accountOptions : ACCOUNT_OPTIONS;
-  const [fromAccount, setFromAccount] = useState(() => options[0]?.value || "");
-  const [toAccount, setToAccount] = useState(() => options[1]?.value || options[0]?.value || "");
+  const initialFrom = options.find(({ value }) => value === initialFromAccount)?.value;
+  const [fromAccount, setFromAccount] = useState(() => initialFrom ?? options[0]?.value ?? "");
+  const [toAccount, setToAccount] = useState(() => initialFrom
+    ? options.find(({ value }) => value !== initialFrom)?.value ?? ""
+    : options[1]?.value ?? options[0]?.value ?? "");
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);

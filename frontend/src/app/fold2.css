@@ -24,6 +24,8 @@
   --fold-shadow: 0 16px 36px -20px rgb(0 0 0 / .65);
   --fold-overlay-shadow: 0 22px 48px -12px rgb(0 0 0 / .6);
   --fold-scrim: rgb(0 0 0 / .65);
+  --fold-wallet-sheet: #30353d;
+  --fold-wallet-deep: #414852;
   --fold-mint: #b9dfc9;
   --fold-coral: #ff9e96;
   --fold-ink: #15181d;
@@ -57,6 +59,8 @@
   --fold-shadow: 0 1px 2px rgb(17 20 25 / .04), 0 16px 36px -20px rgb(17 20 25 / .30);
   --fold-overlay-shadow: 0 20px 44px -8px rgb(17 20 25 / .22), 0 3px 8px rgb(17 20 25 / .08);
   --fold-scrim: rgb(17 20 25 / .42);
+  --fold-wallet-sheet: #eef0f2;
+  --fold-wallet-deep: #c4cbd2;
 }
 
 .tillfold-fold {
@@ -352,25 +356,62 @@
 .fold-row-actions > button:hover { background: var(--fold-selected); }
 .fold-transactions-empty { justify-items: center; text-align: center; padding: 24px 12px; }
 
-.fold-wallet > header { min-height: 50px; padding: 0 4px 8px; }
+.fold-wallet > header { min-height: 50px; padding: 0 8px 8px; }
+.fold-wallet-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.fold-wallet-heading > span { color: var(--fold-overview-secondary); font-size: 13px; }
 .fold-wallet-list { isolation: isolate; }
-.fold-pocket {
-  position: relative;
+.fold-pocket, .fold-pocket-top {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) minmax(0, auto);
   align-items: center;
-  gap: 11px;
-  padding: 20px 15px 13px;
-  border: 1px solid var(--fold-edge);
+  gap: 12px;
+}
+.fold-pocket {
+  position: relative;
+  padding: 32px 22px 14px;
   border-radius: 0 0 26px 26px;
-  background: var(--fold-panel);
+  background: color-mix(in srgb, var(--fold-wallet-sheet), var(--fold-wallet-deep) var(--pocket-depth, 0%));
   box-shadow: 0 10px 20px -16px rgb(17 20 25 / .45);
 }
-.fold-pocket:first-child { z-index: 1; padding-top: 15px; border-radius: 28px; background: var(--fold-surface); }
-.fold-pocket + .fold-pocket { margin-top: -8px; }
-.fold-pocket:nth-child(odd) { background: var(--fold-surface); }
+.fold-wallet-list > .fold-pocket:not(:first-child) { margin-top: -20px; }
+.fold-pocket-front {
+  position: relative;
+  padding: 20px 22px 18px;
+  border-radius: 28px;
+  background: var(--fold-surface);
+  box-shadow: 0 12px 22px -14px rgb(17 20 25 / .42), 0 1px 2px rgb(17 20 25 / .04);
+}
+.fold-pocket-top { grid-template-columns: 38px minmax(0, 1fr) minmax(0, auto); }
 .fold-pocket-icon { width: 34px; height: 34px; background: var(--fold-surface); color: var(--fold-overview-secondary); }
-.fold-pocket:first-child .fold-pocket-icon { background: var(--fold-ink); color: var(--fold-on-ink); }
+.fold-pocket-front .fold-pocket-icon { width: 38px; height: 38px; background: var(--fold-ink); color: var(--fold-on-ink); }
+.fold-pocket-front .fold-pocket-amount { font-size: clamp(14px, 1.3vw, 18px); }
+.fold-pocket-role { color: var(--fold-overview-secondary); }
+.fold-page .fold-pocket-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.fold-pocket-chips li {
+  padding: 5px 11px;
+  border-radius: 999px;
+  color: var(--fold-overview-secondary);
+  background: var(--fold-panel);
+  font-size: 12px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.fold-pocket-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--fold-edge);
+}
+.fold-page .fold-wallet-reconcile {
+  min-height: 36px;
+  border-color: var(--fold-selected-edge);
+  background: var(--fold-surface);
+  color: var(--fold-overview-text);
+}
+.fold-page .fold-wallet-reconcile:hover { background: var(--fold-panel); }
+.fold-page .fold-wallet-reconcile:active { background: var(--fold-selected); }
 .fold-message { display: grid; gap: 10px; align-content: start; justify-items: start; padding: 20px; }
 .fold-budget .fold-message { padding: 4px 0; }
 .fold-card.fold-loading { display: grid; place-items: center; padding: 20px; }
@@ -400,4 +441,7 @@
   .fold-transaction { grid-template-columns: 34px minmax(0, 1fr) minmax(62px, auto); gap: 6px 8px; padding-inline: 8px; }
   .fold-row-actions { grid-column: 2 / -1; }
   .fold-transaction-icon { width: 34px; height: 34px; }
+  .fold-pocket-front { padding: 18px 18px 16px; }
+  .fold-pocket { padding: 30px 18px 12px; }
+  .fold-page .fold-pocket-actions > button { flex: 1 1 auto; min-height: 44px; }
 }

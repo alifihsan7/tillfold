@@ -41,6 +41,7 @@ import { LumaOverview } from "@/components/LumaOverview";
 import { LumaAccountStrip } from "@/components/LumaAccountStrip";
 import { LumaRecentTransactions } from "@/components/LumaRecentTransactions";
 import { AccountGrid } from "@/components/AccountGrid";
+import { ReconcileAccountModal } from "@/components/ReconcileAccountModal";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { SmartBudgetEnvelopes } from "@/components/MandiriEnvelopes";
 import { AccountPockets } from "@/components/AccountPockets";
@@ -376,6 +377,8 @@ export default function FinanceDashboard() {
   const [isPayrollSettingsOpen, setIsPayrollSettingsOpen] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [walletTransferSource, setWalletTransferSource] = useState<string>();
+  const [walletReconcileId, setWalletReconcileId] = useState<number>();
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState<AccountItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -969,6 +972,16 @@ export default function FinanceDashboard() {
   }, [paycheckBuckets, customAccounts]);
 
   const pocketAccountName = (summary.safe_to_spend?.pocket_account || "").toLowerCase();
+  const overviewAccount = activeAccounts.find((account) => account.name.toLowerCase() === pocketAccountName)
+    ?? activeAccounts.find((account) => account.type === "operasional")
+    ?? activeAccounts[0];
+  const overviewPockets = (pocketsData?.pockets ?? pocketsData?.items ?? []).filter((pocket) => {
+    const accountId = pocket.account_id ?? pocketsData?.account_id;
+    const accountName = pocket.account_name ?? pocketsData?.account_name;
+    return pocket.is_active && overviewAccount !== undefined && (
+      accountId != null ? accountId === overviewAccount.id : accountName === overviewAccount.name
+    );
+  });
 
   const mandiriExpenses = useMemo(() => {
     const expenses = { makan: 0, jajan: 0, laundry: 0, galon: 0 };
@@ -1835,9 +1848,12 @@ export default function FinanceDashboard() {
             />
             <LumaAccountStrip
               hideBalance={hideOverviewBalances}
+              featuredName={overviewAccount?.name}
+              featuredPockets={overviewPockets}
               accounts={(summary.accounts || []).map((a) => {
                 const found = customAccounts.find((c) => c.name.toLowerCase() === a.account.toLowerCase());
                 return {
+                  id: found?.is_archived ? undefined : found?.id,
                   name: a.account,
                   balance: a.balance,
                   type: found?.type,
@@ -1845,6 +1861,11 @@ export default function FinanceDashboard() {
               })}
               formatRupiah={formatRupiah}
               loading={loading}
+              onReconcile={setWalletReconcileId}
+              onTransfer={activeAccounts.length > 1 ? (name) => {
+                setWalletTransferSource(name);
+                setIsTransferModalOpen(true);
+              } : undefined}
               onOpenAccounts={() => {
                 setActiveNav("Pengaturan");
                 setSettingsSubTab("rekening");
@@ -1985,7 +2006,7 @@ export default function FinanceDashboard() {
             <AccountPockets
               cycleStart={summary.start_date}
               cycleEnd={summary.end_date}
-              accountId={(customAccounts.find(account => account.name === summary.safe_to_spend?.pocket_account) || customAccounts.find(account => account.type === "operasional") || customAccounts[0])?.id}
+              accountId={overviewAccount?.id}
               formatRupiah={formatRupiah}
               refreshSignal={pocketsRefreshSignal}
               onToast={showToast}
@@ -2952,11 +2973,21 @@ export default function FinanceDashboard() {
 
       {/* Transfer Modal */}
       <TransferModal
+        key={walletTransferSource ? `wallet:${walletTransferSource}` : "transfer"}
         isOpen={isTransferModalOpen}
-        onClose={() => setIsTransferModalOpen(false)}
+        initialFromAccount={walletTransferSource}
+        onClose={() => {
+          setIsTransferModalOpen(false);
+          setWalletTransferSource(undefined);
+        }}
         accountOptions={availableAccountOptions}
         onSuccess={fetchData}
       />
+      {walletReconcileId !== undefined && <ReconcileAccountModal
+        accountId={walletReconcileId}
+        onClose={() => setWalletReconcileId(undefined)}
+        onSuccess={fetchData}
+      />}
 
       {/* Add Account Modal */}
       <AddAccountModal

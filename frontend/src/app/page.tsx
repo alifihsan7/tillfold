@@ -1570,7 +1570,7 @@ export default function FinanceDashboard() {
         {/* Persistent Sticky Topbar Header — slim Luma: period + utilities menu */}
         <header className="luma-topbar sticky top-0 z-20 bg-luma-charcoal/90 backdrop-blur-md border-b border-luma-smokeline/60 py-2.5 px-4 sm:px-6 lg:px-8">
           <div className="luma-topbar-inner max-w-7xl 2xl:max-w-[1600px] mx-auto w-full flex flex-row items-center justify-between gap-3 sm:gap-4">
-            {activeNav === "Ringkasan" && <span className="fold-topbar-title" aria-hidden="true">Ringkasan</span>}
+            <span className="fold-topbar-title" aria-hidden="true">{activeNav}</span>
             {/* Pure Control Period Selector & Theme Switch */}
             <div className="luma-period-controls flex items-center gap-2 sm:gap-2.5 min-w-0">
               {currentUser ? <PeriodSelector
@@ -1727,7 +1727,7 @@ export default function FinanceDashboard() {
 
         <div className="luma-page-content fold-content p-3.5 sm:p-5 md:p-6 lg:p-8 xl:p-10 pb-24 md:pb-10 max-w-7xl 2xl:max-w-[1600px] mx-auto w-full space-y-6 sm:space-y-8">
           {/* Page Title & Antislop Copy Header */}
-          <div key={activeNav} className={`fold-heading animate-fadeIn ${activeNav === "Ringkasan" ? "fold-page-title" : ""}`}>
+          <div key={activeNav} className="fold-heading fold-page-title animate-fadeIn">
             <h1 className="ai7-type-page tracking-tight text-luma-ivory">
               {activeNav}
             </h1>

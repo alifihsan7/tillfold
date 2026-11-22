@@ -163,6 +163,9 @@
   border-radius: 999px;
   background: var(--fold-toolbar);
 }
+/* The period trigger fits its label instead of stretching across the topbar. */
+.tillfold-fold .luma-period-controls { flex: 0 1 auto; min-width: 0; }
+.tillfold-fold .luma-period-selector { flex: 0 1 auto; max-width: min(100%, 18rem); }
 .fold-topbar-title { display: none; font-size: 22px; font-weight: 700; letter-spacing: -.025em; }
 .tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button {
   background: var(--fold-ink);
@@ -436,7 +439,6 @@
 }
 @media (max-width: 767px) {
   .tillfold-fold .luma-topbar-inner { border-radius: 24px; min-height: 56px; padding: 7px 9px; }
-  .tillfold-fold .luma-period-controls { min-width: 0; flex-basis: 0; }
   .tillfold-fold .fold-sheet-backdrop { align-items: flex-end; padding: 0; }
   .tillfold-fold .fold-sheet-panel {
     width: 100%;
@@ -560,6 +562,7 @@ html:not(.light) .fold-hero {
 .fold-ratio > span { border-radius: 999px; }
 .fold-ratio-income { background: var(--fold-mint); }
 .fold-ratio-expense { background: var(--fold-coral); }
+.fold-ratio-hidden { flex: 1 1 0; background: rgb(var(--fold-hero-tint) / .16); }
 .fold-hero .fold-balance-legend { display: flex; flex-wrap: wrap; gap: 6px 17px; margin-top: 9px; font-size: 12px; }
 .fold-balance-legend > div, .fold-balance-legend dt { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 .fold-balance-legend dt { color: var(--fold-on-ink-muted); }
@@ -583,6 +586,9 @@ html:not(.light) .fold-hero {
 .fold-gauge-value { position: absolute; inset: auto 13% 10% 13%; text-align: center; }
 .fold-gauge-value > p + p { color: var(--fold-overview-muted); font-size: 12px; }
 .fold-daily-amount { font-size: clamp(20px, 3.2vw, 30px); font-weight: 750; line-height: 1.15; letter-spacing: -.04em; overflow-wrap: anywhere; }
+/* Hidden amounts inside the gauge stay within the arc: smaller dots, no extra gap. */
+.fold-daily-amount .luma-hidden-amount { display: inline-flex; align-items: center; gap: .18em; }
+.fold-daily-amount .luma-hidden-amount-dots { margin-inline-start: 0; font-size: .55em; letter-spacing: .12em; }
 .fold-budget-status { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 12px; color: var(--fold-overview-muted); }
 .fold-budget[data-pace="warning"] .fold-budget-status > span:first-child { color: var(--fold-overview-negative); }
 .fold-budget .fold-budget-stats {

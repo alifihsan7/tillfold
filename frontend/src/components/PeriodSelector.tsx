@@ -3,7 +3,7 @@ import { Calendar, Check, ChevronDown } from "lucide-react";
 import { DateField } from "@/components/ui/DateField";
 import { Badge, SegmentedControl, type SegmentedOption } from "@/components/ui/controls";
 import { authFetch } from "@/lib/api";
-import { formatDateRange } from "@/lib/format";
+import { formatCompactRange, formatDateRange } from "@/lib/format";
 import { useLatest } from "@/lib/useLatest";
 
 export interface PeriodOption {
@@ -28,8 +28,19 @@ const periodTabs: SegmentedOption<PeriodOption["type"]>[] = [
   { value: "custom", label: "Kustom" },
 ];
 const currentBadges = { cycle: "Berjalan", week: "Minggu ini", month: "Bulan ini" };
+const monthOnly = new Intl.DateTimeFormat("id-ID", { month: "long", timeZone: "UTC" });
 const monthAndYear = new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric", timeZone: "UTC" });
 const recentCycleCount = 3;
+
+/** Shorter label for the trigger button; the full title stays in the tooltip and accessible name. */
+function periodTriggerTitle(period: PeriodOption) {
+  if (!period.start || !period.end) return period.label || "Pilih periode";
+  if (period.type === "month") {
+    const start = new Date(period.start);
+    return start.getUTCFullYear() === new Date().getFullYear() ? monthOnly.format(start) : monthAndYear.format(start);
+  }
+  return formatCompactRange(period.start, period.end);
+}
 
 function periodTitle(period: PeriodOption) {
   if (!period.start || !period.end) return period.label || "Pilih periode";
@@ -134,6 +145,7 @@ export function PeriodSelector({ currentPeriod, onSelectPeriod }: PeriodSelector
   };
 
   const title = periodTitle(currentPeriod);
+  const triggerTitle = periodTriggerTitle(currentPeriod);
 
   return (
     <div ref={dropdownRef} className="luma-period-selector relative min-w-0 text-left">
@@ -148,7 +160,7 @@ export function PeriodSelector({ currentPeriod, onSelectPeriod }: PeriodSelector
         className="w-full min-w-0 min-h-11 py-2 px-3.5 text-xs font-medium inline-flex items-center gap-2"
       >
         <Calendar className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-        <span className="min-w-0 flex-1 text-left truncate">{title}</span>
+        <span className="min-w-0 flex-1 text-left truncate">{triggerTitle}</span>
         <ChevronDown className={`w-3.5 h-3.5 shrink-0 ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 

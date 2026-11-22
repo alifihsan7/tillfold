@@ -12,6 +12,18 @@ export function formatShortDate(value: string, today: Date = new Date()): string
   return (date.getUTCFullYear() === today.getFullYear() ? shortDate : shortDateWithYear).format(date);
 }
 
+/** Range for tight controls: the year is dropped when both ends fall in the current year. */
+export function formatCompactRange(start: string, end: string, today: Date = new Date()): string {
+  const first = new Date(start);
+  const last = new Date(end);
+  if (!Number.isFinite(first.getTime()) || !Number.isFinite(last.getTime())) return "";
+  const year = today.getFullYear();
+  if (first.getUTCFullYear() !== year || last.getUTCFullYear() !== year) return formatDateRange(start, end);
+  if (start === end) return shortDate.format(last);
+  if (first.getUTCMonth() === last.getUTCMonth()) return `${first.getUTCDate()}–${shortDate.format(last)}`;
+  return `${shortDate.format(first)} – ${shortDate.format(last)}`;
+}
+
 /** Compact inclusive range, with the year repeated only when it changes. */
 export function formatDateRange(start: string, end: string): string {
   const first = new Date(start);

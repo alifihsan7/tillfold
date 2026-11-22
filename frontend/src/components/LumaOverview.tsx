@@ -92,10 +92,14 @@ export function LumaOverview({
           </div>
           <p className="fold-balance" aria-live="polite">{privateAmount(totalBalance)}</p>
           <p className="fold-balance-caption">Tersimpan di {accountCount} rekening Anda</p>
-          {!hideBalance && inflow + outflow > 0 && (
+          {inflow + outflow > 0 && (
             <div className="fold-ratio" aria-hidden="true">
-              {inflow > 0 && <span className="fold-ratio-income" style={{ flexGrow: inflow }} />}
-              {outflow > 0 && <span className="fold-ratio-expense" style={{ flexGrow: outflow }} />}
+              {hideBalance ? <span className="fold-ratio-hidden" /> : (
+                <>
+                  {inflow > 0 && <span className="fold-ratio-income" style={{ flexGrow: inflow }} />}
+                  {outflow > 0 && <span className="fold-ratio-expense" style={{ flexGrow: outflow }} />}
+                </>
+              )}
             </div>
           )}
           <dl className="fold-balance-legend">

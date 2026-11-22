@@ -143,11 +143,11 @@ input[type="number"] {
 .tillfold-date-field {
   display: flex;
   align-items: center;
-  background: var(--obsidian-card);
-  border: 1px solid var(--ai7-field-border);
+  background: var(--luma-coal);
+  border: 1px solid transparent;
   border-radius: var(--ai7-radius-control);
 }
-.tillfold-date-field:focus-within { border-color: var(--luma-ember); }
+.tillfold-date-field:focus-within { background: var(--obsidian-hover); }
 .tillfold-date .tillfold-date-field input {
   width: 100%;
   min-width: 0;
@@ -191,7 +191,7 @@ input[type="number"] {
   overflow: hidden;
   padding: 8px;
   background: var(--luma-panel-surface);
-  border: 1px solid var(--luma-smokeline);
+  border: 1px solid transparent;
   border-radius: var(--ai7-radius-control);
   box-shadow: 0 12px 28px rgb(0 0 0 / .22);
 }
@@ -481,7 +481,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-balance-stats span { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--luma-ivory); }
 .luma-balance-stats strong { display: block; margin-top: 5px; font-size: 20px; font-weight: 500; letter-spacing: -.025em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; color: #fff; }
 .luma-overview-side { display: grid; grid-template-rows: auto 1fr; gap: 14px; min-width: 0; }
-.luma-glass, .luma-matte { background: var(--luma-panel-surface); border: 1px solid var(--luma-smokeline); border-radius: var(--ai7-radius-panel); }
+.luma-glass, .luma-matte { background: var(--luma-panel-surface); border: 1px solid transparent; border-radius: var(--ai7-radius-panel); }
 .luma-flow-panel, .luma-daily-panel { padding: 17px 20px; border-radius: var(--ai7-radius-panel); min-width: 0; border-color: transparent; }
 .luma-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .luma-section-heading h2 { font-size: 16px; font-weight: 600; }
@@ -666,25 +666,25 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-app button.bg-luma-ivory:hover:not(:disabled),
 :is(.luma-app, .luma-dialog-panel) .luma-action-primary:hover:not(:disabled) { background: var(--ai7-primary-hover); }
 :is(.luma-app, .luma-dialog-panel) button:disabled { opacity: .5; }
-.luma-dialog-panel { border-radius: var(--ai7-radius-panel); border: 1px solid var(--luma-smokeline); }
+.luma-dialog-panel { border-radius: var(--ai7-radius-panel); border: 1px solid transparent; }
 .luma-dialog-panel .ai7-dialog-icon { color: var(--luma-smoke); background: var(--luma-coal); border-color: var(--luma-smokeline); }
 .luma-dialog-panel .ai7-dialog-icon svg { color: inherit; }
 .luma-dialog-panel button { border-radius: 10px; min-height: 44px; font-weight: 500; }
 .luma-dialog-panel label { text-transform: none; letter-spacing: normal; font: 500 12px/1.5 var(--font-geist-sans), sans-serif; }
 .luma-dialog-panel .luma-form-scope :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
 .ai7-select-trigger, .light .ai7-select-trigger {
-  background: var(--obsidian-card); color: var(--luma-ivory); border: 1px solid var(--ai7-field-border);
+  background: var(--luma-coal); color: var(--luma-ivory); border: 1px solid transparent;
   border-radius: 10px; min-height: 44px; font-family: inherit;
 }
 .luma-form-scope input::placeholder, .luma-form-scope textarea::placeholder { color: var(--luma-smoke); }
-.luma-form-scope input:focus, .luma-form-scope textarea:focus, .ai7-select-trigger[aria-expanded="true"] { border-color: var(--luma-ember); }
-.ai7-select-menu { background: var(--luma-panel-surface); border-color: var(--ai7-field-border); box-shadow: 0 12px 28px rgb(0 0 0 / .18); }
+.luma-form-scope :is(input, textarea):focus, .ai7-select-trigger[aria-expanded="true"] { background: var(--obsidian-hover); }
+.ai7-select-menu { background: var(--luma-panel-surface); border-color: transparent; box-shadow: 0 12px 28px rgb(0 0 0 / .18); }
 .ai7-select-menu button { border-radius: 6px; margin-inline: 4px; width: calc(100% - 8px); }
 .ai7-select-menu .text-amberGold, .ai7-select-menu button.bg-amberGold\/10 { color: var(--luma-ivory); }
 .ai7-select-menu button.bg-amberGold\/10 { background: var(--ai7-selected); }
-.ai7-currency-field { border-color: var(--ai7-field-border); border-radius: 10px; background: var(--obsidian-card); }
-.ai7-currency-field:focus-within { border-color: var(--luma-ember); outline: 2px solid var(--luma-ember); outline-offset: 2px; }
-.ai7-currency-prefix { background: var(--luma-coal); color: var(--luma-smoke); border-color: var(--ai7-field-border); }
+.ai7-currency-field { border-color: transparent; border-radius: 10px; background: var(--luma-coal); }
+.ai7-currency-field:focus-within { outline: 2px solid var(--luma-ember); outline-offset: 2px; }
+.ai7-currency-prefix { background: var(--obsidian-hover); color: var(--luma-smoke); border-color: transparent; }
 .luma-form-scope .ai7-currency-field input { border: 0; background: transparent; border-radius: 0; outline: none; font-family: inherit; box-shadow: none; }
 .luma-dialog-panel .payroll-form :where(input:not([type="checkbox"]), select) {
   min-width: 0;
@@ -695,11 +695,11 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   line-height: 1.4;
 }
 .payroll-form fieldset { min-width: 0; border-radius: var(--ai7-radius-panel); }
-.ai7-amount-preset { color: var(--luma-smoke); border-color: var(--ai7-field-border); background: transparent; }
+.ai7-amount-preset { color: var(--luma-smoke); border-color: transparent; background: var(--obsidian-card); }
 .ai7-amount-preset:hover { background: var(--luma-coal); color: var(--luma-ivory); }
 .ai7-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
 .ai7-category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; }
-.ai7-account-card.luma-glass, .ai7-category-card, .ai7-goal-card.luma-glass, .ai7-section, .ai7-ledger-table.luma-glass { border-radius: var(--ai7-radius-panel); box-shadow: none; border-color: var(--luma-smokeline); }
+.ai7-account-card.luma-glass, .ai7-category-card, .ai7-goal-card.luma-glass, .ai7-section, .ai7-ledger-table.luma-glass { border-radius: var(--ai7-radius-panel); box-shadow: none; border-color: transparent; }
 .ai7-account-icon { background: var(--luma-coal); border-color: var(--luma-smokeline); color: var(--luma-smoke); }
 .ai7-account-card button, .ai7-goal-card button, .ai7-ledger-table button { border-radius: 10px; }
 .ai7-account-card button[aria-label^="Edit"]:hover, .ai7-ledger-table button[aria-label^="Edit"]:hover { color: var(--luma-ivory); background: var(--luma-coal); border-color: var(--luma-smokeline); }
@@ -747,7 +747,8 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 @media(max-width: 600px) { .ai7-metric-grid { grid-template-columns: minmax(0, 1fr); } }
 .luma-app :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
   border-radius: var(--ai7-radius-control);
-  border-color: var(--ai7-field-border);
+  background-color: var(--luma-coal);
+  border-color: transparent;
   min-height: 44px;
 }
 .luma-app .ai7-currency-field input { border-radius: 0; border: 0; }
@@ -796,6 +797,7 @@ textarea:focus-visible,
   .luma-overview-details > summary svg { transition: transform 220ms ease-out; }
   .luma-overview-details[open] > div { animation: luma-balance-enter 240ms ease-out both; }
   .luma-topbar :is([role="menu"], .luma-period-popup) { animation: luma-balance-enter 180ms ease-out both; }
+  .luma-dialog-panel, .ai7-select-menu, .tillfold-calendar { animation: luma-balance-enter 190ms cubic-bezier(.22, 1, .36, 1) both; }
 
   @keyframes luma-balance-enter {
     from { opacity: 0; transform: translateY(4px); }
@@ -893,8 +895,8 @@ textarea:focus-visible,
   padding-inline: 2px;
 }
 .allocation-legend-item {
-  background: color-mix(in srgb, var(--allocation-color) 8%, var(--luma-panel-surface));
-  border-color: color-mix(in srgb, var(--allocation-color) 35%, var(--luma-smokeline));
+  background: color-mix(in srgb, var(--allocation-color) 12%, var(--obsidian-card));
+  border-color: transparent;
 }
 
 /* Fine pointers get compact toolbar controls. Touch retains the base hit area. */
@@ -964,24 +966,22 @@ textarea:focus-visible,
 /* Shared controls (components/ui/controls.tsx).
    Buttons act, chips filter, segments switch views, badges label a state.
    Every selected state, including the sidebar's current page, uses one silver
-   treatment: brighter text, heavier weight and an outline, so it never relies
+   treatment: a tonal fill and heavier text, so it never relies
    on color alone and never borrows the income/expense/transfer colors. */
 :root {
   --ui-selected-ink: #f3f3f5;
-  --ui-selected-bg: rgb(212 213 220 / .14);
-  --ui-selected-border: rgb(212 213 220 / .6);
+  --ui-selected-bg: rgb(212 213 220 / .18);
 }
 .light {
   --ui-selected-ink: #202a37;
-  --ui-selected-bg: rgb(32 42 55 / .07);
-  --ui-selected-border: rgb(32 42 55 / .55);
+  --ui-selected-bg: rgb(32 42 55 / .12);
 }
 
 .ui-btn, .ui-chip, .ui-segment {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; border: 1px solid transparent; border-radius: var(--ai7-radius-control);
   font: 500 var(--ai7-text-body)/1.2 var(--ai7-font-ui); white-space: nowrap; cursor: pointer;
-  transition: background-color .15s, border-color .15s, color .15s;
+  transition: background-color .16s, color .16s, filter .16s;
 }
 .ui-btn { padding: 0 16px; }
 .ui-btn-icon { display: inline-flex; flex-shrink: 0; }
@@ -991,25 +991,19 @@ textarea:focus-visible,
 
 :is(.luma-app, .luma-dialog-panel) .ui-btn--primary { color: var(--ai7-primary-ink); background: var(--ai7-primary); }
 :is(.luma-app, .luma-dialog-panel) .ui-btn--primary:hover:not(:disabled) { background: var(--ai7-primary-hover); }
-/* Secondary must read as available: full-strength text and the field border. */
-:is(.luma-app, .luma-dialog-panel) .ui-btn--secondary { color: var(--luma-ivory); background: var(--luma-coal); border-color: var(--ai7-field-border); }
+/* A tonal fill distinguishes secondary actions from the surrounding panel. */
+:is(.luma-app, .luma-dialog-panel) .ui-btn--secondary { color: var(--luma-ivory); background: var(--luma-coal); }
 :is(.luma-app, .luma-dialog-panel) .ui-btn--secondary:hover:not(:disabled) { background: var(--ai7-selected); }
 :is(.luma-app, .luma-dialog-panel) .ui-btn--ghost { color: var(--luma-ivory); background: transparent; }
 :is(.luma-app, .luma-dialog-panel) .ui-btn--ghost:hover:not(:disabled) { background: var(--luma-coal); }
-:is(.luma-app, .luma-dialog-panel) .ui-btn--danger { color: var(--luma-coral); background: transparent; border-color: rgb(var(--luma-coral-rgb) / .5); }
-:is(.luma-app, .luma-dialog-panel) .ui-btn--danger:hover:not(:disabled) { background: rgb(var(--luma-coral-rgb) / .1); }
-:is(.ui-btn, .luma-action-primary, .luma-action-secondary):active:not(:disabled) { transform: translateY(1px); }
-.luma-topbar :is(.luma-toolbar > button, .luma-toolbar > div > button, .luma-period-selector > button, .luma-period-controls > div:last-child > button),
-.luma-app .luma-balance-panel .luma-action-secondary {
-  border-color: transparent;
-}
-.luma-app :is(.luma-topbar, .luma-balance-actions) button:active:not(:disabled) {
-  transform: none;
+:is(.luma-app, .luma-dialog-panel) .ui-btn--danger { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .09); }
+:is(.luma-app, .luma-dialog-panel) .ui-btn--danger:hover:not(:disabled) { background: rgb(var(--luma-coral-rgb) / .16); }
+.luma-app button:active:not(:disabled), .ai7-select-menu button:active:not(:disabled) {
   filter: brightness(.92);
 }
 
-.ui-chip { padding: 0 14px; color: var(--luma-smoke); background: transparent; border-color: var(--luma-smokeline); }
-.ui-chip:hover:not(:disabled) { color: var(--luma-ivory); background: var(--luma-coal); }
+.ui-chip { padding: 0 14px; color: var(--luma-smoke); background: var(--obsidian-card); }
+.ui-chip:hover:not(:disabled) { color: var(--luma-ivory); background: var(--obsidian-hover); }
 .ui-chip-row { display: flex; gap: 8px; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scroll-padding-inline: 16px; }
 .ui-chip-row > * { flex-shrink: 0; }
 .ui-chip-row[data-fade-end] { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
@@ -1018,7 +1012,7 @@ textarea:focus-visible,
 
 .ui-segmented, .luma-app .ai7-tab-group {
   display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; max-width: 100%;
-  border: 1px solid var(--luma-smokeline); background: var(--luma-charcoal);
+  border: 1px solid transparent; background: var(--luma-charcoal);
   border-radius: calc(var(--ai7-radius-control) + 5px);
 }
 .ui-segment, .luma-app .ai7-tab-group [role="tab"] { padding: 0 14px; color: var(--luma-smoke); background: transparent; border: 1px solid transparent; box-shadow: none; }
@@ -1030,29 +1024,53 @@ textarea:focus-visible,
 .luma-app .ai7-tab-group [role="tab"][aria-selected="true"],
 .luma-sidebar nav button[aria-current] {
   color: var(--ui-selected-ink); background: var(--ui-selected-bg);
-  border: 1px solid var(--ui-selected-border); font-weight: 600; box-shadow: none;
+  border: 1px solid transparent; font-weight: 600; box-shadow: none;
 }
 .ui-chip[aria-pressed="true"]:hover,
 .ui-segment[aria-pressed="true"]:hover,
 .luma-app .ai7-tab-group [role="tab"][aria-selected="true"]:hover { background: var(--ui-selected-bg); color: var(--ui-selected-ink); }
-.luma-app .ai7-filters button[aria-pressed="true"] { color: var(--ui-selected-ink); background: var(--ui-selected-bg); box-shadow: inset 0 -2px var(--ui-selected-border); font-weight: 600; }
+.luma-app .ai7-filters button[aria-pressed="true"] { color: var(--ui-selected-ink); background: var(--ui-selected-bg); box-shadow: none; font-weight: 600; }
 .ai7-select-menu button.bg-amberGold\/10 { color: var(--ui-selected-ink); background: var(--ui-selected-bg); box-shadow: none; }
 
 .ui-badge {
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
-  border: 1px solid; border-radius: var(--ai7-radius-badge);
+  border-radius: var(--ai7-radius-badge);
   font: 500 var(--ai7-text-meta)/1.4 var(--ai7-font-ui); white-space: nowrap;
 }
-.ui-badge--neutral { color: var(--luma-smoke); border-color: var(--luma-smokeline); background: transparent; }
-.ui-badge--positive { color: var(--luma-sage); border-color: rgb(var(--luma-sage-rgb) / .45); background: rgb(var(--luma-sage-rgb) / .1); }
-.ui-badge--negative { color: var(--luma-coral); border-color: rgb(var(--luma-coral-rgb) / .45); background: rgb(var(--luma-coral-rgb) / .1); }
-.ui-badge--warning { color: var(--luma-gold); border-color: rgb(var(--luma-gold-rgb) / .45); background: rgb(var(--luma-gold-rgb) / .1); }
-.ui-badge--transfer { color: var(--luma-transfer); border-color: rgb(var(--luma-transfer-rgb) / .45); background: rgb(var(--luma-transfer-rgb) / .1); }
+.ui-badge--neutral { color: var(--luma-smoke); background: var(--luma-coal); }
+.ui-badge--positive { color: var(--luma-sage); background: rgb(var(--luma-sage-rgb) / .1); }
+.ui-badge--negative { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .1); }
+.ui-badge--warning { color: var(--luma-gold); background: rgb(var(--luma-gold-rgb) / .1); }
+.ui-badge--transfer { color: var(--luma-transfer); background: rgb(var(--luma-transfer-rgb) / .1); }
 
 /* Dialog-level additions to the shared controls. */
 .ui-segmented--fill { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
-.ui-segment[data-tone="expense"][aria-pressed="true"] { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .12); border-color: rgb(var(--luma-coral-rgb) / .5); }
-.ui-segment[data-tone="income"][aria-pressed="true"] { color: var(--luma-sage); background: rgb(var(--luma-sage-rgb) / .12); border-color: rgb(var(--luma-sage-rgb) / .5); }
+.ui-segment[data-tone="expense"][aria-pressed="true"] { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .15); }
+.ui-segment[data-tone="income"][aria-pressed="true"] { color: var(--luma-sage); background: rgb(var(--luma-sage-rgb) / .15); }
 /* Same silver selected state for hand-built pickers (icons, colors, steps). */
-.ui-selected { color: var(--ui-selected-ink) !important; background: var(--ui-selected-bg) !important; border: 1px solid var(--ui-selected-border) !important; font-weight: 600; box-shadow: none !important; }
+.ui-selected { color: var(--ui-selected-ink) !important; background: var(--ui-selected-bg) !important; border: 1px solid transparent !important; font-weight: 600; box-shadow: none !important; }
 .ui-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding-top: 16px; border-top: 1px solid var(--luma-smokeline); }
+
+/* Legacy all-sided card edges follow the same surfaces as the shared controls. */
+.luma-app :is(main, .luma-dialog-panel, .luma-sidebar) .border:not(.animate-spin, [aria-invalid="true"], input[type="checkbox"], input[type="radio"]),
+.luma-app :is(.luma-sidebar, .luma-action-secondary, .luma-balance-panel .luma-action-secondary, .luma-toolbar button, .luma-period-controls button),
+:is(.ai7-select-menu, .tillfold-calendar) .border:not(.animate-spin) {
+  border-color: transparent;
+}
+
+.luma-app button:active:not(:disabled) { transform: none; scale: none; }
+.luma-app :where(button, a[href], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--luma-ember);
+  outline-offset: 2px;
+}
+.luma-app .ai7-currency-field input:focus-visible { outline: none; }
+
+@media (min-width: 768px) and (pointer: fine) {
+  .luma-app :is(.ui-btn, .ui-chip, .ui-segment, .ai7-filters button, .luma-action-primary, .luma-action-secondary) {
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .luma-app :is(.ui-btn, .ui-chip, .ui-segment, .luma-action-primary, .luma-action-secondary) {
+    padding: 7px 11px;
+  }
+}

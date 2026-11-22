@@ -225,7 +225,7 @@ export function Pockets({
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-white/[0.04] border border-luma-smokeline p-4 sm:p-5 space-y-4"
+              className="rounded-2xl bg-obsidian-card p-4 sm:p-5 space-y-4"
             >
               <div className="flex justify-between items-center gap-2">
                 <Skeleton className="w-24 h-4 rounded-full" />
@@ -348,7 +348,7 @@ export function Pockets({
 
       {/* Pocket Cards Grid */}
       {pockets.length === 0 && !error ? (
-        <div className="p-6 rounded-2xl bg-white/[0.04] border border-luma-smokeline text-center text-sm text-luma-smoke">
+        <div className="p-6 rounded-2xl bg-obsidian-card text-center text-sm text-luma-smoke">
           Belum ada kantong aktif. Tambahkan kantong untuk mempartisi alokasi saldo kas rekening ini.
         </div>
       ) : (
@@ -373,7 +373,7 @@ export function Pockets({
             return (
               <div
                 key={pocket.slug}
-                className="rounded-2xl bg-white/[0.04] border border-luma-smokeline hover:border-white/[0.18] p-4 sm:p-5 space-y-3.5 flex flex-col justify-between transition-all duration-200"
+                className="rounded-2xl bg-obsidian-card p-4 sm:p-5 space-y-3.5 flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   {/* Card Header: Icon, Name, and Status Badge */}

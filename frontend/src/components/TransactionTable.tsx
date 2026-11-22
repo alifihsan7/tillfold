@@ -92,7 +92,7 @@ export function TransactionTable({
               {showActions && <th className="py-4 px-4 sm:px-6 text-center whitespace-nowrap w-24">Aksi</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.06]">
+          <tbody className="divide-y divide-luma-smokeline">
             {loading ? (
               [1, 2, 3, 4, 5].map((i) => (
                 <tr key={i} className="animate-pulse">

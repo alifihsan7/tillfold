@@ -76,7 +76,7 @@ export function LumaRecentTransactions({
 
       <div className="luma-glass !rounded-3xl overflow-hidden">
         {loading ? (
-          <ul className="divide-y divide-white/[0.06]">
+          <ul className="divide-y divide-luma-smokeline">
             {[1, 2, 3, 4, 5].map((i) => (
               <li key={i} className="flex items-center gap-3.5 px-5 py-4">
                 <Skeleton className="w-11 h-11 rounded-full shrink-0" />
@@ -97,7 +97,7 @@ export function LumaRecentTransactions({
             {onAddTransaction && <button type="button" onClick={onAddTransaction} className="luma-text-action">Catat transaksi pertama</button>}
           </div>
         ) : (
-          <ul className="divide-y divide-white/[0.06]">
+          <ul className="divide-y divide-luma-smokeline">
             {transactions.map((tx) => {
               const isAdjustment = tx.type === "adjustment_in" || tx.type === "adjustment_out";
               const isPositive = tx.type === "income" || tx.type === "transfer_in" || tx.type === "adjustment_in";

@@ -1049,13 +1049,13 @@ textarea:focus-visible,
 :is(.luma-app, .luma-dialog-panel) .ui-btn--primary:hover:not(:disabled) { background: var(--ai7-primary-hover); }
 /* A tonal fill distinguishes secondary actions from the surrounding panel. */
 :is(.luma-app, .luma-dialog-panel) :is(.ui-btn--secondary, .luma-action-secondary, .ai7-amount-preset),
-.luma-topbar :is(.luma-period-selector > button, .luma-toolbar [aria-haspopup="menu"], .luma-period-controls > div:last-child > button),
+.luma-topbar :is(.luma-toolbar [aria-haspopup="menu"], .luma-period-controls > div:last-child:not(.luma-period-selector) > button),
 .tillfold-calendar button.tillfold-calendar-heading {
   color: var(--luma-ivory);
   background: var(--ui-control-bg);
 }
 :is(.luma-app, .luma-dialog-panel) :is(.ui-btn--secondary, .luma-action-secondary, .ai7-amount-preset):hover:not(:disabled),
-.luma-topbar :is(.luma-period-selector > button, .luma-toolbar [aria-haspopup="menu"], .luma-period-controls > div:last-child > button):is(:hover, [aria-expanded="true"]),
+.luma-topbar :is(.luma-toolbar [aria-haspopup="menu"], .luma-period-controls > div:last-child:not(.luma-period-selector) > button):is(:hover, [aria-expanded="true"]),
 .tillfold-calendar button.tillfold-calendar-heading:hover {
   background: var(--ui-control-hover);
 }

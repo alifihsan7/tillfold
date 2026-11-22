@@ -162,7 +162,9 @@
   border-color: transparent;
 }
 .tillfold-fold .luma-topbar-inner .luma-period-selector > button svg { color: var(--fold-on-ink-muted); }
-.tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button:hover { background: #2a2f37; }
+.tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button:is(:hover, [aria-expanded="true"]) {
+  background: #2a2f37;
+}
 .tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button:active { background: #3b414a; }
 .tillfold-fold .luma-topbar-inner button:not([role="menuitem"]),
 .tillfold-fold :is(.ui-btn, .luma-action-primary, .luma-action-secondary) { border-radius: 999px; }
@@ -313,8 +315,11 @@
 :is(.ai7-select-menu, .tillfold-calendar) :where(button, input):focus-visible {
   outline-color: var(--fold-focus);
 }
-.tillfold-fold :is(.luma-period-selector > button, .luma-period-tabs .ui-segment, .luma-profile-tabs .ui-segment):focus-visible {
+.tillfold-fold :is(.luma-period-tabs .ui-segment, .luma-profile-tabs .ui-segment):focus-visible {
   box-shadow: inset 0 -2px var(--fold-focus);
+}
+.tillfold-fold .luma-topbar .luma-period-selector > button:focus-visible {
+  box-shadow: inset 0 -2px var(--fold-on-ink-muted);
 }
 .ai7-select-menu button[data-selected="true"],
 .tillfold-calendar button[aria-pressed="true"] {

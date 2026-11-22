@@ -67,16 +67,15 @@
   --fold-field-edge: #818c9a;
   --fold-field-hover: #5f6773;
   --fold-selected: #eceff2;
-  --fold-control: #d5dde7;
-  --fold-control-hover: #c7d2df;
-  --fold-control-pressed: #b9c7d7;
-  --fold-action-selected: #28394b;
-  --fold-action-selected-ink: #fff;
-  --fold-action-selected-focus: #c6d5e6;
-  --fold-action-selected-badge: #44576b;
-  --fold-income-control: #c4e2d2;
+  --fold-control: #e4e7eb;
+  --fold-control-hover: #dce0e5;
+  --fold-control-pressed: #d4d9df;
+  --fold-action-selected: #d8dde3;
+  --fold-action-selected-ink: #262b32;
+  --fold-action-selected-badge: #cdd3da;
+  --fold-income-control: #e0eee6;
   --fold-income-control-ink: #175538;
-  --fold-expense-control: #f2d1ce;
+  --fold-expense-control: #f4e3e1;
   --fold-expense-control-ink: #792a24;
   --fold-toolbar: rgb(255 255 255 / .62);
   --fold-primary: #15181d;
@@ -274,8 +273,8 @@
   background: var(--fold-control-hover);
 }
 .light .tillfold-fold :is(.luma-sidebar nav, .luma-bottom-nav) button[aria-current] {
-  background: var(--fold-control);
-  color: var(--fold-action-selected);
+  background: var(--fold-action-selected);
+  color: var(--fold-action-selected-ink);
 }
 .tillfold-fold :is(.luma-mobile-header, .luma-bottom-nav) {
   background: var(--fold-surface);
@@ -353,6 +352,7 @@
 ) {
   background: var(--fold-action-selected);
   color: var(--fold-action-selected-ink);
+  font-weight: 700;
 }
 .light .tillfold-fold .ui-segment[data-tone="income"][aria-pressed="true"] {
   background: var(--fold-income-control);
@@ -446,9 +446,6 @@
 .tillfold-fold :is(.luma-period-tabs .ui-segment, .luma-profile-tabs .ui-segment):focus-visible {
   box-shadow: inset 0 -2px var(--fold-focus);
 }
-.light .tillfold-fold :is(.luma-period-tabs .ui-segment, .luma-profile-tabs .ui-segment)[aria-pressed="true"]:focus-visible {
-  box-shadow: inset 0 -2px var(--fold-action-selected-focus);
-}
 .tillfold-fold .luma-topbar .luma-period-selector > button:focus-visible {
   box-shadow: inset 0 -2px var(--fold-on-ink-muted);
 }
@@ -465,8 +462,8 @@
 .light .ai7-select-menu button[data-selected="true"],
 .light .luma-period-popup .fold-period-option[aria-pressed="true"],
 .light .fold-burn-day[aria-pressed="true"] {
-  background: var(--fold-control);
-  color: var(--fold-action-selected);
+  background: var(--fold-action-selected);
+  color: var(--fold-action-selected-ink);
 }
 .tillfold-fold .luma-toast {
   background: var(--fold-ink);
@@ -642,9 +639,9 @@ html:not(.light) .fold-hero {
 .fold-hero .fold-action-secondary { background: rgb(var(--fold-hero-tint) / .09); color: var(--fold-on-ink); }
 .fold-hero .fold-action-secondary:hover { background: rgb(var(--fold-hero-tint) / .12); }
 .fold-hero .fold-action-secondary:active { background: rgb(var(--fold-hero-tint) / .2); }
-.light .fold-hero .fold-action-secondary { background: rgb(var(--fold-hero-tint) / .18); }
-.light .fold-hero .fold-action-secondary:hover { background: rgb(var(--fold-hero-tint) / .23); }
-.light .fold-hero .fold-action-secondary:active { background: rgb(var(--fold-hero-tint) / .28); }
+.light .fold-hero .fold-action-secondary { background: rgb(var(--fold-hero-tint) / .14); }
+.light .fold-hero .fold-action-secondary:hover { background: rgb(var(--fold-hero-tint) / .18); }
+.light .fold-hero .fold-action-secondary:active { background: rgb(var(--fold-hero-tint) / .22); }
 
 .fold-budget { display: flex; flex-direction: column; gap: 10px; padding: 22px 24px 20px; }
 .fold-gauge { position: relative; width: min(100%, 260px); margin: 6px auto 0; }

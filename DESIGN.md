@@ -27,7 +27,7 @@ All Fold colors are `--fold-*` tokens defined on `:root` (dark) and `.light`. Co
 | Positive (income) | #b9dfc9 | #147a46 |
 | Negative (expense) | #ff9e96 | #b3352e |
 | Primary action `--fold-primary` / text | #eef1f4 / #15181d | #15181d / #ffffff |
-| Secondary control fill / hover | #2d323a / #3b414a | #d5dde7 / #c7d2df |
+| Secondary control fill / hover | #2d323a / #3b414a | #e4e7eb / #dce0e5 |
 | Field fill / edge | #2c323a / #858d99 | #f0f2f5 / #818c9a |
 | Focus ring `--fold-focus` | #a8c0ff | #2d5ad6 |
 
@@ -81,10 +81,10 @@ Use sentence case for headings, labels, buttons and badges ("Total pemasukan", "
 
 ## Controls
 
-- Primary action: `--fold-primary` fill, pill, 42 px tall on desktop. Secondary actions use `--fold-control`. Inside the light-mode ink hero, secondary actions use a white 18 % tint.
+- Primary action: `--fold-primary` fill, pill, 42 px tall on desktop. Secondary actions use `--fold-control`. Inside the light-mode ink hero, secondary actions use a white 14 % tint.
 - Icon buttons and links are 36 px on desktop and 44 px below 768 px. Form controls, dialog buttons and navigation are 44 px at every width. Primary pressed state darkens the fill; buttons never gain a border on press.
-- Chips: selected state is the inverted primary fill with `aria-pressed`. Neutral selected tabs use ink in light mode and a surface-colored pill in dark mode. Income and expense segments use semantic tints.
-- Selected rows in menus use a silver fill with weight 700. The light-mode date picker uses ink for the selected day. In the transaction calendar, the selected day has a bottom inset line in `--fold-focus`.
+- Chips: selected state is the inverted primary fill with `aria-pressed`. Neutral selected tabs use a silver fill and bold text in light mode and a surface-colored pill in dark mode. Income and expense segments use semantic tints.
+- Selected rows in menus use a silver fill with weight 700. The light-mode date picker uses the same silver fill for the selected day. In the transaction calendar, the selected day has a bottom inset line in `--fold-focus`.
 - Focus: every interactive element shows a 2 px outline in `--fold-focus`. Elements that sit on ink or inside a clipped group use an inset bottom line instead.
 - Status and category badges use the badge radius (pill) and weight 650.
 - Checkboxes: field fill unchecked, primary fill checked.

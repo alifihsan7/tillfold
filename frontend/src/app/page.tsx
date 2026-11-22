@@ -1157,7 +1157,7 @@ export default function FinanceDashboard() {
   };
 
   return (
-    <div data-page={activeNav === "Ringkasan" ? "overview" : undefined} className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
+    <div className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
       <aside id="desktop-sidebar" aria-label="Sidebar" data-collapsed={sidebarCollapsed} data-motion={sidebarMotion} className="luma-sidebar hidden md:flex shrink-0 bg-luma-charcoal p-5 flex-col justify-between overflow-x-hidden overflow-y-auto">
         <div>
           <div className="luma-sidebar-heading flex items-center justify-between gap-1">
@@ -1724,9 +1724,9 @@ export default function FinanceDashboard() {
           </div>
         </header>
 
-        <div className="luma-page-content p-3.5 sm:p-5 md:p-6 lg:p-8 xl:p-10 pb-24 md:pb-10 max-w-7xl 2xl:max-w-[1600px] mx-auto w-full space-y-6 sm:space-y-8">
+        <div className="luma-page-content fold-content p-3.5 sm:p-5 md:p-6 lg:p-8 xl:p-10 pb-24 md:pb-10 max-w-7xl 2xl:max-w-[1600px] mx-auto w-full space-y-6 sm:space-y-8">
           {/* Page Title & Antislop Copy Header */}
-          <div key={activeNav} className={`mb-2 sm:mb-4 animate-fadeIn ${activeNav === "Ringkasan" ? "fold-page-title" : ""}`}>
+          <div key={activeNav} className={`fold-heading animate-fadeIn ${activeNav === "Ringkasan" ? "fold-page-title" : ""}`}>
             <h1 className="ai7-type-page tracking-tight text-luma-ivory">
               {activeNav}
             </h1>
@@ -2224,7 +2224,7 @@ export default function FinanceDashboard() {
         {activeNav === "Rencana" && (
           <div className="space-y-6 animate-fadeIn">
             {/* Sub-tab Navigation */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2 border-b border-luma-smokeline">
+            <div className="fold-subnav flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="ai7-tab-group inline-flex bg-white/[0.04] border border-luma-smokeline" role="tablist" aria-label="Rencana" onKeyDown={handleTabArrowKeys}>
                 <button
                   type="button"
@@ -2359,7 +2359,7 @@ export default function FinanceDashboard() {
         {activeNav === "Pengaturan" && (
           <div className="space-y-6 animate-fadeIn">
             {/* Sub-tab Navigation */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-luma-smokeline">
+            <div className="fold-subnav flex flex-wrap items-center justify-between gap-3">
               <div className="ai7-tab-group grid w-full grid-cols-2 gap-1 border border-luma-smokeline bg-white/[0.04] sm:flex sm:w-auto sm:max-w-full sm:flex-wrap" role="tablist" aria-label="Pengaturan" onKeyDown={handleTabArrowKeys}>
                 <button
                   type="button"

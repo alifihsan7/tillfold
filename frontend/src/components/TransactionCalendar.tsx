@@ -110,7 +110,7 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
         <span>Rendah</span>{[1, 2, 3, 4].map((level) => <span key={level} className="calendar-heat-key" data-expense-level={level} aria-hidden="true" />)}<span>Tinggi</span>
       </div>
     </div>}
-    <div className="overflow-hidden rounded-2xl border border-luma-smokeline" role="group" aria-label={`Kalender transaksi ${months[month - 1]} ${year}`} aria-busy={loading}>
+    <div className="fold-calendar-card fold-card overflow-hidden" role="group" aria-label={`Kalender transaksi ${months[month - 1]} ${year}`} aria-busy={loading}>
       <div className="grid grid-cols-7 border-b border-luma-smokeline bg-luma-coal">
         {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => <div key={day} className="py-2 text-center text-xs font-medium text-luma-smoke">{day}</div>)}
       </div>

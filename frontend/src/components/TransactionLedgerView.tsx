@@ -219,7 +219,7 @@ export function TransactionLedgerView({
         <span>{historyError}</span><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button>
       </div>}
       {/* 1. QUICK-STATS KPI BAR (REAL-TIME AGGREGATES) */}
-      <div className="ai7-metric-grid grid gap-4">
+      <div className="fold-metric-grid ai7-metric-grid grid gap-4">
         {/* Total Transaksi */}
         <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between gap-2 text-zinc-400">
@@ -313,7 +313,7 @@ export function TransactionLedgerView({
       </div>
 
       {/* 2. FILTER & CONTROL PANEL */}
-      <div className="bg-obsidian-panel border border-luma-smokeline rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+      <div className="fold-ledger-filters fold-card p-4 sm:p-5 space-y-4">
         {/* Top Control Bar: Search & Account Pills */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
           {/* Account Tabs */}

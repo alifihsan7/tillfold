@@ -46,7 +46,7 @@ const ACCOUNT_COLOR_DOTS: Record<string, string> = {
 
 // Account role is a category, not a financial status: one neutral badge style,
 // so green, coral and transfer blue keep their meaning elsewhere.
-const ROLE_BADGE_CLASS = "bg-transparent text-luma-smoke border-luma-smokeline";
+const ROLE_BADGE_CLASS = "ui-badge ui-badge--neutral border-transparent";
 
 export function getAccountRoleBadge(type?: string): { label: string; className: string } {
   const t = (type || "").toLowerCase().trim();

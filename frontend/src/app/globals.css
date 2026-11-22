@@ -678,7 +678,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-dialog-panel .ai7-dialog-icon { color: var(--luma-smoke); background: var(--luma-coal); border-color: var(--luma-smokeline); }
 .luma-dialog-panel .ai7-dialog-icon svg { color: inherit; }
 .luma-dialog-panel button { border-radius: 10px; min-height: 44px; font-weight: 500; }
-.luma-dialog-panel label { text-transform: none; letter-spacing: normal; font: 500 12px/1.5 var(--font-geist-sans), sans-serif; }
+.luma-dialog-panel label { text-transform: none; letter-spacing: normal; font: 600 12px/1.5 var(--ai7-font-ui); }
 .luma-dialog-panel .luma-form-scope :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
 .ai7-select-trigger, .light .ai7-select-trigger {
   background: var(--ai7-field-surface); color: var(--luma-ivory); border: 1px solid transparent;
@@ -715,7 +715,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .ai7-account-card button[aria-label^="Edit"]:hover, .ai7-ledger-table button[aria-label^="Edit"]:hover { color: var(--luma-ivory); background: var(--luma-coal); border-color: var(--luma-smokeline); }
 .ai7-category-card button[aria-label^="Edit"], .ai7-category-card button[aria-label^="Hapus"] { min-width: 44px; min-height: 44px; }
 .ai7-filters { border-bottom: 1px solid var(--luma-smokeline); }
-.luma-app .ai7-filters button { background: transparent; color: var(--luma-smoke); border: 0; border-radius: 8px 8px 0 0; box-shadow: none; min-height: 44px; font: 500 14px/1.4 var(--font-geist-sans), sans-serif; }
+.luma-app .ai7-filters button { background: transparent; color: var(--luma-smoke); border: 0; border-radius: 8px 8px 0 0; box-shadow: none; min-height: 44px; font: 500 14px/1.4 var(--ai7-font-ui); }
 .luma-app .ai7-filters button[aria-pressed="true"], .luma-app .ai7-filters button.bg-amberGold:hover { color: var(--luma-ivory); background: var(--ai7-selected); box-shadow: inset 0 -2px var(--luma-ember); }
 .ai7-filters button:hover { color: var(--luma-ivory); }
 .ai7-ledger-table thead { background: var(--obsidian-card); }
@@ -1114,7 +1114,7 @@ textarea:focus-visible,
 
 /* Interactive controls use fill, while structural borders can separate adjacent content. */
 .luma-app :is(main, .luma-dialog-panel, .luma-sidebar)
-  :where(button, input:not([type="checkbox"], [type="radio"]), select, textarea, .ai7-tab-group, .ui-segmented).border:not([aria-invalid="true"]),
+  :where(button, .ai7-tab-group, .ui-segmented).border:not([aria-invalid="true"]),
 .luma-app :is(.luma-action-secondary, .luma-balance-panel .luma-action-secondary, .luma-toolbar button, .luma-period-controls button),
 :is(.ai7-select-menu, .tillfold-calendar) button.border:not([aria-invalid="true"]) {
   border-color: transparent;

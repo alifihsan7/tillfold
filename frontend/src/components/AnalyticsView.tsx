@@ -125,7 +125,7 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
                 <span><span className="mr-1.5 inline-block size-2 rounded-sm bg-mintRise" aria-hidden="true" />Pemasukan</span>
                 <span><span className="mr-1.5 inline-block size-2 rounded-sm bg-coralFall" aria-hidden="true" />Pengeluaran</span>
               </div>
-              <div className="mt-4 flex h-32 items-end gap-px border-b border-luma-smokeline sm:gap-1" aria-hidden="true">
+              <div className="fold-report-chart mt-4 flex h-32 items-end gap-px sm:gap-1" aria-hidden="true">
                 {daily.map(({ date, income, expense }) => (
                   <div key={date} className="flex h-full min-w-0 flex-1 items-end justify-center gap-px"
                     title={`${formatDate(date)} · Masuk ${money(income)} · Keluar ${money(expense)}`}>

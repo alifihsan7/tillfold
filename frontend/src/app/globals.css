@@ -357,10 +357,6 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-flow-track > div {
   height: 100%; border-radius: inherit; transform-origin: left center; transform: scaleX(var(--meter-fill, 1));
 }
-.luma-overview-details { border-top: 1px solid rgba(255,255,255,.1); padding-top: 6px; }
-.luma-overview-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; min-height: 48px; list-style: none; font-size: 12px; color: var(--luma-smoke); }
-.luma-overview-details > summary::-webkit-details-marker { display: none; }
-.luma-overview-details[open] > summary svg { transform: rotate(180deg); }
 .luma-app .ai7-ledger-table tbody tr[data-new-transaction="true"],
 .luma-app .ai7-ledger-table li[data-new-transaction="true"] {
   background: rgb(var(--luma-transfer-rgb) / .14);
@@ -584,15 +580,8 @@ textarea:focus-visible,
     transition-property: width, transform, background-color;
   }
 
-  .luma-overview-details > summary svg,
-  .ai7-select-trigger > svg:last-child {
-    transition: transform var(--luma-motion-panel) var(--luma-motion-out);
-  }
-
-  .luma-overview-details[open] > div {
-    animation: fadeIn var(--luma-motion-panel) ease-out;
-  }
-  :is(.luma-topbar [role="menu"], .luma-period-popup, .ai7-select-menu, .tillfold-calendar) {
+  
+    :is(.luma-topbar [role="menu"], .luma-period-popup, .ai7-select-menu, .tillfold-calendar) {
     animation: luma-popup-enter 220ms var(--luma-motion-out);
   }
   .luma-dialog-backdrop {

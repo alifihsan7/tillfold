@@ -1144,7 +1144,7 @@ export default function FinanceDashboard() {
   };
 
   return (
-    <div className="luma-app bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
+    <div className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
       <aside id="desktop-sidebar" aria-label="Sidebar" data-collapsed={sidebarCollapsed} data-motion={sidebarMotion} className="luma-sidebar hidden md:flex shrink-0 bg-luma-charcoal p-5 flex-col justify-between overflow-x-hidden overflow-y-auto">
         <div>
           <div className="luma-sidebar-heading flex items-center justify-between gap-1">
@@ -1556,6 +1556,7 @@ export default function FinanceDashboard() {
         {/* Persistent Sticky Topbar Header — slim Luma: period + utilities menu */}
         <header className="luma-topbar sticky top-0 z-20 bg-luma-charcoal/90 backdrop-blur-md border-b border-luma-smokeline/60 py-2.5 px-4 sm:px-6 lg:px-8">
           <div className="luma-topbar-inner max-w-7xl 2xl:max-w-[1600px] mx-auto w-full flex flex-row items-center justify-between gap-3 sm:gap-4">
+            {activeNav === "Ringkasan" && <span className="fold-topbar-title" aria-hidden="true">Ringkasan</span>}
             {/* Pure Control Period Selector & Theme Switch */}
             <div className="luma-period-controls flex items-center gap-2 sm:gap-2.5 min-w-0">
               {currentUser ? <PeriodSelector
@@ -1712,7 +1713,7 @@ export default function FinanceDashboard() {
 
         <div className="luma-page-content p-3.5 sm:p-5 md:p-6 lg:p-8 xl:p-10 pb-24 md:pb-10 max-w-7xl 2xl:max-w-[1600px] mx-auto w-full space-y-6 sm:space-y-8">
           {/* Page Title & Antislop Copy Header */}
-          <div key={activeNav} className="mb-2 sm:mb-4 animate-fadeIn">
+          <div key={activeNav} className={`mb-2 sm:mb-4 animate-fadeIn ${activeNav === "Ringkasan" ? "fold-page-title" : ""}`}>
             <h1 className="ai7-type-page tracking-tight text-luma-ivory">
               {activeNav}
             </h1>
@@ -1817,6 +1818,21 @@ export default function FinanceDashboard() {
             />
 
             {currentUser && !overviewError && <>
+            <div className="fold-lists">
+            <LumaRecentTransactions
+              transactions={transactions.slice(0, 5)}
+              newTransactionIds={newTransactionIds}
+              totalCount={transactions.length}
+              formatRupiah={formatRupiah}
+              loading={loading}
+              onOpenLedger={() => {
+                setActiveNav("Transaksi");
+                window.location.hash = "#/transactions";
+              }}
+              onAddTransaction={() => setIsModalOpen(true)}
+              onEdit={(tx) => setTxToEdit(tx)}
+              onDelete={(tx) => setTxToDelete(tx)}
+            />
             <LumaAccountStrip
               hideBalance={hideOverviewBalances}
               accounts={(summary.accounts || []).map((a) => {
@@ -1836,20 +1852,7 @@ export default function FinanceDashboard() {
               }}
             />
 
-            <LumaRecentTransactions
-              transactions={transactions.slice(0, 5)}
-              newTransactionIds={newTransactionIds}
-              totalCount={transactions.length}
-              formatRupiah={formatRupiah}
-              loading={loading}
-              onOpenLedger={() => {
-                setActiveNav("Transaksi");
-                window.location.hash = "#/transactions";
-              }}
-              onAddTransaction={() => setIsModalOpen(true)}
-              onEdit={(tx) => setTxToEdit(tx)}
-              onDelete={(tx) => setTxToDelete(tx)}
-            />
+            </div>
 
             <details className="luma-overview-details">
               <summary>Rincian anggaran &amp; tabungan <ChevronDown size={16} /></summary>

@@ -1114,7 +1114,7 @@ textarea:focus-visible,
 
 /* Interactive controls use fill, while structural borders can separate adjacent content. */
 .luma-app :is(main, .luma-dialog-panel, .luma-sidebar)
-  :where(button, input:not([type="checkbox"], [type="radio"]), select, textarea, .ai7-currency-field, .ai7-tab-group, .ui-segmented).border:not([aria-invalid="true"]),
+  :where(button, input:not([type="checkbox"], [type="radio"]), select, textarea, .ai7-tab-group, .ui-segmented).border:not([aria-invalid="true"]),
 .luma-app :is(.luma-action-secondary, .luma-balance-panel .luma-action-secondary, .luma-toolbar button, .luma-period-controls button),
 :is(.ai7-select-menu, .tillfold-calendar) button.border:not([aria-invalid="true"]) {
   border-color: transparent;

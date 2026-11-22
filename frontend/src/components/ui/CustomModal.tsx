@@ -11,6 +11,7 @@ interface CustomModalProps {
   accent?: "amber" | "cyan" | "mint" | "coral" | "ember" | "sage" | "gold";
   children: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl";
+  mobileSheet?: boolean;
 }
 
 export function CustomModal({
@@ -21,6 +22,7 @@ export function CustomModal({
   icon,
   children,
   maxWidth = "md",
+  mobileSheet = false,
 }: CustomModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -68,14 +70,14 @@ export function CustomModal({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="luma-dialog-backdrop fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+      className={`luma-dialog-backdrop fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3 sm:p-5 overflow-y-auto ${mobileSheet ? "fold-sheet-backdrop" : ""}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
-        className={`luma-dialog-panel relative rounded-3xl w-full shadow-luma-glass flex flex-col max-h-[90dvh] my-auto ${maxWidthStyles[maxWidth]}`}
+        className={`luma-dialog-panel relative rounded-3xl w-full shadow-luma-glass flex flex-col max-h-[90dvh] my-auto ${maxWidthStyles[maxWidth]} ${mobileSheet ? "fold-sheet-panel" : ""}`}
       >
         {/* Close Button — 44x44 touch target */}
         <button

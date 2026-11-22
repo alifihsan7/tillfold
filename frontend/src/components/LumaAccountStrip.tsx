@@ -63,22 +63,14 @@ export function LumaAccountStrip({ accounts, formatRupiah, loading, hideBalance,
             key={acc.name}
             className="luma-account-item"
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <Wallet className="w-4 h-4 text-luma-smoke shrink-0" aria-hidden="true" />
-              <p className="text-sm font-medium text-luma-ivory leading-snug [overflow-wrap:anywhere]">
-                {acc.name}
-              </p>
+            <span className="fold-account-icon"><Wallet size={17} aria-hidden="true" /></span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug [overflow-wrap:anywhere]">{acc.name}</p>
+              {acc.type && <p className="text-xs text-luma-smoke mt-1">{getAccountRoleBadge(acc.type).label}</p>}
             </div>
-            <p className={`text-lg font-semibold mt-2 tabular-nums [overflow-wrap:anywhere] ${acc.balance < 0 && !hideBalance ? "text-luma-coral" : "text-luma-ivory"}`}>
+            <p className={`fold-account-amount tabular-nums [overflow-wrap:anywhere] ${acc.balance < 0 && !hideBalance ? "text-luma-coral" : "text-luma-ivory"}`}>
               {hideBalance ? <HiddenAmount /> : formatRupiah(acc.balance)}
             </p>
-            {acc.type && (
-              <span
-                className={`inline-flex mt-2 text-xs font-sans font-semibold px-2 py-0.5 rounded-badge border whitespace-nowrap ${getAccountRoleBadge(acc.type).className}`}
-              >
-                {getAccountRoleBadge(acc.type).label}
-              </span>
-            )}
           </div>
         ))}
       </div>

@@ -171,6 +171,7 @@ export function AddTransactionModal({
 
   return (
     <CustomModal
+      mobileSheet
       isOpen={isOpen}
       onClose={onClose}
       title="Catat transaksi baru"
@@ -187,10 +188,11 @@ export function AddTransactionModal({
 
         {/* Amount */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label htmlFor="add-transaction-amount" className="block text-xs font-semibold text-zinc-400 mb-1.5">
             Nominal transaksi
           </label>
           <CurrencyInput
+            id="add-transaction-amount"
             value={formAmount}
             onChange={setFormAmount}
             placeholder="0"
@@ -206,10 +208,11 @@ export function AddTransactionModal({
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+          <label htmlFor="add-transaction-description" className="block text-xs font-semibold text-zinc-400 mb-1.5">
             Keterangan
           </label>
           <input
+            id="add-transaction-description"
             type="text"
             required
             placeholder="Contoh: Nasi Padang + Es Teh"

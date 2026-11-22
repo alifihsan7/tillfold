@@ -213,7 +213,7 @@ export function TransactionLedgerView({
         { value: "calendar", label: "Kalender", icon: <Calendar /> },
       ]} />
       {viewMode === "calendar" ? <TransactionCalendar accounts={accounts} account={activeAccount} onAccountChange={(value) => { setActiveAccount(value); setCurrentPage(1); }}
-        refreshSignal={transactions} formatRupiah={formatRupiah} onEdit={onEdit} onDelete={onDelete} /> : <>
+        refreshSignal={transactions} formatRupiah={formatRupiah} onEdit={onEdit} onDelete={onDelete} /> : <div className="space-y-5 animate-fadeIn">
       <p className="text-sm text-luma-smoke">“Semua waktu” mencakup seluruh riwayat, di luar periode dashboard.</p>
       {historyError && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-luma-coral">
         <span>{historyError}</span><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button>
@@ -532,7 +532,7 @@ export function TransactionLedgerView({
           </div>
         )}
       </div>
-      </>}
+      </div>}
     </div>
   );
 }

@@ -491,7 +491,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-flow-line strong { font-variant-numeric: tabular-nums; font-weight: 600; overflow-wrap: anywhere; }
 .luma-flow-track, .luma-quota-track { height: 6px; background: var(--obsidian-hover); border-radius: 8px; overflow: hidden; }
 .luma-flow-track > div, .luma-quota-track > div {
-  height: 100%; border-radius: inherit; transform-origin: left center; transform: scaleX(var(--meter-fill, 0));
+  height: 100%; border-radius: inherit; transform-origin: left center; transform: scaleX(var(--meter-fill, 1));
 }
 .luma-flow-income { background: var(--luma-sage); }
 .luma-flow-expense { background: var(--luma-coral); }
@@ -590,15 +590,15 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .light .luma-guest-guide dl > div + div { border-color: var(--luma-smokeline); }
 :is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button {
   -webkit-tap-highlight-color: transparent;
-  transition-property: background-color, border-color, color, filter;
-  transition-duration: 140ms;
-  transition-timing-function: ease;
+  transition: background-color var(--luma-motion-quick) ease-out,
+    color var(--luma-motion-quick) ease-out, filter var(--luma-motion-quick) ease-out;
 }
 :is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button:not(:disabled):active {
   transform: none;
   scale: none;
   filter: brightness(.92);
   border-color: transparent;
+  transition-duration: 60ms;
 }
 .luma-topbar button, .luma-sidebar > div:last-child > button { border-radius: var(--ai7-radius-control); font-weight: 400; }
 .luma-topbar [role=menu] { border-radius: var(--ai7-radius-panel); font-weight: 400; }
@@ -778,10 +778,17 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
-/* Overview motion draws attention to the balance and how its bars compare. */
+:root {
+  --luma-motion-quick: 140ms;
+  --luma-motion-panel: 220ms;
+  --luma-motion-meter: 360ms;
+  --luma-motion-out: cubic-bezier(.22, 1, .36, 1);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .luma-sidebar[data-motion="true"] {
-    transition: width 220ms ease, padding-inline 220ms ease;
+    transition: width var(--luma-motion-panel) var(--luma-motion-out),
+      padding-inline var(--luma-motion-panel) var(--luma-motion-out);
   }
 
   .luma-sidebar[data-motion="true"][data-collapsed="false"] .luma-sidebar-copy {
@@ -793,39 +800,67 @@ textarea:focus-visible,
     to { opacity: 1; }
   }
 
-  .luma-overview-grid .luma-balance-body {
-    animation: luma-balance-enter 330ms cubic-bezier(.22, 1, .36, 1) both;
+  :is(.luma-app, .luma-dialog-panel, .tillfold-calendar) :is(a[href], summary),
+  .luma-form-scope :is(input, textarea, select),
+  .tillfold-date-field, .ai7-currency-field {
+    transition: background-color var(--luma-motion-quick) ease-out, color var(--luma-motion-quick) ease-out;
   }
 
-  .luma-flow-track > div, .luma-quota-track > div {
-    animation: luma-meter-enter 520ms cubic-bezier(.22, 1, .36, 1);
-    transition: transform 320ms cubic-bezier(.22, 1, .36, 1);
+  .luma-app [role="progressbar"] > div,
+  .luma-flow-track > div {
+    transition: width var(--luma-motion-meter) var(--luma-motion-out),
+      background-color var(--luma-motion-quick) ease-out;
   }
 
-  .luma-overview-side > section { animation: luma-balance-enter 340ms cubic-bezier(.22, 1, .36, 1) 45ms backwards; }
-  .luma-overview-side > section + section { animation-delay: 85ms; }
-  .luma-overview-details > summary svg { transition: transform 220ms ease-out; }
-  .luma-overview-details[open] > div { animation: luma-balance-enter 240ms ease-out both; }
-  .luma-topbar :is([role="menu"], .luma-period-popup) { animation: luma-balance-enter 180ms ease-out both; }
-  .luma-dialog-panel, .ai7-select-menu, .tillfold-calendar { animation: luma-balance-enter 190ms cubic-bezier(.22, 1, .36, 1) both; }
+  .luma-app :is(.luma-flow-track, .luma-quota-track) > div {
+    animation: luma-meter-enter var(--luma-motion-meter) var(--luma-motion-out);
+    transition-property: width, transform, background-color;
+  }
 
-  @keyframes luma-balance-enter {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+  .luma-overview-details > summary svg,
+  .ai7-select-trigger > svg:last-child {
+    transition: transform var(--luma-motion-panel) var(--luma-motion-out);
+  }
+
+  .luma-overview-details[open] > div {
+    animation: fadeIn var(--luma-motion-panel) ease-out;
+  }
+  :is(.luma-topbar [role="menu"], .luma-period-popup, .ai7-select-menu, .tillfold-calendar) {
+    animation: luma-popup-enter 180ms var(--luma-motion-out);
+  }
+  .luma-dialog-backdrop {
+    animation: luma-backdrop-enter var(--luma-motion-panel) ease-out;
+  }
+  .luma-dialog-panel, .luma-toast {
+    animation: luma-panel-enter var(--luma-motion-panel) var(--luma-motion-out);
+  }
+
+  @keyframes luma-backdrop-enter {
+    from { background-color: transparent; }
+  }
+
+  @keyframes luma-popup-enter {
+    from { opacity: 0; translate: 0 -4px; }
+    to { opacity: 1; translate: none; }
+  }
+
+  @keyframes luma-panel-enter {
+    from { opacity: 0; translate: 0 8px; }
+    to { opacity: 1; translate: none; }
   }
 
   @keyframes luma-meter-enter {
     from { transform: scaleX(0); }
-    to { transform: scaleX(var(--meter-fill, 0)); }
+    to { transform: scaleX(var(--meter-fill, 1)); }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button {
-    transition-duration: 0ms;
-  }
+  :is(.luma-app, .luma-dialog-panel, .ai7-select-menu, .tillfold-calendar),
+  :is(.luma-app, .luma-dialog-panel, .ai7-select-menu, .tillfold-calendar) *,
   .animate-fadeIn {
-    animation: none;
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -991,7 +1026,6 @@ textarea:focus-visible,
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; border: 1px solid transparent; border-radius: var(--ai7-radius-control);
   font: 500 var(--ai7-text-body)/1.2 var(--ai7-font-ui); white-space: nowrap; cursor: pointer;
-  transition: background-color .16s, color .16s, filter .16s;
 }
 .ui-btn { padding: 0 16px; }
 .ui-btn-icon { display: inline-flex; flex-shrink: 0; }

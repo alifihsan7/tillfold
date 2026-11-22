@@ -71,12 +71,12 @@ const config: Config = {
       },
       keyframes: {
         fadeIn: {
-          from: { opacity: "0", transform: "translateY(4px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
       },
       animation: {
-        fadeIn: "fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both",
+        fadeIn: "fadeIn var(--luma-motion-panel, 220ms) var(--luma-motion-out, ease-out)",
       },
       spacing: {
         "8.5": "2.125rem",

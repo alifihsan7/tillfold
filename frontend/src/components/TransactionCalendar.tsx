@@ -78,7 +78,7 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
   const changeMonth = (delta: number) => { const next = shiftCalendarMonth(year, month, delta); if (next) changePeriod(next); };
   const openDate = (date: string) => { setDayPage(1); setDetail(null); setDetailLoading(true); setDetailError(""); setSelected(date); };
 
-  return <div className="transaction-finance-calendar space-y-4">
+  return <div className="transaction-finance-calendar space-y-4 animate-fadeIn">
     <div className="calendar-toolbar">
       <div className="calendar-period-fields">
         <div className="min-w-0 space-y-1"><span className="text-xs text-luma-smoke">Bulan</span>
@@ -114,7 +114,7 @@ export function TransactionCalendar({ accounts, account, onAccountChange, refres
       <div className="grid grid-cols-7 border-b border-luma-smokeline bg-luma-coal">
         {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => <div key={day} className="py-2 text-center text-xs font-medium text-luma-smoke">{day}</div>)}
       </div>
-      <div className="transaction-calendar-grid grid grid-cols-7 gap-px bg-luma-smokeline">
+      <div key={`${year}-${month}`} className="transaction-calendar-grid grid grid-cols-7 gap-px bg-luma-smokeline animate-fadeIn">
         {cells.map((date, index) => {
           if (!date) return <div key={`empty-${index}`} aria-hidden="true" className="min-h-[100px] bg-luma-charcoal sm:min-h-[120px]" />;
           const day = byDate.get(date);

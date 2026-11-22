@@ -1712,7 +1712,7 @@ export default function FinanceDashboard() {
 
         <div className="luma-page-content p-3.5 sm:p-5 md:p-6 lg:p-8 xl:p-10 pb-24 md:pb-10 max-w-7xl 2xl:max-w-[1600px] mx-auto w-full space-y-6 sm:space-y-8">
           {/* Page Title & Antislop Copy Header */}
-          <div className="mb-2 sm:mb-4">
+          <div key={activeNav} className="mb-2 sm:mb-4 animate-fadeIn">
             <h1 className="ai7-type-page tracking-tight text-luma-ivory">
               {activeNav}
             </h1>
@@ -1756,7 +1756,7 @@ export default function FinanceDashboard() {
         {/* VIEW 1: RINGKASAN */}
         {/* ============================================================== */}
         {activeNav === "Ringkasan" && (
-          <div className="space-y-5 sm:space-y-8">
+          <div className="space-y-5 sm:space-y-8 animate-fadeIn">
             {/* Active Paycheck Session Banner */}
             {activePaycheckSession && activePaycheckSession.status === "in_progress" && (
               <div className="luma-glass !rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2271,7 +2271,7 @@ export default function FinanceDashboard() {
               </div>
             </div>
 
-            <div role="tabpanel" id="plan-tab-content" aria-labelledby={`plan-tab-${planSubTab}`} tabIndex={0}>
+            <div key={planSubTab} className="animate-fadeIn" role="tabpanel" id="plan-tab-content" aria-labelledby={`plan-tab-${planSubTab}`} tabIndex={0}>
             {planSubTab === "target" && (
               <GoalsView
                 goals={goals}
@@ -3104,7 +3104,7 @@ export default function FinanceDashboard() {
       {toastMessage && (
         <aside
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-obsidian-card/95 backdrop-blur-md border border-amberGold/30 text-slateText-primary shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className="luma-toast fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-obsidian-card/95 backdrop-blur-md border border-amberGold/30 text-slateText-primary shadow-2xl"
         >
           <div className="w-7 h-7 rounded-xl bg-amberGold/15 border border-amberGold/30 flex items-center justify-center text-amberGold shrink-0">
             <CheckCircle2 className="w-4 h-4" />

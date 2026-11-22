@@ -589,14 +589,16 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 .luma-dialog-panel input:focus-visible { outline: 2px solid var(--luma-ember); outline-offset: 2px; }
 .light .luma-guest-guide dl > div + div { border-color: var(--luma-smokeline); }
 :is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button {
+  -webkit-tap-highlight-color: transparent;
   transition-property: background-color, border-color, color, filter;
   transition-duration: 140ms;
   transition-timing-function: ease;
 }
 :is(.luma-app, .luma-dialog-panel, .ai7-select-menu) button:not(:disabled):active {
   transform: none;
-  filter: brightness(.98);
-  border-color: var(--luma-smoke);
+  scale: none;
+  filter: brightness(.92);
+  border-color: transparent;
 }
 .luma-topbar button, .luma-sidebar > div:last-child > button { border-radius: var(--ai7-radius-control); font-weight: 400; }
 .luma-topbar [role=menu] { border-radius: var(--ai7-radius-panel); font-weight: 400; }
@@ -998,10 +1000,6 @@ textarea:focus-visible,
 :is(.luma-app, .luma-dialog-panel) .ui-btn--ghost:hover:not(:disabled) { background: var(--luma-coal); }
 :is(.luma-app, .luma-dialog-panel) .ui-btn--danger { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .09); }
 :is(.luma-app, .luma-dialog-panel) .ui-btn--danger:hover:not(:disabled) { background: rgb(var(--luma-coral-rgb) / .16); }
-.luma-app button:active:not(:disabled), .ai7-select-menu button:active:not(:disabled) {
-  filter: brightness(.92);
-}
-
 .ui-chip { padding: 0 14px; color: var(--luma-smoke); background: var(--obsidian-card); }
 .ui-chip:hover:not(:disabled) { color: var(--luma-ivory); background: var(--obsidian-hover); }
 .ui-chip-row { display: flex; gap: 8px; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scroll-padding-inline: 16px; }
@@ -1058,7 +1056,6 @@ textarea:focus-visible,
   border-color: transparent;
 }
 
-.luma-app button:active:not(:disabled) { transform: none; scale: none; }
 .luma-app :where(button, a[href], input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--luma-ember);
   outline-offset: 2px;

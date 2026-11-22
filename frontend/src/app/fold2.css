@@ -256,12 +256,12 @@
   background: var(--fold-panel);
   color: var(--fold-overview-secondary);
 }
-.tillfold-fold :is(.luma-main, .luma-dialog-panel) button.border:is(.bg-obsidian-card, [class*=" bg-white/"]) {
+.tillfold-fold :is(.luma-main, .luma-dialog-panel) button.border:is(.bg-obsidian-card, [class*=" bg-white/"]):not(:where(.luma-topbar *)) {
   background: var(--fold-surface);
   border-color: var(--fold-selected-edge);
   border-radius: 999px;
 }
-.tillfold-fold :is(.luma-main, .luma-dialog-panel) button.border:is(.bg-obsidian-card, [class*=" bg-white/"]):hover:not(:disabled) {
+.tillfold-fold :is(.luma-main, .luma-dialog-panel) button.border:is(.bg-obsidian-card, [class*=" bg-white/"]):hover:not(:disabled):not(:where(.luma-topbar *)) {
   background: var(--fold-panel);
 }
 .tillfold-fold :is(.ai7-ledger-table, .ai7-account-card, .ai7-goal-card, .ai7-category-card) button[aria-label] {

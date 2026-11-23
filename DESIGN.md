@@ -113,6 +113,7 @@ Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-moti
 - **Hero balance**: ink panel, balance, income/expense ratio bar with legend, then actions. The eye toggle hides amounts (`HiddenAmount`).
 - **Budget gauge**: ring gauge with daily allowance; switches to negative color when the pace is `warning`.
 - **Cash wallet**: stacked pocket sheets that darken with depth; the selected account comes to the front and shows chips and actions (reconcile, transfer).
+- **Overview lists**: transaction and cash-account headings sit outside their cards on the same baseline. The transaction panel stretches to the wallet height and shows extra recent entries on desktop according to the number of accounts (up to ten); stacked layouts keep five.
 - **Transactions**: 38 px round icon, two-line copy, amount, row actions. Phones drop actions to a second row.
 - **Ledger and calendar**: table header on `--fold-panel`, row hover `--fold-row-hover`, calendar days tinted by expense level.
 - **Categories**: filters and management dialogs use the shared neutral segmented control. Category cards sit on `--fold-panel`, with progress tracks on `--fold-edge`; user-selected accent colors remain intact. Transaction types read “Pengeluaran” and “Pemasukan”.

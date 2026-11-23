@@ -34,7 +34,7 @@ export function LumaRecentTransactions({
   const hasNew = transactions.some((transaction) => newTransactionIds?.has(transaction.id));
 
   return (
-    <section className="fold-card fold-transactions" aria-labelledby="fold-transactions-title" aria-busy={loading || undefined}>
+    <section className="fold-transactions" aria-labelledby="fold-transactions-title" aria-busy={loading || undefined}>
       <header className="fold-section-header">
         <h2 id="fold-transactions-title">Transaksi terbaru</h2>
         <button type="button" className="fold-link" onClick={onOpenLedger}>
@@ -43,9 +43,10 @@ export function LumaRecentTransactions({
       </header>
       <p className="sr-only" role="status">{hasNew ? "Transaksi baru ditampilkan." : ""}</p>
 
+      <div className="fold-card fold-transactions-panel">
       {loading ? (
         <ul className="fold-transaction-list">
-          {[1, 2, 3].map((item) => (
+          {[1, 2, 3, 4, 5, 6].map((item) => (
             <li className="fold-transaction" key={item}>
               <Skeleton className="size-9 rounded-full" /><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-16" />
             </li>
@@ -59,7 +60,7 @@ export function LumaRecentTransactions({
         </div>
       ) : (
         <ul className="fold-transaction-list">
-          {transactions.map((transaction) => {
+          {transactions.map((transaction, index) => {
             const { id, type, description, date, category, account, amount, is_internal_loan_transfer } = transaction;
             const adjustment = type === "adjustment_in" || type === "adjustment_out";
             const transfer = type === "transfer_in" || type === "transfer_out";
@@ -67,7 +68,7 @@ export function LumaRecentTransactions({
             const tone = adjustment || transfer ? "fold-muted" : incoming ? "fold-positive" : "fold-negative";
             const Icon = adjustment || transfer ? ArrowLeftRight : incoming ? ArrowUpRight : ArrowDownRight;
             return (
-              <li key={id} className="fold-transaction" data-new-transaction={newTransactionIds?.has(id) || undefined}>
+              <li key={id} className="fold-transaction" data-desktop-only={index >= 5 || undefined} data-new-transaction={newTransactionIds?.has(id) || undefined}>
                 <span className={`fold-transaction-icon ${tone}`}><Icon size={16} aria-hidden="true" /></span>
                 <div className="fold-transaction-copy">
                   <p>{description}</p>
@@ -91,6 +92,7 @@ export function LumaRecentTransactions({
           })}
         </ul>
       )}
+      </div>
     </section>
   );
 }

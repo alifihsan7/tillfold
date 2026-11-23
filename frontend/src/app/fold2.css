@@ -535,7 +535,7 @@
   grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
   gap: 16px;
 }
-.fold-lists { align-items: start; }
+.fold-lists { align-items: stretch; }
 .fold-page :is(section, h2, p, dl, dd, ul) { min-width: 0; margin: 0; }
 .fold-page ul { list-style: none; padding: 0; }
 .fold-page h2 { font-size: 16px; font-weight: 750; letter-spacing: -.015em; line-height: 1.35; }
@@ -684,8 +684,9 @@ html:not(.light) .fold-hero {
 .fold-flow dd { margin-top: 3px; font-size: 27px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .fold-flow > p { margin-top: 9px; }
 
-.fold-transactions { padding: 12px 10px; }
-.fold-transactions > header { padding: 2px 9px 4px 14px; }
+.fold-transactions { display: flex; flex-direction: column; }
+.fold-transactions-panel { flex: 1; padding: 12px 10px; }
+.fold-transactions > header { min-height: 50px; padding: 0 8px 8px; }
 .fold-transaction {
   display: grid;
   align-items: center;
@@ -849,6 +850,7 @@ html:not(.light) .fold-hero {
 
 @media (max-width: 1023px) {
   .fold-grid, .fold-lists { grid-template-columns: minmax(0, 1fr); }
+  .fold-transaction[data-desktop-only="true"] { display: none; }
 }
 @media (max-width: 767px) {
   .fold-page { gap: 16px; }

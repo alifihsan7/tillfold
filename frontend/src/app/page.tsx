@@ -1814,7 +1814,7 @@ export default function FinanceDashboard() {
             {currentUser && !overviewError && <>
             <div className="fold-lists">
             <LumaRecentTransactions
-              transactions={transactions.slice(0, 5)}
+              transactions={transactions.slice(0, Math.min(10, Math.max(5, (summary.accounts?.length ?? 0) + 1 + (overviewPockets.length > 0 ? 1 : 0))))}
               newTransactionIds={newTransactionIds}
               totalCount={transactions.length}
               formatRupiah={formatRupiah}

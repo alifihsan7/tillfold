@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Wallet } from "lucide-react";
+import { Wallet } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
 import { CurrencyInput } from "./ui/CurrencyInput";

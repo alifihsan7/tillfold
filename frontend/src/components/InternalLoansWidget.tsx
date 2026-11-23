@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Clock,
   Ban,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   InternalLoan,
   getInternalLoans,

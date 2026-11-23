@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CreditCard, Trash2, AlertTriangle, X, Edit2 } from "lucide-react";
+import { CreditCard, Trash2, AlertTriangle, X, Edit2 } from "@/components/icons";
 import { Skeleton } from "./ui/Skeleton";
 import { SegmentedControl } from "./ui/controls";
 import { authFetch } from "@/lib/api";

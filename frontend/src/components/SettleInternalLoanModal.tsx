@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { CheckCircle2, ArrowRight, AlertCircle, Coins, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ArrowRight, AlertCircle, Coins, ShieldCheck } from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { InternalLoan, settleInternalLoan } from "@/lib/api";

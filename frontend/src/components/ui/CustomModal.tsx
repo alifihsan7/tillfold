@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { X } from "@/components/icons";
 
 interface CustomModalProps {
   isOpen: boolean;
@@ -122,7 +122,7 @@ export function CustomModal({
           <div className="flex items-start gap-3.5 pr-12 sm:pr-14">
             {icon && (
               <div
-                className="ai7-dialog-icon p-2.5 rounded-xl shrink-0"
+                className="fold-dialog-icon pt-0.5 shrink-0"
               >
                 {icon}
               </div>

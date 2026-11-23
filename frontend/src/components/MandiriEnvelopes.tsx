@@ -1,5 +1,5 @@
 import React from "react";
-import { Wallet } from "lucide-react";
+import { Wallet } from "@/components/icons";
 import { Skeleton } from "./ui/Skeleton";
 
 export interface SmartBudgetEnvelopesProps {
@@ -157,7 +157,7 @@ export function SmartBudgetEnvelopes({
                       aria-hidden="true"
                       className="w-8 h-8 rounded-xl bg-luma-coal border border-luma-smokeline flex items-center justify-center shrink-0"
                     >
-                      <Wallet className={`w-3.5 h-3.5 ${isIcon ? "text-luma-ember" : "text-luma-smoke"}`} />
+                      <Wallet className={`w-3.5 h-3.5 ${isIcon ? "text-luma-secondary" : "text-luma-smoke"}`} />
                     </span>
                     <span className="text-luma-ivory font-semibold text-sm break-words leading-snug flex-1">
                       {env.title}

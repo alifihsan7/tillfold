@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { PlusCircle, Wallet } from "lucide-react";
+import { PlusCircle, Wallet, AlertTriangle } from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
@@ -94,7 +94,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-coralFall/10 border border-coralFall/30 rounded-xl p-3 text-xs sm:text-sm text-coralFall flex items-center gap-2">
-            <span>⚠️</span>
+            <AlertTriangle className="size-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}

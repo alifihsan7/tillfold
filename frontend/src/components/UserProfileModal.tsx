@@ -2,7 +2,7 @@
 import { SelectionRail } from "./ui/SelectionRail";
 
 import React, { useEffect, useRef, useState } from "react";
-import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy, Check, RefreshCw } from "lucide-react";
+import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy, Check, RefreshCw } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { authFetch, setStoredUser, UserProfile, syncGoogleSheets, sheetsSyncMessage } from "@/lib/api";
 

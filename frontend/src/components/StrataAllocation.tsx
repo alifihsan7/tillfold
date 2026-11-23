@@ -47,7 +47,7 @@ export function StrataAllocationBar({
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="p-3.5 rounded-2xl luma-inset space-y-2">
               <div className="flex items-center gap-1.5">
-                <Skeleton className="w-2 h-2 rounded-full" />
+                <Skeleton className="w-3.5 h-3.5 rounded-full" />
                 <Skeleton className="w-16 h-3 rounded-md" />
               </div>
               <Skeleton className="w-20 h-4 rounded-md" />

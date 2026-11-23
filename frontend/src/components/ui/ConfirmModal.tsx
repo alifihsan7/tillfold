@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2 } from "@/components/icons";
 import { CustomModal } from "./CustomModal";
 
 interface ConfirmModalProps {

@@ -13,7 +13,7 @@ import {
   Plus,
   Trash2,
   AlertCircle
-} from "lucide-react";
+} from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
 import { CurrencyInput } from "./ui/CurrencyInput";
@@ -328,7 +328,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
                       : "bg-white/[0.08] text-luma-smoke"
                   }`}
                 >
-                  {isDone ? <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" /> : s.num}
+                  {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.num}
                 </div>
                 <div className="sr-only sm:not-sr-only sm:block min-w-0">
                   <p className="text-xs font-medium leading-none truncate">{s.label}</p>
@@ -443,7 +443,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
           <div className="space-y-4 animate-fadeIn">
             <div className="bg-obsidian-card p-4 rounded-2xl border border-luma-smokeline">
               <h4 className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-cyanHub" />
+                <Calendar className="w-4 h-4 text-luma-secondary" />
                 Pilih durasi siklus anggaran
               </h4>
               <p className="text-xs text-luma-smoke">

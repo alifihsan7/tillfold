@@ -8,7 +8,7 @@ import {
   Search,
   X,
   RotateCcw,
-  ArrowDownRight,
+  ArrowDownLeft,
   ArrowUpRight,
   ArrowLeftRight,
   Calendar,
@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Receipt,
-} from "lucide-react";
+} from "@/components/icons";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";
 import { Skeleton } from "./ui/Skeleton";
 import { Chip, ChipRow, SegmentedControl } from "./ui/controls";
@@ -246,7 +246,7 @@ export function TransactionLedgerView({
           <div className="flex items-center justify-between gap-2 text-luma-smoke">
             <span className="text-xs font-medium truncate">Total pemasukan</span>
             <div className="w-6 h-6 rounded-full bg-mintRise/15 border border-mintRise/30 flex items-center justify-center text-mintRise shrink-0">
-              <ArrowDownRight className="w-3.5 h-3.5" />
+              <ArrowDownLeft className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-2.5">
@@ -429,7 +429,7 @@ export function TransactionLedgerView({
         {dateFilter === "custom" && (
           <div className="p-3.5 rounded-2xl bg-obsidian-card border border-luma-smokeline flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-luma-secondary">
-              <Calendar className="w-4 h-4 text-amberGold shrink-0" />
+              <Calendar className="w-4 h-4 text-luma-secondary shrink-0" />
               <span className="font-medium">Rentang Tanggal Kustom:</span>
             </div>
             <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start">
@@ -456,7 +456,7 @@ export function TransactionLedgerView({
         {activeFiltersCount > 0 && (
           <div className="flex items-center justify-between pt-1 text-xs">
             <div className="flex items-center gap-2 text-luma-smoke font-medium">
-              <Filter className="w-3.5 h-3.5 text-amberGold" />
+              <Filter className="w-3.5 h-3.5 text-luma-secondary" />
               <span>
                 Menampilkan hasil dengan{" "}
                 <strong className="text-amberGold font-sans">{activeFiltersCount}</strong> filter aktif

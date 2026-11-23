@@ -33,13 +33,13 @@ const icon = (...args) => renderToStaticMarkup(React.createElement(React.Fragmen
 // A picked emoji must render even though every goal defaults to the "Tabungan" category.
 assert.match(icon("🏝️", "Liburan Bali"), /🏝️/);
 assert.match(icon("💍", "Biaya nikah"), /💍/);
-assert.doesNotMatch(icon("💍", "Tabungan nikah"), /lucide-shield/);
+assert.doesNotMatch(icon("💍", "Tabungan nikah"), /fold-icon--savings/);
 // Known emoji map to their line icon; the default icon falls back to the name.
-assert.match(icon("💻", "Apa saja"), /lucide-laptop/);
-assert.match(icon("🎯", "Laptop baru"), /lucide-laptop/);
-assert.match(icon("🎯", "Dana dingin"), /lucide-shield/);
-assert.match(icon("🎯", "Biaya nikah"), /lucide-target/);
-assert.match(icon("", "Biaya nikah"), /lucide-target/);
+assert.match(icon("💻", "Apa saja"), /fold-icon--laptop/);
+assert.match(icon("🎯", "Laptop baru"), /fold-icon--laptop/);
+assert.match(icon("🎯", "Dana dingin"), /fold-icon--savings/);
+assert.match(icon("🎯", "Biaya nikah"), /fold-icon--goal/);
+assert.match(icon("", "Biaya nikah"), /fold-icon--goal/);
 console.log("PASS: the goal icon the user picked wins over name and category keywords.");
 
 const totals = summarizeGoals([

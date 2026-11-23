@@ -1,6 +1,6 @@
 import { DateField } from "@/components/ui/DateField";
 import React, { useState } from "react";
-import { ArrowLeftRight, CheckCircle2 } from "lucide-react";
+import { ArrowLeftRight, CheckCircle2 } from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";

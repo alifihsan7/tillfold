@@ -1,6 +1,6 @@
 import React from "react";
 import { formatShortDate, formatSignedRupiah } from "@/lib/format";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2 } from "@/components/icons";
 import { Skeleton } from "./ui/Skeleton";
 import { getCategoryBadgeClasses } from "@/lib/categoryColors";
 

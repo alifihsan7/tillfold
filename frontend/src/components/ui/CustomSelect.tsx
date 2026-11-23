@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "@/components/icons";
 
 export interface SelectOption {
   value: string;
@@ -248,7 +248,7 @@ export function CustomSelect({
                       )}
                     </div>
                   </div>
-                  {isSelected && <Check className="w-4 h-4 text-luma-transfer shrink-0" />}
+                  {isSelected && <Check className="w-4 h-4 text-luma-secondary shrink-0" />}
                 </button>
               );
             })}

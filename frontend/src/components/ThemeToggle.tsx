@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon } from "@/components/icons";
 import { useTheme } from "./ThemeProvider";
 
 interface ThemeToggleProps {
@@ -54,11 +54,11 @@ export function ThemeToggle({
       <div className="relative flex items-center justify-center w-full h-full">
         {isLight ? (
           <Moon
-            className={`${iconSize} stroke-[2.2] text-luma-ivory`}
+            className={`${iconSize} text-luma-ivory`}
           />
         ) : (
           <Sun
-            className={`${iconSize} stroke-[2.2] text-amberGold`}
+            className={`${iconSize} text-luma-secondary`}
           />
         )}
       </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatShortDate } from "@/lib/format";
-import { Activity } from "lucide-react";
+import { Activity } from "@/components/icons";
 
 interface CycleBurnDay {
   day: number;
@@ -50,7 +50,7 @@ export function BurnRateChart({ summary, formatRupiah }: BurnRateChartProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-luma-ember" aria-hidden="true" />
+            <Activity className="w-5 h-5 text-luma-secondary" aria-hidden="true" />
             <h2 className="ai7-type-section text-luma-ivory tracking-tight">
               Belanja kumulatif
             </h2>

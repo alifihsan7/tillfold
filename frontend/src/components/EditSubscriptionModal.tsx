@@ -2,7 +2,7 @@
 
 import { DateField } from "@/components/ui/DateField";
 import React, { useState, useEffect } from "react";
-import { Calendar, Clock, Sparkles } from "lucide-react";
+import { Calendar, Clock, Plus } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { CurrencyInput } from "./ui/CurrencyInput";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";
@@ -241,7 +241,7 @@ export function EditSubscriptionModal({
                     onClick={() => handleAddDays(30)}
                     className="ai7-amount-preset"
                   >
-                    <Sparkles className="w-2.5 h-2.5" />
+                    <Plus className="w-3.5 h-3.5" />
                     +30 Hari
                   </button>
                 </div>

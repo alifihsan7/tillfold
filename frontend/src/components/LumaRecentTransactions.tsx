@@ -1,7 +1,7 @@
 "use client";
 
 import { formatShortDate, formatSignedRupiah } from "@/lib/format";
-import { ArrowRight, Receipt, ArrowUpRight, ArrowDownRight, ArrowLeftRight, Pencil, Trash2 } from "lucide-react";
+import { ArrowRight, Receipt, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Pencil, Trash2 } from "@/components/icons";
 import { Skeleton } from "./ui/Skeleton";
 
 export interface LumaTransaction {
@@ -66,7 +66,7 @@ export function LumaRecentTransactions({
             const transfer = type === "transfer_in" || type === "transfer_out";
             const incoming = type === "income" || type === "transfer_in" || type === "adjustment_in";
             const tone = adjustment || transfer ? "fold-muted" : incoming ? "fold-positive" : "fold-negative";
-            const Icon = adjustment || transfer ? ArrowLeftRight : incoming ? ArrowUpRight : ArrowDownRight;
+            const Icon = adjustment || transfer ? ArrowLeftRight : incoming ? ArrowDownLeft : ArrowUpRight;
             return (
               <li key={id} className="fold-transaction" data-desktop-only={index >= 5 || undefined} data-new-transaction={newTransactionIds?.has(id) || undefined}>
                 <span className={`fold-transaction-icon ${tone}`}><Icon size={16} aria-hidden="true" /></span>

@@ -19,7 +19,7 @@ import {
   Heart,
   Clock,
   CheckCircle2,
-} from "lucide-react";
+} from "@/components/icons";
 import { GoalItem } from "./EditGoalModal";
 import { Skeleton } from "./ui/Skeleton";
 
@@ -58,17 +58,17 @@ function formatDateIndo(dateStr: string | null): string {
 }
 
 const GOAL_ICON_GLYPHS: Record<string, React.ReactNode> = {
-  "🛡️": <ShieldCheck className="w-5 h-5 text-luma-sage" />,
-  "📈": <TrendingUp className="w-5 h-5 text-luma-gold" />,
-  "🚨": <AlertTriangle className="w-5 h-5 text-luma-gold" />,
-  "💻": <Laptop className="w-5 h-5 text-luma-ember" />,
-  "✨": <Sparkles className="w-5 h-5 text-luma-ember" />,
-  "✈️": <Plane className="w-5 h-5 text-luma-gold" />,
-  "🚗": <Car className="w-5 h-5 text-luma-ember" />,
-  "🏠": <Home className="w-5 h-5 text-luma-sage" />,
-  "🪙": <Coins className="w-5 h-5 text-luma-gold" />,
-  "🎓": <GraduationCap className="w-5 h-5 text-luma-ember" />,
-  "❤️": <Heart className="w-5 h-5 text-luma-coral" />,
+  "🛡️": <ShieldCheck className="w-5 h-5 text-luma-secondary" />,
+  "📈": <TrendingUp className="w-5 h-5 text-luma-secondary" />,
+  "🚨": <AlertTriangle className="w-5 h-5 text-luma-secondary" />,
+  "💻": <Laptop className="w-5 h-5 text-luma-secondary" />,
+  "✨": <Sparkles className="w-5 h-5 text-luma-secondary" />,
+  "✈️": <Plane className="w-5 h-5 text-luma-secondary" />,
+  "🚗": <Car className="w-5 h-5 text-luma-secondary" />,
+  "🏠": <Home className="w-5 h-5 text-luma-secondary" />,
+  "🪙": <Coins className="w-5 h-5 text-luma-secondary" />,
+  "🎓": <GraduationCap className="w-5 h-5 text-luma-secondary" />,
+  "❤️": <Heart className="w-5 h-5 text-luma-secondary" />,
 };
 
 const DEFAULT_GOAL_ICON = "🎯";
@@ -89,7 +89,7 @@ export function renderGoalIcon(icon: string, name: string) {
   if (lower.includes("darurat")) return GOAL_ICON_GLYPHS["🚨"];
   if (lower.includes("investasi") || lower.includes("bibit") || lower.includes("reksadana")) return GOAL_ICON_GLYPHS["📈"];
   if (lower.includes("laptop") || lower.includes("gadget")) return GOAL_ICON_GLYPHS["💻"];
-  return <Target className="w-5 h-5 text-luma-ember" />;
+  return <Target className="w-5 h-5 text-luma-secondary" />;
 }
 
 // Money above a goal's target does not count toward other goals, so the
@@ -239,7 +239,7 @@ export function GoalsView({
             onClick={onOpenAddModal}
             className="luma-touch inline-flex items-center gap-2 px-5 py-2.5 bg-luma-ivory text-luma-charcoal font-semibold rounded-full hover:brightness-95 transition text-sm whitespace-nowrap cursor-pointer"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className="w-4 h-4" />
             <span>Buat target pertama</span>
           </button>
         </div>
@@ -259,7 +259,7 @@ export function GoalsView({
                   <div className="flex items-start justify-between gap-3.5">
                     <div className="flex items-center gap-3.5 min-w-0">
                       {/* Circular icon well */}
-                      <div className="ai7-account-icon w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                      <div className="fold-goal-mark size-9 flex items-center justify-center shrink-0">
                         {renderGoalIcon(goal.icon, goal.name)}
                       </div>
 

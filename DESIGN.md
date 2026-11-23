@@ -97,6 +97,15 @@ Use sentence case for headings, labels, buttons and badges ("Total pemasukan", "
 - Overview grid is 1.62 fr main column plus 1 fr side column, stacking below 1024 px. Summary grids use one column on phones, two at medium widths, four from 1440 px.
 - The period selector is a single popup with Siklus, Minggu, Bulan and Kustom tabs, a list of recent periods, and a history link. It keeps legible contrast on ink while expanded.
 
+## Icons
+
+- UI glyphs come from `frontend/src/components/icons.tsx`: a local SVG line set with a 24-unit grid, 1.7-unit strokes, square terminals and slightly rounded joins. Navigation uses 20 px glyphs (1.9-unit strokes for the selected item); action icons use 14–16 px and supporting marks 20–24 px.
+- Shapes distinguish functions: a ledger for the overview, receipt for transactions, divided wallet for budget, milestone flag for goals and a simple chart for reports. Settings uses sliders, and the wishlist uses a bookmark instead of sparkle decoration.
+- Interface and decorative icons are neutral. Semantic money/error colors remain on financial/status controls, and user-selected category/goal colors remain on dots, badges and progress bars. Dialog, goal, category and pocket marks have no colored icon tile.
+- Category marks identify their subject (food, shopping, transport, utilities, health, education, income); unknown names use a tag. Incoming money consistently points down-left, outgoing money up-right, and paired transfers use two opposing arrows.
+- Built-in goal keys stay compatible with saved data. Custom user-selected emoji remain user content. The Google sign-in mark and Tillfold logo are brand assets, separate from this UI set.
+- Glyphs are hidden from assistive technology by default; meaningful standalone glyphs require `aria-label`, while icon buttons retain their text or accessible button name. Glyphs never receive keyboard focus.
+
 ## Motion
 
 Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-motion-meter` 360 ms, easing `--luma-motion-out` `cubic-bezier(.22, 1, .36, 1)`.

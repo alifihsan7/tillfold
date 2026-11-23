@@ -4,7 +4,7 @@ import { DateField } from "@/components/ui/DateField";
 import { SegmentedControl } from "./ui/controls";
 import { todayWib } from "@/lib/transactionCalendar";
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2 } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { CurrencyInput } from "./ui/CurrencyInput";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";

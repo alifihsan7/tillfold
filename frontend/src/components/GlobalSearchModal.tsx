@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatSignedRupiah } from "@/lib/format";
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/components/icons";
 import { authFetch } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 import type { Transaction } from "./TransactionTable";

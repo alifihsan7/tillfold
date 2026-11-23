@@ -15,7 +15,7 @@ import {
   Heart,
   CheckCircle2,
   Check,
-} from "lucide-react";
+} from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
@@ -364,7 +364,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
           >
             {loading ? "Menyimpan..." : (
               <>
-                <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                <CheckCircle2 className="w-4 h-4" />
                 Simpan perubahan
               </>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload } from "@/components/icons";
 import { authFetch } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 

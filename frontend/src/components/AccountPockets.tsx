@@ -10,7 +10,7 @@ import {
   Plus,
   Smartphone,
   Wallet,
-} from "lucide-react";
+} from "@/components/icons";
 import { Skeleton } from "./ui/Skeleton";
 import { Button, Chip } from "./ui/controls";
 import {
@@ -53,11 +53,11 @@ const POCKET_META: Record<
   string,
   { icon: React.ComponentType<{ className?: string }>; accent: string }
 > = {
-  utama: { icon: Wallet, accent: "text-luma-ember bg-luma-ember/10 border-luma-ember/30" },
-  kuota: { icon: Smartphone, accent: "text-luma-gold bg-luma-gold/10 border-luma-gold/30" },
-  visa: { icon: CreditCard, accent: "text-luma-gold bg-luma-gold/10 border-luma-gold/30" },
-  claude: { icon: Bot, accent: "text-luma-ember bg-luma-ember/10 border-luma-ember/30" },
-  gym: { icon: Dumbbell, accent: "text-luma-sage bg-luma-sage/10 border-luma-sage/30" },
+  utama: { icon: Wallet, accent: "text-luma-secondary" },
+  kuota: { icon: Smartphone, accent: "text-luma-secondary" },
+  visa: { icon: CreditCard, accent: "text-luma-secondary" },
+  claude: { icon: Bot, accent: "text-luma-secondary" },
+  gym: { icon: Dumbbell, accent: "text-luma-secondary" },
 };
 
 function sortPockets(pockets: PocketItem[]): PocketItem[] {
@@ -253,7 +253,7 @@ export function Pockets({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="ai7-type-section text-luma-ivory tracking-tight flex items-center gap-2">
-            <Landmark className="w-5 h-5 text-luma-ember shrink-0" aria-hidden="true" />
+            <Landmark className="w-5 h-5 text-luma-secondary shrink-0" aria-hidden="true" />
             <span>{title}</span>
           </h2>
           <p className="text-xs text-luma-smoke mt-1">
@@ -366,7 +366,7 @@ export function Pockets({
 
             const meta = POCKET_META[pocket.slug] ?? {
               icon: Wallet,
-              accent: "text-luma-smoke bg-white/[0.06] border-luma-smokeline",
+              accent: "text-luma-secondary",
             };
             const Icon = meta.icon;
 
@@ -380,7 +380,7 @@ export function Pockets({
                   <div className="flex justify-between items-center gap-2">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <span
-                        className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${meta.accent}`}
+                        className={`fold-pocket-mark size-9 flex items-center justify-center shrink-0 ${meta.accent}`}
                       >
                         <Icon className="w-4 h-4" aria-hidden="true" />
                       </span>

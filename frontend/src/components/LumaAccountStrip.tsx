@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowLeftRight, Check, Landmark, Smartphone, Wallet } from "lucide-react";
+import { ArrowLeftRight, Check, Landmark, Smartphone, Wallet } from "@/components/icons";
 import { getPockets, type PocketItem } from "@/lib/api";
 import { getAccountRoleBadge } from "./AccountGrid";
 import { HiddenAmount } from "./ui/HiddenAmount";

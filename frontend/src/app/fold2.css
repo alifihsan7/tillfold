@@ -792,6 +792,15 @@ html:not(.light) .fold-hero {
 .fold-hero.fold-loading { gap: 20px; }
 .fold-hero .animate-pulse { background: rgb(var(--fold-hero-tint) / .16); }
 
+/* One compact line system; decorative marks do not need a colored tile. */
+.fold-icon { display: inline-block; vertical-align: -.125em; flex-shrink: 0; }
+.tillfold-fold :is(.luma-sidebar nav, .luma-bottom-nav) .fold-icon { width: 20px; height: 20px; }
+.tillfold-fold :is(.luma-sidebar nav, .luma-bottom-nav) button[aria-current] > .fold-icon { stroke-width: 1.9; }
+.fold-dialog-icon, .fold-goal-mark, .fold-category-mark, .fold-pocket-mark { color: var(--fold-overview-secondary); }
+.fold-dialog-icon > .fold-icon { width: 22px; height: 22px; color: inherit; }
+.fold-goal-mark > .fold-icon { width: 24px; height: 24px; color: inherit; }
+.fold-category-mark > .fold-icon { color: inherit; }
+
 /* The selection moves underneath stationary labels; native button state is the fallback. */
 .fold-choice-rail { position: relative; isolation: isolate; }
 .fold-choice-rail > button { position: relative; z-index: 1; }

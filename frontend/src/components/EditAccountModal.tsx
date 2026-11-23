@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Wallet, Check } from "lucide-react";
+import { Wallet, Check, AlertTriangle } from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { authFetch } from "@/lib/api";
@@ -102,7 +102,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-coralFall/10 border border-coralFall/30 rounded-xl p-3 text-xs sm:text-sm text-coralFall flex items-center gap-2">
-            <span>⚠️</span>
+            <AlertTriangle className="size-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -179,7 +179,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
               <span>Menyimpan...</span>
             ) : (
               <>
-                <Check className="w-4 h-4 stroke-[2.5]" />
+                <Check className="w-4 h-4" />
                 <span>Simpan perubahan</span>
               </>
             )}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BillPaymentModal } from "./BillPaymentModal";
-import { Trash2, Calendar, Edit2, Clock, Pause, Play } from "lucide-react";
+import { Trash2, Calendar, Edit2, Clock, Pause, Play } from "@/components/icons";
 import { Skeleton } from "./ui/Skeleton";
 import { todayWib } from "@/lib/transactionCalendar";
 
@@ -163,14 +163,14 @@ export function SubscriptionsView({
                   <div className="flex items-center gap-1.5 text-xs text-luma-smoke font-sans mt-1 truncate">
                     {isExact ? (
                       <>
-                        <Clock className="w-3.5 h-3.5 text-amberGold shrink-0" />
+                        <Clock className="w-3.5 h-3.5 text-luma-secondary shrink-0" />
                         <span className="truncate">
                           Jatuh tempo <strong>{sub.exact_due_date || sub.next_billing_date}</strong>
                         </span>
                       </>
                     ) : (
                       <>
-                        <Calendar className="w-3.5 h-3.5 text-amberGold shrink-0" />
+                        <Calendar className="w-3.5 h-3.5 text-luma-secondary shrink-0" />
                       <span className="truncate">{isYearly
                         ? (missingDate ? "Atur tanggal tahunan lewat Ubah" : `Jatuh tempo ${sub.next_billing_date}`)
                         : `Setiap tanggal ${sub.billing_day} (${sub.next_billing_date})`}</span>

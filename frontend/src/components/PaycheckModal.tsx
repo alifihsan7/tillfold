@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Check,
   AlertCircle,
-} from "lucide-react";
+} from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { CurrencyInput } from "./ui/CurrencyInput";
 import { CustomSelect } from "./ui/CustomSelect";
@@ -703,7 +703,7 @@ export default function PaycheckModal({
             <div className="p-4 rounded-2xl bg-mintRise/10 border border-mintRise/30 flex items-center justify-between gap-3 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-mintRise/20 flex items-center justify-center text-mintRise shrink-0">
-                  <Check className="w-5 h-5 stroke-[2.5]" />
+                  <Check className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm text-mintRise">Pembagian gaji selesai</h4>
@@ -768,7 +768,7 @@ export default function PaycheckModal({
                             <div className="shrink-0">
                               {step.is_done ? (
                                 <div className="w-6 h-6 rounded-lg bg-mintRise/20 border border-mintRise/50 flex items-center justify-center text-mintRise">
-                                  <Check className="w-4 h-4 stroke-[2.5]" />
+                                  <Check className="w-4 h-4" />
                                 </div>
                               ) : (
                                 <div className="w-6 h-6 rounded-lg bg-obsidian-panel border border-luma-smokeline flex items-center justify-center hover:border-mintRise transition">

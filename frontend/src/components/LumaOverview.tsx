@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Eye, EyeOff, Plus } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Eye, EyeOff, Plus } from "@/components/icons";
 import { HiddenAmount } from "./ui/HiddenAmount";
 import { Skeleton } from "./ui/Skeleton";
 

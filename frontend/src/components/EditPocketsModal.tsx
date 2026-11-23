@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Landmark } from "lucide-react";
+import { CheckCircle2, Landmark } from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import {
@@ -175,7 +175,7 @@ export function EditPocketsModal({
               "Menyimpan..."
             ) : (
               <>
-                <CheckCircle2 className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
+                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                 Simpan target
               </>
             )}

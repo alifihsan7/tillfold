@@ -15,7 +15,7 @@ import {
   Heart,
   PlusCircle,
   Check,
-} from "lucide-react";
+} from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
@@ -330,7 +330,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
           >
             {loading ? "Menyimpan..." : (
               <>
-                <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+                <PlusCircle className="w-4 h-4" />
                 Simpan target
               </>
             )}

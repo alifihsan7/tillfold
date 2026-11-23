@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from "react";
-import { Calendar, Check, ChevronDown } from "lucide-react";
+import { Calendar, Check, ChevronDown } from "@/components/icons";
 import { DateField } from "@/components/ui/DateField";
 import { Badge, SegmentedControl, type SegmentedOption } from "@/components/ui/controls";
 import { authFetch } from "@/lib/api";

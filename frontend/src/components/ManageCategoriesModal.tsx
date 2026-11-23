@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Layers,
-} from "lucide-react";
+} from "@/components/icons";
 import { SegmentedControl } from "./ui/controls";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
@@ -412,7 +412,7 @@ export function ManageCategoriesModal({
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <Plus className="w-4 h-4" />
                   <span>Tambah kategori</span>
                 </>
               )}

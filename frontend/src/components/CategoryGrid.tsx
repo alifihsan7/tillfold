@@ -1,18 +1,17 @@
 "use client";
 
 import React, { useState, useMemo, useId } from "react";
+import { CategoryIcon } from "./CategoryIcon";
 import { Badge, SegmentedControl } from "./ui/controls";
 import {
   Tag,
-  ArrowUpRight,
-  ArrowDownLeft,
   Plus,
   Edit2,
   Trash2,
   Loader2,
   AlertCircle,
   AlertTriangle,
-} from "lucide-react";
+} from "@/components/icons";
 import { CategoryItem } from "./ManageCategoriesModal";
 import { CATEGORY_COLORS, getCategoryColorDef } from "@/lib/categoryColors";
 import { Skeleton } from "./ui/Skeleton";
@@ -339,7 +338,7 @@ export function CategoryGrid({
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Tag className="w-5 h-5 text-amberGold" />
+            <Tag className="w-5 h-5 text-luma-secondary" />
             <h2 className="ai7-type-section text-white tracking-tight">
               Kategori pengeluaran & pemasukan
             </h2>
@@ -372,7 +371,7 @@ export function CategoryGrid({
             className="luma-action-primary shrink-0"
             title="Tambah kategori transaksi baru"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+            <Plus className="w-3.5 h-3.5 shrink-0" />
             <span className="whitespace-nowrap">Tambah kategori</span>
           </button>
         </div>
@@ -411,7 +410,7 @@ export function CategoryGrid({
             }}
             className="luma-action-primary"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Tambah kategori baru</span>
           </button>
         </div>
@@ -431,13 +430,9 @@ export function CategoryGrid({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
-                        className={`w-8 h-8 rounded-xl ${colorDef.badgeBg} ${colorDef.badgeBorder} border flex items-center justify-center shrink-0`}
+                        className="fold-category-mark flex size-8 items-center justify-center shrink-0"
                       >
-                        {isExpense ? (
-                          <ArrowUpRight className={`w-4 h-4 ${colorDef.badgeText}`} />
-                        ) : (
-                          <ArrowDownLeft className="w-4 h-4 text-mintRise" />
-                        )}
+                        <CategoryIcon name={c.name} type={c.type} />
                       </div>
                       <div className="min-w-0">
                         <span className="font-semibold text-sm text-white block truncate" title={c.name}>
@@ -531,7 +526,7 @@ export function CategoryGrid({
         }}
         title="Tambah kategori baru"
         subtitle="Buat pos alokasi transaksi baru untuk pengeluaran atau pemasukan."
-        icon={<Plus className="w-5 h-5 text-amberGold" />}
+        icon={<Plus className="w-5 h-5 text-luma-secondary" />}
         accent="amber"
         maxWidth="md"
       >
@@ -624,7 +619,7 @@ export function CategoryGrid({
         }}
         title="Edit kategori"
         subtitle="Perubahan nama otomatis diperbarui ke seluruh riwayat transaksi terkait."
-        icon={<Edit2 className="w-5 h-5 text-amberGold" />}
+        icon={<Edit2 className="w-5 h-5 text-luma-secondary" />}
         accent="amber"
         maxWidth="md"
       >

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link2 } from "lucide-react";
+import { Link2 } from "@/components/icons";
 import { getPocketBills, linkPocketBill, PocketItem, PocketsSummaryResponse, PocketBill } from "@/lib/api";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";

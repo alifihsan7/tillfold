@@ -438,8 +438,6 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
 :is(.luma-app, .luma-dialog-panel) .luma-action-primary:hover:not(:disabled) { background: var(--ai7-primary-hover); }
 :is(.luma-app, .luma-dialog-panel) button:disabled { opacity: .5; }
 .luma-dialog-panel { border-radius: var(--ai7-radius-panel); border: 1px solid transparent; }
-.luma-dialog-panel .ai7-dialog-icon { color: var(--luma-smoke); background: var(--luma-coal); border-color: var(--luma-smokeline); }
-.luma-dialog-panel .ai7-dialog-icon svg { color: inherit; }
 .luma-dialog-panel button { border-radius: 10px; min-height: 44px; font-weight: 500; }
 .luma-dialog-panel label { text-transform: none; letter-spacing: normal; font: 600 12px/1.5 var(--ai7-font-ui); }
 .luma-dialog-panel .luma-form-scope :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea),

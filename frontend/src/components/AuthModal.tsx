@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useLatest } from "@/lib/useLatest";
-import { LogIn, UserPlus, Shield, AlertCircle, KeyRound, AtSign, User, Info } from "lucide-react";
+import { LogIn, UserPlus, Shield, AlertCircle, KeyRound, AtSign, User, Info } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
 import { setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
 

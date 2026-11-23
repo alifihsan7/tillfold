@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { HandCoins, ArrowLeftRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { HandCoins, ArrowLeftRight, AlertCircle, CheckCircle2 } from "@/components/icons";
 import { CustomModal } from "@/components/ui/CustomModal";
 import { CustomSelect, SelectOption } from "@/components/ui/CustomSelect";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";

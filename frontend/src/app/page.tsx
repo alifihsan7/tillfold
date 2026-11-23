@@ -17,6 +17,8 @@ import {
   ArrowDownLeft,
   CheckCircle2,
   Layers,
+  Tag,
+  User,
   Bell,
   BarChart2,
   LayoutDashboard,
@@ -37,7 +39,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   WalletCards,
-} from "lucide-react";
+} from "@/components/icons";
 import { StrataAllocationBar } from "@/components/StrataAllocation";
 import { LumaOverview } from "@/components/LumaOverview";
 import { LumaAccountStrip } from "@/components/LumaAccountStrip";
@@ -1162,7 +1164,7 @@ export default function FinanceDashboard() {
             {[
               { name: "Ringkasan", icon: LayoutDashboard },
               { name: "Transaksi", icon: Receipt },
-              { name: "Anggaran", icon: Layers },
+              { name: "Anggaran", icon: WalletCards },
               { name: "Rencana", icon: Target },
               { name: "Laporan", icon: BarChart2 },
             ].map((item) => {
@@ -1185,7 +1187,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-transfer" : "text-luma-smoke"}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-secondary" : "text-luma-smoke"}`} />
                   <span className="luma-sidebar-copy truncate whitespace-nowrap">{item.name}</span>
                 </button>
               );
@@ -1212,7 +1214,7 @@ export default function FinanceDashboard() {
                   : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
               }`}
             >
-              <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-transfer" : "text-luma-smoke"}`} />
+              <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-secondary" : "text-luma-smoke"}`} />
               <span className="luma-sidebar-copy truncate whitespace-nowrap">Pengaturan</span>
             </button>
           </nav>
@@ -1280,7 +1282,7 @@ export default function FinanceDashboard() {
             aria-label="Refresh data"
             className="hidden luma-touch min-w-[44px] items-center justify-center text-luma-smoke hover:text-luma-ivory bg-white/[0.05] border border-luma-smokeline rounded-full transition active:scale-95 cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-luma-ember" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-luma-secondary" : ""}`} />
           </button>
           <ThemeToggle size="sm" />
           <button
@@ -1356,7 +1358,7 @@ export default function FinanceDashboard() {
                 {[
                   { name: "Ringkasan", icon: LayoutDashboard },
                   { name: "Transaksi", icon: Receipt },
-                  { name: "Anggaran", icon: Layers },
+                  { name: "Anggaran", icon: WalletCards },
                   { name: "Rencana", icon: Target },
                   { name: "Laporan", icon: BarChart2 },
                 ].map((item) => {
@@ -1378,7 +1380,7 @@ export default function FinanceDashboard() {
                           : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
                       }`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-transfer" : "text-luma-smoke"}`} />
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-luma-secondary" : "text-luma-smoke"}`} />
                       <span className="truncate whitespace-nowrap">{item.name}</span>
                     </button>
                   );
@@ -1402,7 +1404,7 @@ export default function FinanceDashboard() {
                         : "text-luma-smoke hover:text-luma-ivory border border-transparent hover:border-white/[0.06] hover:bg-white/[0.04] font-medium"
                     }`}
                   >
-                    <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-transfer" : "text-luma-smoke"}`} />
+                    <Settings className={`w-4 h-4 shrink-0 ${activeNav === "Pengaturan" ? "text-luma-secondary" : "text-luma-smoke"}`} />
                     <span className="truncate whitespace-nowrap">Pengaturan</span>
                   </button>
                 </nav>
@@ -1511,7 +1513,7 @@ export default function FinanceDashboard() {
         title="Catat transaksi baru"
         aria-label="Catat transaksi baru"
       >
-        <Plus className="w-6 h-6 stroke-[3]" />
+        <Plus className="w-6 h-6" />
       </button>
 
       {/* MOBILE BOTTOM NAVIGATION BAR — 5 Core Menus */}
@@ -1519,7 +1521,7 @@ export default function FinanceDashboard() {
         {[
           { name: "Ringkasan", slug: "#/overview", icon: LayoutDashboard },
           { name: "Transaksi", slug: "#/transactions", icon: Receipt },
-          { name: "Anggaran", slug: "#/budget", icon: Layers },
+          { name: "Anggaran", slug: "#/budget", icon: WalletCards },
           { name: "Rencana", slug: "#/plan", icon: Target },
           { name: "Laporan", slug: "#/reports", icon: BarChart2 },
         ].map((item) => {
@@ -1583,7 +1585,7 @@ export default function FinanceDashboard() {
                 >
                   <Download className="w-3.5 h-3.5 text-luma-smoke shrink-0" />
                   <span className="font-semibold hidden sm:inline">Utilitas</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-luma-smoke shrink-0 transition-transform duration-200 ${isUtilitiesMenuOpen ? "rotate-180 text-luma-ember" : ""}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-luma-smoke shrink-0 transition-transform duration-200 ${isUtilitiesMenuOpen ? "rotate-180 text-luma-secondary" : ""}`} />
                 </button>
 
                 {isUtilitiesMenuOpen && (
@@ -1597,7 +1599,7 @@ export default function FinanceDashboard() {
                       role="menuitem"
                       className="luma-touch w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-luma-ivory hover:bg-white/[0.06] transition text-left cursor-pointer"
                     >
-                      <RefreshCw className={`w-4 h-4 shrink-0 ${loading ? "animate-spin text-luma-ember" : "text-luma-smoke"}`} />
+                      <RefreshCw className={`w-4 h-4 shrink-0 ${loading ? "animate-spin text-luma-secondary" : "text-luma-smoke"}`} />
                       <div className="text-left">
                         <div className="font-semibold text-xs text-luma-ivory">
                           Refresh data
@@ -2067,7 +2069,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  <Target className="w-4 h-4 shrink-0 text-luma-ember" />
+                  <Target className="w-4 h-4 shrink-0 text-luma-secondary" />
                   <span>Target tabungan</span>
                   <span className="text-xs font-sans font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-luma-smoke ml-1">
                     {goals.length}
@@ -2090,7 +2092,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  <Bell className="w-4 h-4 shrink-0 text-luma-gold" />
+                  <Bell className="w-4 h-4 shrink-0 text-luma-secondary" />
                   <span>Tagihan</span>
                   <span className="text-xs font-sans font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-luma-smoke ml-1">
                     {subsData.items.length}
@@ -2106,7 +2108,7 @@ export default function FinanceDashboard() {
                     onClick={() => setIsAddGoalModalOpen(true)}
                     className="luma-action-primary cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Tambah target</span>
                   </button>
                 ) : (
@@ -2115,7 +2117,7 @@ export default function FinanceDashboard() {
                     onClick={() => setIsSubModalOpen(true)}
                     className="luma-action-primary cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Tambah tagihan</span>
                   </button>
                 )}
@@ -2202,7 +2204,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  <CreditCard className="w-4 h-4 shrink-0 text-luma-ember" />
+                  <CreditCard className="w-4 h-4 shrink-0 text-luma-secondary" />
                   <span>Rekening</span>
                   <span className="text-xs font-sans font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-luma-smoke ml-1">
                     {customAccounts.length || summary.accounts?.length || 0}
@@ -2225,7 +2227,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  <WalletCards className="w-4 h-4 shrink-0 text-luma-gold" />
+                  <Layers className="w-4 h-4 shrink-0 text-luma-secondary" />
                   <span>Kantong</span>
                   <span className="text-xs font-sans font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-luma-smoke ml-1">
                     {pocketsCount}
@@ -2248,7 +2250,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  <Layers className="w-4 h-4 shrink-0 text-luma-sage" />
+                  <Tag className="w-4 h-4 shrink-0 text-luma-secondary" />
                   <span>Kategori</span>
                   <span className="text-xs font-sans font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-luma-smoke ml-1">
                     {categories.length}
@@ -2271,7 +2273,7 @@ export default function FinanceDashboard() {
                       : "text-luma-smoke hover:text-luma-ivory hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
-                  <Settings className="w-4 h-4 shrink-0 text-luma-gold" />
+                  <User className="w-4 h-4 shrink-0 text-luma-secondary" />
                   <span>Profil</span>
                 </button>
               </SelectionRail>
@@ -2292,7 +2294,7 @@ export default function FinanceDashboard() {
                     onClick={() => setIsAddAccountModalOpen(true)}
                     className="luma-action-primary cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                    <Plus className="w-3.5 h-3.5 shrink-0" />
                     <span>Tambah rekening</span>
                   </button>
                 </div>

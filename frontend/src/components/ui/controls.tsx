@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { SelectionRail } from "./SelectionRail";
 
 /*
  * Shared controls. One look per role, so pages cannot drift apart again:
@@ -92,7 +93,7 @@ export function SegmentedControl<T extends string>({ label, value, options, onCh
   fill?: boolean;
 }) {
   return (
-    <div role="group" aria-label={label} className={cx("ui-segmented", fill && "ui-segmented--fill", className)}>
+    <SelectionRail selection={value} role="group" aria-label={label} className={cx("ui-segmented", fill && "ui-segmented--fill", className)}>
       {options.map((option) => (
         <button key={option.value} type="button" className="ui-segment" aria-pressed={value === option.value}
           data-tone={option.tone} onClick={() => onChange(option.value)}>
@@ -100,7 +101,7 @@ export function SegmentedControl<T extends string>({ label, value, options, onCh
           {option.label}
         </button>
       ))}
-    </div>
+    </SelectionRail>
   );
 }
 

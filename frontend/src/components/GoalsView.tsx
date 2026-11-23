@@ -244,7 +244,7 @@ export function GoalsView({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-7 lg:gap-8">
+        <div className="fold-stagger grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-7 lg:gap-8">
           {goals.map((goal) => {
             const theme = getCategoryColorDef(GOAL_COLOR_KEYS[goal.color] || "mintRise");
             const isCompleted = goal.remaining_amount === 0;

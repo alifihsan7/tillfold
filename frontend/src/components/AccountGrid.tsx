@@ -318,7 +318,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
         ]} />
       {showArchived && <p className="text-sm text-luma-smoke">Saldo dan riwayat rekening arsip tetap tersimpan.</p>}
       {showArchived && !allDisplayAccounts.some((account) => account.is_archived) && <p className="luma-matte p-4 text-sm text-luma-smoke">Belum ada rekening yang diarsipkan.</p>}
-      <div className="ai7-account-grid">
+      <div className="ai7-account-grid fold-stagger">
       {allDisplayAccounts.filter((account) => account.is_archived === showArchived).map((acc) => {
         const hasPlafon = acc.allocated > 0;
         const pctUsed = hasPlafon ? Math.min(100, Math.round((acc.spent / acc.allocated) * 100)) : 0;

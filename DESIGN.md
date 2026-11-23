@@ -101,8 +101,9 @@ Use sentence case for headings, labels, buttons and badges ("Total pemasukan", "
 
 Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-motion-meter` 360 ms, easing `--luma-motion-out` `cubic-bezier(.22, 1, .36, 1)`.
 
-- Page heading slides up 8 px (240 ms), then content fades in from 25 % opacity (300 ms). No translation of financial figures.
-- Button color, border and shadow changes use the quick duration; pressed state has no scale or translation.
+- Page heading slides up 8 px (240 ms); content fades in over 180 ms. Overview groups and account/category/goal cards fade in over 360 ms with a 45 ms stagger, capped at 180 ms. No translation or counting animation of financial figures.
+- Button color, border and shadow changes use the quick duration; pressed state has no scale or translation. Selected navigation icons briefly settle from 85 % scale (260 ms), without moving the button or label.
+- Shared segments, plan/settings tabs and profile tabs use `SelectionRail`: a pill background follows the selected button over 260 ms. Labels and focus stay stationary. ResizeObserver keeps the pill aligned when tabs wrap, fonts load, or labels change. Without measurement, the native selected background remains visible.
 - Gauges, ratio bars, cycle bars and chart bars grow from their baseline (460–640 ms) and animate again when the period or amount changes.
 - A newly added transaction highlights in positive color and fades out (640 ms).
 - Dialogs fade; bottom sheets slide up 24 px on phones; the mobile drawer slides in from the left.

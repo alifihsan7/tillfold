@@ -1,4 +1,5 @@
 "use client";
+import { SelectionRail } from "./ui/SelectionRail";
 
 import React, { useEffect, useRef, useState } from "react";
 import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy, Check, RefreshCw } from "lucide-react";
@@ -296,7 +297,7 @@ export function UserProfileModal({
           </button>
         </div>
 
-        <div className="ui-segmented luma-profile-tabs" role="tablist" aria-label="Pengaturan akun">
+        <SelectionRail selection={activeTab} className="ui-segmented luma-profile-tabs" role="tablist" aria-label="Pengaturan akun">
           <button
             type="button"
             role="tab"
@@ -330,7 +331,7 @@ export function UserProfileModal({
           >
             <FileSpreadsheet className="h-4 w-4" />Google Sheets
           </button>
-        </div>
+        </SelectionRail>
 
         {msg && (
           <p role={msg.type === "error" ? "alert" : "status"} className={`text-xs ${msg.type === "error" ? "text-coralFall" : "text-mintRise"}`}>

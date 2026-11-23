@@ -416,7 +416,7 @@ export function CategoryGrid({
           </button>
         </div>
       ) : (
-        <div className="ai7-category-grid">
+        <div key={filterTab} className="ai7-category-grid fold-stagger">
           {filteredList.map((c) => {
             const colorDef = getCategoryColorDef(c.color);
             const isExpense = c.type === "expense";

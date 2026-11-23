@@ -792,10 +792,50 @@ html:not(.light) .fold-hero {
 .fold-hero.fold-loading { gap: 20px; }
 .fold-hero .animate-pulse { background: rgb(var(--fold-hero-tint) / .16); }
 
+/* The selection moves underneath stationary labels; native button state is the fallback. */
+.fold-choice-rail { position: relative; isolation: isolate; }
+.fold-choice-rail > button { position: relative; z-index: 1; }
+.fold-choice-indicator {
+  display: none;
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--choice-width);
+  height: var(--choice-height);
+  translate: var(--choice-x) var(--choice-y);
+  border-radius: 999px;
+  pointer-events: none;
+  background: var(--fold-surface);
+}
+.fold-choice-rail[data-measured="true"] > .fold-choice-indicator { display: block; }
+/* Keep the selected label's existing contrast, tone and focus ring. */
+.tillfold-fold .fold-choice-rail[data-measured="true"] > button:is([aria-pressed="true"], [aria-selected="true"]) {
+  background: transparent !important;
+}
+.fold-choice-rail[data-tone="expense"] > .fold-choice-indicator { background: rgb(var(--fold-negative-rgb) / .12); }
+.fold-choice-rail[data-tone="income"] > .fold-choice-indicator { background: rgb(var(--fold-positive-rgb) / .12); }
+.light .fold-choice-indicator { background: var(--fold-action-selected); }
+.light .fold-choice-rail[data-tone="expense"] > .fold-choice-indicator { background: var(--fold-expense-control); }
+.light .fold-choice-rail[data-tone="income"] > .fold-choice-indicator { background: var(--fold-income-control); }
+
 @media (prefers-reduced-motion: no-preference) {
-  /* Move the heading into place first, then reveal the page without shifting its controls. */
+  /* A short stagger reveals groups without moving financial figures or controls. */
+  :is(.fold-grid, .fold-lists, .fold-stagger) > :not(.fold-loading) {
+    animation: fold-card-enter 360ms var(--luma-motion-out) backwards;
+    animation-delay: 0ms;
+  }
+  :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(2) { animation-delay: 45ms; }
+  :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(3) { animation-delay: 90ms; }
+  :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(4) { animation-delay: 135ms; }
+  :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(n + 5) { animation-delay: 180ms; }
+  .fold-choice-indicator {
+    transition: translate 260ms var(--luma-motion-out), width 260ms var(--luma-motion-out),
+      height 260ms var(--luma-motion-out), background-color var(--luma-motion-quick) ease-out;
+  }
+  .tillfold-fold :is(.luma-sidebar nav, .luma-bottom-nav) button[aria-current] > svg {
+    animation: fold-nav-icon-enter 260ms var(--luma-motion-out);
+  }
   .fold-content > .fold-heading { animation: fold-heading-enter 240ms var(--luma-motion-out); }
-  .fold-content > .animate-fadeIn:not(.fold-heading) { animation: fold-content-enter 300ms ease-out; }
+  .fold-content > .animate-fadeIn:not(.fold-heading) { animation: fold-content-enter 180ms ease-out; }
   .fold-content [role="tabpanel"].animate-fadeIn,
   .fold-content .transaction-calendar-grid,
   :is(.fold-period-options, .fold-period-custom),
@@ -817,6 +857,10 @@ html:not(.light) .fold-hero {
   .fold-period-history > svg,
   .luma-sidebar-toggle > svg {
     transition: transform var(--luma-motion-panel) var(--luma-motion-out);
+  }
+  .fold-link > svg { transition: translate var(--luma-motion-quick) var(--luma-motion-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .fold-link:hover > svg:last-child { translate: 2px 0; }
   }
   .fold-theme-toggle svg { animation: fold-icon-enter 240ms var(--luma-motion-out); }
   .fold-mobile-drawer { animation: fold-drawer-enter 280ms var(--luma-motion-out); }
@@ -847,6 +891,8 @@ html:not(.light) .fold-hero {
     animation: fold-new-entry 640ms ease-out;
   }
 
+  @keyframes fold-card-enter { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fold-nav-icon-enter { from { opacity: .45; scale: .85; } to { opacity: 1; scale: 1; } }
   @keyframes fold-heading-enter {
     from { opacity: 0; translate: 0 8px; }
     to { opacity: 1; translate: none; }

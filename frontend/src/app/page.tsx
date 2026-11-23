@@ -1,5 +1,6 @@
 "use client";
 
+import { SelectionRail } from "@/components/ui/SelectionRail";
 import { DateField } from "@/components/ui/DateField";
 import { CHROME_COLOR } from "@/components/ThemeProvider";
 import { useLatest } from "@/lib/useLatest";
@@ -2048,7 +2049,7 @@ export default function FinanceDashboard() {
           <div className="space-y-6 animate-fadeIn">
             {/* Sub-tab Navigation */}
             <div className="fold-subnav flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="ai7-tab-group inline-flex bg-white/[0.04] border border-luma-smokeline" role="tablist" aria-label="Rencana" onKeyDown={handleTabArrowKeys}>
+              <SelectionRail selection={planSubTab} className="ai7-tab-group inline-flex bg-white/[0.04] border border-luma-smokeline" role="tablist" aria-label="Rencana" onKeyDown={handleTabArrowKeys}>
                 <button
                   type="button"
                   role="tab"
@@ -2095,7 +2096,7 @@ export default function FinanceDashboard() {
                     {subsData.items.length}
                   </span>
                 </button>
-              </div>
+              </SelectionRail>
 
               {/* Action shortcut depending on active sub-tab */}
               <div className="flex items-center gap-2">
@@ -2183,7 +2184,7 @@ export default function FinanceDashboard() {
           <div className="space-y-6 animate-fadeIn">
             {/* Sub-tab Navigation */}
             <div className="fold-subnav flex flex-wrap items-center justify-between gap-3">
-              <div className="ai7-tab-group grid w-full grid-cols-2 gap-1 border border-luma-smokeline bg-white/[0.04] sm:flex sm:w-auto sm:max-w-full sm:flex-wrap" role="tablist" aria-label="Pengaturan" onKeyDown={handleTabArrowKeys}>
+              <SelectionRail selection={settingsSubTab} className="ai7-tab-group grid w-full grid-cols-2 gap-1 border border-luma-smokeline bg-white/[0.04] sm:flex sm:w-auto sm:max-w-full sm:flex-wrap" role="tablist" aria-label="Pengaturan" onKeyDown={handleTabArrowKeys}>
                 <button
                   type="button"
                   role="tab"
@@ -2273,7 +2274,7 @@ export default function FinanceDashboard() {
                   <Settings className="w-4 h-4 shrink-0 text-luma-gold" />
                   <span>Profil</span>
                 </button>
-              </div>
+              </SelectionRail>
 
               {/* Sub-tab action shortcuts */}
               {settingsSubTab === "rekening" && (
@@ -2300,7 +2301,7 @@ export default function FinanceDashboard() {
 
             </div>
 
-            <div role="tabpanel" id="settings-tab-content" aria-labelledby={`settings-tab-${settingsSubTab}`} tabIndex={0}>
+            <div key={settingsSubTab} className="animate-fadeIn" role="tabpanel" id="settings-tab-content" aria-labelledby={`settings-tab-${settingsSubTab}`} tabIndex={0}>
             {/* Sub-tab 1: Rekening */}
             {settingsSubTab === "rekening" && (
               <div className="space-y-4 animate-fadeIn">

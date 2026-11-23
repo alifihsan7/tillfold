@@ -26,6 +26,10 @@
 
 ---
 
+## 📱 Aplikasi Android Native
+
+Klien Kotlin + Jetpack Compose tersedia di [`android/`](android/README.md), terhubung ke API dan akun yang sama. Lihat panduan tersebut untuk build APK, fitur versi pertama, pengujian, dan batasan saat ini.
+
 ## 🏗️ Arsitektur Sistem
 
 ```text

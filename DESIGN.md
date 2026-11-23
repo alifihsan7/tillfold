@@ -115,6 +115,7 @@ Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-moti
 - **Cash wallet**: stacked pocket sheets that darken with depth; the selected account comes to the front and shows chips and actions (reconcile, transfer).
 - **Transactions**: 38 px round icon, two-line copy, amount, row actions. Phones drop actions to a second row.
 - **Ledger and calendar**: table header on `--fold-panel`, row hover `--fold-row-hover`, calendar days tinted by expense level.
+- **Categories**: filters and management dialogs use the shared neutral segmented control. Category cards sit on `--fold-panel`, with progress tracks on `--fold-edge`; user-selected accent colors remain intact. Transaction types read “Pengeluaran” and “Pemasukan”.
 - **Nested tab frames**: inner pill tabs sit in a 4 px inset frame with a 22 px radius.
 
 ## Scope and known deviations

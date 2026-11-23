@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { SegmentedControl } from "./ui/controls";
+import { Badge, SegmentedControl } from "./ui/controls";
 import {
   Tag,
   ArrowUpRight,
@@ -335,59 +335,31 @@ export function CategoryGrid({
   return (
     <section className="ai7-section bg-obsidian-panel border border-luma-smokeline rounded-3xl p-5 sm:p-7 space-y-5">
       {/* Header Flex Row */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-amberGold" />
             <h2 className="ai7-type-section text-white tracking-tight">
-              Kategori Belanja & Pemasukan
+              Kategori pengeluaran & pemasukan
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-luma-smoke mt-0.5">
-            Daftar pos alokasi transaksi beserta nominal belanja periode ini.
+            Kelompok pengeluaran dan pemasukan beserta total transaksi periode ini.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-          {/* Filter Pills */}
-          <div className="ai7-filters flex items-center gap-1 p-1 text-xs" role="group" aria-label="Jenis kategori">
-            <button
-              type="button"
-              onClick={() => setFilterTab("all")}
-              aria-pressed={filterTab === "all"}
-              className={`px-3 py-1 rounded-full transition cursor-pointer min-h-[32px] ${
-                filterTab === "all"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-luma-smoke hover:text-white"
-              }`}
-            >
-              Semua ({combinedCards.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab("expense")}
-              aria-pressed={filterTab === "expense"}
-              className={`px-3 py-1 rounded-full transition cursor-pointer min-h-[32px] ${
-                filterTab === "expense"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-luma-smoke hover:text-white"
-              }`}
-            >
-              Belanja ({expenseCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterTab("income")}
-              aria-pressed={filterTab === "income"}
-              className={`px-3 py-1 rounded-full transition cursor-pointer min-h-[32px] ${
-                filterTab === "income"
-                  ? "bg-amberGold text-slate-950 font-semibold shadow-xs"
-                  : "text-luma-smoke hover:text-white"
-              }`}
-            >
-              Masuk ({incomeCount})
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto xl:justify-end">
+          <SegmentedControl<"all" | "expense" | "income">
+            label="Jenis kategori"
+            className="fold-category-filters"
+            value={filterTab}
+            onChange={setFilterTab}
+            options={[
+              { value: "all", label: <>Semua <span>({combinedCards.length})</span></> },
+              { value: "expense", label: <>Pengeluaran <span>({expenseCount})</span></> },
+              { value: "income", label: <>Pemasukan <span>({incomeCount})</span></> },
+            ]}
+          />
 
           {/* + Tambah Kategori Button */}
           <button
@@ -471,17 +443,11 @@ export function CategoryGrid({
                           {c.name}
                         </span>
                         <div className="flex items-center gap-1.5 text-xs font-sans text-luma-smoke mt-0.5">
-                          <span
-                            className={`px-1.5 py-0.2 rounded text-xs font-semibold ${
-                              isExpense
-                                ? "bg-white/[0.06] text-luma-smoke"
-                                : "bg-mintRise/15 text-mintRise"
-                            }`}
-                          >
-                            {isExpense ? "Belanja" : "Masuk"}
-                          </span>
+                          <Badge tone={isExpense ? "neutral" : "positive"}>
+                            {isExpense ? "Pengeluaran" : "Pemasukan"}
+                          </Badge>
                           <span>•</span>
-                          <span>{c.count} tx</span>
+                          <span className="whitespace-nowrap">{c.count} tx</span>
                         </div>
                       </div>
                     </div>
@@ -538,7 +504,7 @@ export function CategoryGrid({
 
                 {/* Progress Bar */}
                 <div className="pt-2">
-                  <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                  <div className="fold-category-track h-1.5 rounded-full overflow-hidden">
                     <div
                       style={{
                         width: `${c.percentage > 0 ? Math.min(100, Math.max(4, c.percentage)) : 0}%`,
@@ -602,6 +568,7 @@ export function CategoryGrid({
                     key={col.id}
                     type="button"
                     onClick={() => setAddColor(col.id)}
+                    aria-pressed={isSelected}
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
                         ? "ui-selected"
@@ -692,6 +659,7 @@ export function CategoryGrid({
                     key={col.id}
                     type="button"
                     onClick={() => setEditColor(col.id)}
+                    aria-pressed={isSelected}
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
                         ? "ui-selected"
@@ -762,7 +730,7 @@ export function CategoryGrid({
                   : "bg-emerald-500/15 text-emerald-300"
               }`}
             >
-              {deletingCat?.type === "expense" ? "Belanja" : "Pemasukan"}
+              {deletingCat?.type === "expense" ? "Pengeluaran" : "Pemasukan"}
             </span>
           </div>
 

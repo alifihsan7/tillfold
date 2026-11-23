@@ -299,6 +299,14 @@
   border-color: transparent;
   border-radius: 28px;
 }
+.tillfold-fold .fold-content .ai7-category-card {
+  background-color: var(--fold-panel);
+}
+.fold-category-track { background: var(--fold-edge); }
+@media (max-width: 767px) {
+  .fold-category-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .fold-category-filters .ui-segment { flex-direction: column; gap: 2px; min-width: 0; padding: 8px 4px; font-size: 12px; }
+}
 .fold-content :is(.luma-inset, .luma-readout) { border-radius: 20px; }
 .fold-content :is(.luma-data-state, .luma-guest-banner) {
   background: var(--fold-surface);

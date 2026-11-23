@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Layers,
 } from "lucide-react";
+import { SegmentedControl } from "./ui/controls";
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
 import { authFetch } from "@/lib/api";
@@ -312,58 +313,20 @@ export function ManageCategoriesModal({
       maxWidth="lg"
     >
       <div className="space-y-5">
-        {/* TAB SWITCHER: Pengeluaran vs Pemasukan */}
-        <div className="grid grid-cols-2 gap-2 bg-obsidian-panel p-1.5 rounded-2xl border border-luma-smokeline">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("expense");
-              setEditingId(null);
-              setCreateError(null);
-            }}
-            className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === "expense"
-                ? "bg-coralFall text-slate-950 font-semibold shadow-sm"
-                : "text-luma-smoke hover:text-white"
-            }`}
-          >
-            <span>Pengeluaran</span>
-            <span
-              className={`text-xs font-sans px-2 py-0.5 rounded-full ${
-                activeTab === "expense"
-                  ? "bg-slate-950/25 text-slate-950 font-semibold"
-                  : "bg-white/[0.06] text-luma-smoke"
-              }`}
-            >
-              {expenseCategories.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("income");
-              setEditingId(null);
-              setCreateError(null);
-            }}
-            className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === "income"
-                ? "bg-mintRise text-slate-950 font-semibold shadow-sm"
-                : "text-luma-smoke hover:text-white"
-            }`}
-          >
-            <span>Pemasukan</span>
-            <span
-              className={`text-xs font-sans px-2 py-0.5 rounded-full ${
-                activeTab === "income"
-                  ? "bg-slate-950/25 text-slate-950 font-semibold"
-                  : "bg-white/[0.06] text-luma-smoke"
-              }`}
-            >
-              {incomeCategories.length}
-            </span>
-          </button>
-        </div>
+        <SegmentedControl<"expense" | "income">
+          fill
+          label="Jenis kategori"
+          value={activeTab}
+          onChange={(type) => {
+            setActiveTab(type);
+            setEditingId(null);
+            setCreateError(null);
+          }}
+          options={[
+            { value: "expense", label: `Pengeluaran (${expenseCategories.length})` },
+            { value: "income", label: `Pemasukan (${incomeCategories.length})` },
+          ]}
+        />
 
         {/* FORM TAMBAH KATEGORI BARU */}
         <form

@@ -268,7 +268,7 @@ export function SettleInternalLoanModal({
             onChange={(e) => setNote(e.target.value)}
             placeholder="Contoh: Gajian cair, pelunasan sisa talangan..."
             maxLength={255}
-            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-sage/60 focus:ring-1 focus:ring-luma-sage/50 rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-luma-smoke outline-none transition"
+            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-sage/60 rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-luma-smoke outline-none transition"
           />
         </div>
 

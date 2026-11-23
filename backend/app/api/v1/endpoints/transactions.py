@@ -169,6 +169,24 @@ def require_owned_accounts(db: Session, user_id: int, *names: str):
         raise HTTPException(400, "Pilih rekening aktif yang terdaftar di akun Anda.")
 
 
+def require_valid_pocket(db: Session, user_id: int, account: str, pocket_id: int | None):
+    if pocket_id is None:
+        return
+    pocket = db.query(Pocket).filter(
+        Pocket.id == pocket_id, Pocket.user_id == user_id, Pocket.is_active.is_(True),
+    ).first()
+    if not pocket:
+        raise HTTPException(404, "Kantong tidak ditemukan atau sudah nonaktif.")
+    parent = db.query(Account).filter(Account.user_id == user_id, Account.name == account).first()
+    if pocket.account_id is None:
+        from app.api.v1.endpoints.pockets import get_target_pocket_account_names
+        matches = account.lower() in get_target_pocket_account_names(db, user_id)
+    else:
+        matches = parent is not None and pocket.account_id == parent.id
+    if not matches:
+        raise HTTPException(400, "Kantong harus berada di rekening transaksi. Pilih ulang atau kosongkan kantong.")
+
+
 @router.post("", response_model=TransactionOut)
 def create_transaction(
     payload: TransactionCreate,
@@ -182,10 +200,7 @@ def create_transaction(
     require_owned_accounts(db, current_user.id, payload.account)
 
     pocket_id = payload.pocket_id
-    if pocket_id is not None:
-        p = db.query(Pocket).filter(Pocket.id == pocket_id, Pocket.user_id == current_user.id).first()
-        if not p:
-            raise HTTPException(404, "Kantong tidak ditemukan")
+    require_valid_pocket(db, current_user.id, payload.account, pocket_id)
 
     tx = Transaction(
         user_id=current_user.id,
@@ -396,10 +411,8 @@ def update_transaction(
     update_data = payload.model_dump(exclude_unset=True)
     if update_data.get("account") is not None and update_data["account"] != tx.account:
         require_owned_accounts(db, current_user.id, update_data["account"])
-    if update_data.get("pocket_id") is not None:
-        p = db.query(Pocket).filter(Pocket.id == update_data["pocket_id"], Pocket.user_id == current_user.id).first()
-        if not p:
-            raise HTTPException(404, "Kantong tidak ditemukan")
+    require_valid_pocket(db, current_user.id, update_data.get("account") or tx.account,
+                         update_data.get("pocket_id", tx.pocket_id))
     payment = db.query(SubscriptionPayment).filter(
         SubscriptionPayment.user_id == current_user.id, SubscriptionPayment.transaction_id == tx.id,
     ).with_for_update().first()
@@ -445,7 +458,7 @@ def update_transaction(
     elif requested_type in transfer_types:
         raise HTTPException(status_code=400, detail="Gunakan fitur transfer untuk memindahkan saldo antar rekening")
     for field, value in update_data.items():
-        if value is not None:
+        if value is not None or field == "pocket_id":
             setattr(tx, field, value)
             
     db.commit()

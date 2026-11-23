@@ -101,64 +101,21 @@ def sync_transaction_categories(db: Session, user_id: int) -> int:
     Creates concrete Category rows so they can be edited or deleted with cascade support.
     """
     existing_cats = db.query(Category).filter(Category.user_id == user_id).all()
-    existing_names_lower = {c.name.strip().lower() for c in existing_cats if c.name}
-
-    tx_rows = (
-        db.query(Transaction.category, Transaction.type)
-        .filter(
-            Transaction.user_id == user_id,
-            Transaction.type.notin_(["adjustment_in", "adjustment_out"]),
-            Transaction.category.isnot(None),
-            func.trim(Transaction.category) != "",
-        )
-        .all()
-    )
-
-    if not tx_rows:
-        return 0
-
-    # Aggregate distinct category names (case-insensitive deduplication, preserve first clean casing)
-    tx_cat_map: dict[str, dict] = {}
-    for raw_cat, tx_type in tx_rows:
-        if not raw_cat:
-            continue
-        clean_cat = raw_cat.strip()
-        if not clean_cat:
-            continue
-        key = clean_cat.lower()
-        if key not in tx_cat_map:
-            tx_cat_map[key] = {
-                "name": clean_cat,
-                "types": set(),
-            }
-        if tx_type:
-            tx_cat_map[key]["types"].add(tx_type.strip().lower())
-
+    existing = {(c.type, c.name.strip().lower()) for c in existing_cats if c.name}
+    tx_rows = db.query(Transaction.category, Transaction.type).filter(
+        Transaction.user_id == user_id,
+        Transaction.type.in_(["expense", "income"]),
+        Transaction.category.isnot(None), func.trim(Transaction.category) != "",
+    ).distinct().all()
     new_count = 0
-    for key, item in tx_cat_map.items():
-        if key in existing_names_lower:
+    for raw_name, cat_type in tx_rows:
+        name = raw_name.strip()
+        key = (cat_type, name.lower())
+        if key in existing:
             continue
-
-        clean_name = item["name"]
-        types = item["types"]
-
-        # Determine type: "income" jika transaksi bertipe income atau nama mengandung "gaji"/"masuk"/"saldo awal", selain itu "expense"
-        is_income = (
-            "income" in types
-            or any(kw in key for kw in ("gaji", "masuk", "saldo awal"))
-        )
-        cat_type = "income" if is_income else "expense"
-        color, icon = get_category_color_and_icon(clean_name, cat_type)
-
-        new_cat = Category(
-            user_id=user_id,
-            name=clean_name,
-            type=cat_type,
-            color=color,
-            icon=icon,
-        )
-        db.add(new_cat)
-        existing_names_lower.add(key)
+        color, icon = get_category_color_and_icon(name, cat_type)
+        db.add(Category(user_id=user_id, name=name, type=cat_type, color=color, icon=icon))
+        existing.add(key)
         new_count += 1
 
     if new_count > 0:
@@ -251,6 +208,7 @@ def update_category(
         )
 
     old_name = cat.name
+    old_type = cat.type
     new_name = category_in.name.strip() if category_in.name is not None else old_name
     if not new_name:
         raise HTTPException(
@@ -267,6 +225,12 @@ def update_category(
                 detail="Tipe kategori harus 'expense' atau 'income'"
             )
 
+    if new_type != old_type and db.query(Transaction.id).filter(
+        Transaction.user_id == current_user.id, Transaction.category == old_name,
+        Transaction.type == old_type,
+    ).first():
+        raise HTTPException(409, "Kategori yang sudah dipakai tidak dapat diubah tipenya. Buat kategori baru untuk tipe lain.")
+
     # Cek duplikasi jika nama atau tipe berubah
     if new_name != old_name or new_type != cat.type:
         existing = db.query(Category).filter(
@@ -281,22 +245,29 @@ def update_category(
                 detail=f"Kategori '{new_name}' dengan tipe '{new_type}' sudah terdaftar"
             )
 
+    owns_goal_name = not db.query(Category.id).filter(
+        Category.user_id == current_user.id, Category.id != cat.id,
+        func.lower(Category.name) == old_name.lower(),
+    ).first()
+
     # Cascade update pada Transaction jika nama kategori berubah
     if new_name != old_name:
         db.query(Transaction).filter(
             Transaction.user_id == current_user.id,
-            Transaction.category == old_name
+            Transaction.category == old_name,
+            Transaction.type == old_type,
         ).update({Transaction.category: new_name}, synchronize_session=False)
 
         # Update juga Subscriptions & Goals bila ada yang memakai kategori lama
         db.query(Subscription).filter(
             Subscription.user_id == current_user.id,
-            Subscription.category == old_name
+            Subscription.category == old_name,
+            old_type == "expense",
         ).update({Subscription.category: new_name}, synchronize_session=False)
 
         db.query(Goal).filter(
             Goal.user_id == current_user.id,
-            Goal.category == old_name
+            Goal.category == old_name, owns_goal_name,
         ).update({Goal.category: new_name}, synchronize_session=False)
 
     cat.name = new_name
@@ -331,15 +302,27 @@ def delete_category(
     cat_name = cat.name
     tx_count = db.query(Transaction).filter(
         Transaction.user_id == current_user.id,
-        Transaction.category == cat_name
+        Transaction.category == cat_name,
+        Transaction.type == cat.type,
+    ).count()
+    sub_count = db.query(Subscription.id).filter(
+        Subscription.user_id == current_user.id, Subscription.category == cat_name,
+        cat.type == "expense",
+    ).count()
+    owns_goal_name = not db.query(Category.id).filter(
+        Category.user_id == current_user.id, Category.id != cat.id,
+        func.lower(Category.name) == cat_name.lower(),
+    ).first()
+    goal_count = db.query(Goal.id).filter(
+        Goal.user_id == current_user.id, Goal.category == cat_name, owns_goal_name,
     ).count()
 
     target_fallback_name = None
-    if tx_count > 0:
+    if tx_count or sub_count or goal_count:
         if not fallback_to:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Kategori '{cat_name}' sedang digunakan oleh {tx_count} transaksi. "
+                detail=f"Kategori '{cat_name}' sedang digunakan oleh {tx_count} transaksi, {sub_count} tagihan, dan {goal_count} target. "
                        f"Tentukan parameter 'fallback_to' (misal: 'Lainnya') untuk memindahkan transaksi, "
                        f"atau ubah transaksi terkait terlebih dahulu."
             )
@@ -378,18 +361,20 @@ def delete_category(
         # Cascade reassign transaksi ke target fallback
         db.query(Transaction).filter(
             Transaction.user_id == current_user.id,
-            Transaction.category == cat_name
+            Transaction.category == cat_name,
+            Transaction.type == cat.type,
         ).update({Transaction.category: target_cat.name}, synchronize_session=False)
 
         # Update juga Subscriptions & Goals bila ada yang memakai kategori yang dihapus
         db.query(Subscription).filter(
             Subscription.user_id == current_user.id,
-            Subscription.category == cat_name
+            Subscription.category == cat_name,
+            cat.type == "expense",
         ).update({Subscription.category: target_cat.name}, synchronize_session=False)
 
         db.query(Goal).filter(
             Goal.user_id == current_user.id,
-            Goal.category == cat_name
+            Goal.category == cat_name, owns_goal_name,
         ).update({Goal.category: target_cat.name}, synchronize_session=False)
 
     db.delete(cat)

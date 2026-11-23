@@ -227,7 +227,22 @@ def compute_safe_to_spend_metrics(
             d_str = str(tx.date)
             spent_by_date[d_str] = spent_by_date.get(d_str, 0) + int(tx.amount)
 
-    pocket_remaining = max(0, pocket_budget - pocket_spent)
+    # An allowance cannot spend reserved pockets or exceed actual cash.
+    from app.core.ledger import signed_amount
+    cash = db.query(func.coalesce(func.sum(signed_amount()), 0)).filter(
+        Transaction.user_id == user_id, Transaction.account == pocket_account,
+        Transaction.date <= min(today_wib, cycle_end),
+    ).scalar()
+    spendable = max(0, int(cash or 0))
+    if account_pockets and pocket_acc_obj:
+        from app.api.v1.endpoints.pockets import compute_pockets_summary
+        pocket_summary = compute_pockets_summary(
+            db, user_id, pocket_acc_obj.id, cycle_start, cycle_end,
+            persist=False, balance_through=min(today_wib, cycle_end),
+        )
+        reserved = sum(max(0, p.balance) for p in pocket_summary.pockets if p.role != "operasional")
+        spendable = max(0, spendable - reserved)
+    pocket_remaining = min(max(0, pocket_budget - pocket_spent), spendable)
 
     if days_remaining > 0:
         safe_daily = int(pocket_remaining / days_remaining)

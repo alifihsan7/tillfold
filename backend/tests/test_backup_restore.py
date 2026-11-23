@@ -299,13 +299,15 @@ def test_backup_restore_preserves_reconciliation_records(recovery, kind, expecte
     assert client.delete(f"/transactions/{adjustment.id}").status_code == 409
 
 
-@pytest.mark.parametrize("version", [1, 2, 3, 4, 5])
+@pytest.mark.parametrize("version", [1, 2, 3, 4, 5, 6])
 def test_previous_backup_format_still_restores(recovery, version):
     client, db, users, current = recovery
     payload = download(client)
     payload["version"] = version
     for pocket in payload["data"]["pockets"]:
-        pocket.pop("allocation_amount")
+        pocket.pop("allocation_start_date")
+        if version < 6:
+            pocket.pop("allocation_amount")
     if version < 5:
         payload["data"].pop("internal_loans")
         payload["data"].pop("pocket_mutations")

@@ -22,7 +22,7 @@ export function CustomModal({
   icon,
   children,
   maxWidth = "md",
-  mobileSheet = false,
+  mobileSheet = true,
 }: CustomModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);

@@ -2430,7 +2430,7 @@ export default function FinanceDashboard() {
                       <div>
                         <div className="text-xs font-semibold text-luma-ivory">Tema tampilan</div>
                         <div className="text-xs text-luma-smoke mt-0.5">
-                          Ganti palet Ink &amp; Silver antara mode Gelap (Dark Glass) dan Terang.
+                          Pilih tampilan gelap, terang, atau ikuti tema perangkat.
                         </div>
                       </div>
                       <div className="shrink-0">

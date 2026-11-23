@@ -374,9 +374,10 @@ export function ManageCategoriesModal({
                     key={c.id}
                     type="button"
                     onClick={() => setNewColor(c.id)}
+                    aria-pressed={isSelected}
                     className={`py-1.5 px-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition cursor-pointer ${
                       isSelected
-                        ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-2 ring-luma-ember/60 font-semibold shadow-xs`
+                        ? "ui-selected"
                         : "bg-obsidian-card/60 border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.12]"
                     }`}
                   >
@@ -483,7 +484,7 @@ export function ManageCategoriesModal({
                               onClick={() => setEditColor(c.id)}
                               className={`py-1 px-1.5 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition cursor-pointer ${
                                 isSel
-                                  ? `${c.badgeBg} ${c.badgeBorder} ${c.badgeText} ring-2 ring-luma-ember/60 font-semibold`
+                                  ? "ui-selected"
                                   : "bg-obsidian-card/70 border-luma-smokeline text-luma-smoke hover:text-white"
                               }`}
                             >

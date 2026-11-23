@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useId } from "react";
 import { Badge, SegmentedControl } from "./ui/controls";
 import {
   Tag,
@@ -47,6 +47,7 @@ export function CategoryGrid({
   onCategoriesUpdated,
   transactions = [],
 }: CategoryGridProps) {
+  const formId = useId();
   const [filterTab, setFilterTab] = useState<"all" | "expense" | "income">("all");
 
   // Modal Add state
@@ -546,8 +547,9 @@ export function CategoryGrid({
 
           {/* Nama Kategori */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-luma-secondary">Nama kategori</label>
+            <label htmlFor={`${formId}-add-name`} className="text-xs font-semibold text-luma-secondary">Nama kategori</label>
             <input
+              id={`${formId}-add-name`}
               type="text"
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
@@ -638,8 +640,9 @@ export function CategoryGrid({
 
           {/* Nama Kategori */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-luma-secondary">Nama kategori</label>
+            <label htmlFor={`${formId}-edit-name`} className="text-xs font-semibold text-luma-secondary">Nama kategori</label>
             <input
+              id={`${formId}-edit-name`}
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
@@ -734,30 +737,22 @@ export function CategoryGrid({
             </span>
           </div>
 
-          {activeDeleteTxCount > 0 ? (
-            <div className="space-y-3">
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amberGold/10 border border-amberGold/25 text-amberGold text-xs leading-relaxed">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  Kategori ini digunakan oleh <strong>{activeDeleteTxCount} transaksi</strong>.
-                  Pilih kategori tujuan (fallback) untuk memindahkan seluruh transaksi tersebut:
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-luma-secondary">Pindahkan transaksi ke</label>
-                <CustomSelect
-                  value={fallbackCategory}
-                  onChange={(val) => setFallbackCategory(val)}
-                  options={fallbackSelectOptions}
-                  placeholder="Pilih kategori fallback..."
-                />
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amberGold/10 text-amberGold text-xs leading-relaxed">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                {activeDeleteTxCount > 0 && <>{activeDeleteTxCount} transaksi terlihat pada periode ini. </>}
+                Riwayat transaksi, tagihan, dan target yang masih memakai kategori ini akan dipindahkan ke kategori tujuan dengan tipe yang sama.
+              </span>
             </div>
-          ) : (
-            <p className="text-xs text-luma-smoke leading-relaxed">
-              Kategori ini belum memiliki transaksi pada periode aktif. Apakah Anda yakin ingin menghapus kategori <strong>{deletingCat?.name}</strong> secara permanen?
-            </p>
-          )}
+            <CustomSelect
+              label="Kategori tujuan"
+              value={fallbackCategory}
+              onChange={setFallbackCategory}
+              options={fallbackSelectOptions}
+              placeholder="Pilih kategori tujuan"
+            />
+          </div>
 
           {deleteError && (
             <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">

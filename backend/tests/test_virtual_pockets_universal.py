@@ -411,7 +411,8 @@ def test_safe_to_spend_only_consumes_operasional_pockets(client, db_session, tes
     # PENTING: pocket_spent HANYA 300.000 (dari kantong operasional).
     # 800.000 dari kantong 'Cicilan & Tagihan' (role: tagihan) diproteksi dari daily burn safe-to-spend!
     assert safe["pocket_spent"] == 300_000
-    assert safe["pocket_remaining"] == 2_200_000
+    # Protected expenses do not count as operational burn, but still leave the bank.
+    assert safe["pocket_remaining"] == 1_400_000
 
 
 # ============================================================================

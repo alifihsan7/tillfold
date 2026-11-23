@@ -141,7 +141,7 @@ class ReceiptRecordRequest(BaseModel):
     category: str
     date: dt_date
     raw_summary: Optional[str] = ""
-    type: Optional[str] = "expense"
+    type: Literal["expense", "income"] = "expense"
 
 class ReceiptRecordResponse(BaseModel):
     ok: bool

@@ -1,5 +1,5 @@
 import { DateField } from "@/components/ui/DateField";
-import React, { useState } from "react";
+import React, { useState, useId } from "react";
 import {
   Target,
   ShieldCheck,
@@ -60,6 +60,7 @@ const ICON_OPTIONS = [
 ];
 
 export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: AddGoalModalProps) {
+  const formId = useId();
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [category, setCategory] = useState("Tabungan");
@@ -157,10 +158,11 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
 
         {/* Nama Target */}
         <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+          <label htmlFor={`${formId}-name`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nama target <span className="text-coralFall">*</span>
           </label>
           <input
+            id={`${formId}-name`}
             type="text"
             required
             placeholder="Contoh: Dana Dingin BRI 2, Laptop M3 Pro..."
@@ -172,10 +174,11 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
 
         {/* Nominal Target */}
         <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+          <label htmlFor={`${formId}-target`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Nominal target (Rp) <span className="text-coralFall">*</span>
           </label>
           <CurrencyInput
+            id={`${formId}-target`}
             value={targetAmount}
             onChange={(raw) => setTargetAmount(raw)}
             placeholder="5.000.000"
@@ -192,6 +195,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
               Sinkronisasi rekening
             </label>
             <CustomSelect
+              label="Sinkronisasi rekening"
               options={accountOptions}
               value={linkedAccount}
               onChange={(val) => setLinkedAccount(val)}
@@ -204,6 +208,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
               Kategori
             </label>
             <CustomSelect
+              label="Kategori target"
               options={CATEGORY_OPTIONS}
               value={category}
               onChange={(val) => setCategory(val)}
@@ -213,10 +218,11 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
 
         {!linkedAccount && (
           <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+            <label htmlFor={`${formId}-current`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Saldo terkumpul saat ini (Rp)
             </label>
             <CurrencyInput
+              id={`${formId}-current`}
               value={manualCurrentAmount}
               onChange={(raw) => setManualCurrentAmount(raw)}
               placeholder="0"
@@ -230,12 +236,13 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
           <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
             Tema warna aksen
           </label>
-          <div className="grid grid-cols-5 gap-2 pt-0.5">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-0.5">
             {COLOR_OPTIONS.map((c) => (
               <button
                 key={c.value}
                 type="button"
                 onClick={() => setColor(c.value)}
+                aria-pressed={color === c.value}
                 className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-2xl border text-xs font-medium transition cursor-pointer ${
                   color === c.value
                     ? "ui-selected"
@@ -264,6 +271,8 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
                   key={item.id}
                   type="button"
                   onClick={() => setIcon(item.id)}
+                  aria-label={item.label}
+                  aria-pressed={isSelected}
                   title={item.label}
                   className={`h-11 rounded-2xl flex items-center justify-center transition cursor-pointer ${
                     isSelected
@@ -291,10 +300,11 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+            <label htmlFor={`${formId}-notes`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Catatan / rencana (opsional)
             </label>
             <input
+              id={`${formId}-notes`}
               type="text"
               placeholder="Strategi alokasi atau tujuan..."
               value={notes}

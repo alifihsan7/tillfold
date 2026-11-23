@@ -22,9 +22,9 @@ class PaycheckConfigUpdate(BaseModel):
     source_account: str
     use_gate: bool
     gate_name: str
-    cycle_type: str = "biweekly"
-    cycle_days: int = 14
-    paycheck_day: Optional[int] = 25
+    cycle_type: Literal["weekly", "biweekly", "monthly", "monthly_date", "custom"] = "biweekly"
+    cycle_days: int = Field(default=14, ge=1, le=365)
+    paycheck_day: Optional[int] = Field(default=25, ge=1, le=31)
     cycle_start_date: Optional[dt_date] = None
     pocket_account: str = "Mandiri"
 

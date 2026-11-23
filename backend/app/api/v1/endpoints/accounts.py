@@ -156,25 +156,11 @@ def get_accounts(
         if not acc_pockets and any(k in acc.name.lower() for k in ["jago", "pocket"]):
             acc_pockets = [p for p in all_user_pockets if p.account_id is None]
 
-        fixed_allocation = sum(p.allocation_amount or 0 for p in acc_pockets if not p.uses_unallocated_cash)
         pockets_breakdown = []
-        for p in acc_pockets:
-            target = int(p.target_amount)
-            pocket_bal = max(0, curr_bal - fixed_allocation) if p.uses_unallocated_cash else (p.allocation_amount or 0)
-            pockets_breakdown.append(PocketBreakdownItem(
-                id=p.id,
-                name=p.name,
-                slug=p.slug,
-                role=p.role,
-                balance=pocket_bal,
-                current_balance=pocket_bal,
-                allocation_amount=pocket_bal,
-                target_amount=target,
-                spent_amount=0,
-                remaining_amount=pocket_bal,
-                percentage_spent=0.0,
-                is_active=p.is_active,
-            ))
+        if acc_pockets:
+            from app.api.v1.endpoints.pockets import compute_pockets_summary
+            pocket_summary = compute_pockets_summary(db, current_user.id, acc.id, persist=False)
+            pockets_breakdown = [PocketBreakdownItem.model_validate(item.model_dump()) for item in pocket_summary.pockets]
 
         results.append(AccountResponse(
             id=acc.id,

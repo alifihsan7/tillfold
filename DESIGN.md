@@ -86,14 +86,14 @@ Use sentence case for headings, labels, buttons and badges ("Total pemasukan", "
 - Chips: selected state is the inverted primary fill with `aria-pressed`. Neutral selected tabs use a silver fill and bold text in light mode and a surface-colored pill in dark mode. Income and expense segments use semantic tints.
 - Selected rows in menus use a silver fill with weight 700. The light-mode date picker uses the same silver fill for the selected day. In the transaction calendar, the selected day has a bottom inset line in `--fold-focus`.
 - Focus: every interactive element shows a 2 px outline in `--fold-focus`. Elements that sit on ink or inside a clipped group use an inset bottom line instead.
-- Status and category badges use the badge radius (pill) and weight 650.
+- Status and category badges use the badge radius (pill) and weight 650. Hand-built icon and color pickers use the same silver selected fill as neutral tabs; selection never adds a persistent outline.
 - Checkboxes: field fill unchecked, primary fill checked.
 
 ## Layout
 
 - The app fills the viewport. The sidebar is a separate rounded panel inset 16 px from the screen edge, 244 px wide, collapsible to an icon rail with a 44 px toggle. The browser remembers the choice.
 - The topbar is a pill containing the period selector, the theme toggle and other global actions. At 1130 px and wider the page title moves into the topbar and the in-page title becomes screen-reader-only.
-- Below 768 px: bottom navigation, a drawer for secondary pages, bottom sheets for dialogs with safe-area padding.
+- Below 768 px: bottom navigation, a drawer for secondary pages, bottom sheets by default for dialogs with safe-area padding.
 - Overview grid is 1.62 fr main column plus 1 fr side column, stacking below 1024 px. Summary grids use one column on phones, two at medium widths, four from 1440 px.
 - The period selector is a single popup with Siklus, Minggu, Bulan and Kustom tabs, a list of recent periods, and a history link. It keeps legible contrast on ink while expanded.
 
@@ -116,6 +116,7 @@ Tokens: `--luma-motion-quick` 140 ms, `--luma-motion-panel` 220 ms, `--luma-moti
 - **Overview lists**: transaction and cash-account headings sit outside their cards on the same baseline. The transaction panel stretches to the wallet height and shows extra recent entries on desktop according to the number of accounts (up to ten); stacked layouts keep five.
 - **Transactions**: 38 px round icon, two-line copy, amount, row actions. Phones drop actions to a second row.
 - **Ledger and calendar**: table header on `--fold-panel`, row hover `--fold-row-hover`, calendar days tinted by expense level.
+- **Goals**: category palette colors also drive goal dots, badges and progress fills, preserving Emerald, Cyan, Amber, Purple and Rose. Mobile color pickers use two columns so names remain readable.
 - **Categories**: filters and management dialogs use the shared neutral segmented control. Category cards sit on `--fold-panel`, with progress tracks on `--fold-edge`; user-selected accent colors remain intact. Transaction types read “Pengeluaran” and “Pemasukan”.
 - **Nested tab frames**: inner pill tabs sit in a 4 px inset frame with a 22 px radius.
 

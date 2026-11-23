@@ -1,7 +1,7 @@
 import json
 import math
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String
@@ -91,7 +91,7 @@ def export_backup(db: Session, user_id: int):
                         row["raw_text"] = f"[pair_id:{pair.id}] {raw}"
             rows.append(row)
         data[name] = rows
-    return {"format": "tillfold-backup", "version": 6,
+    return {"format": "tillfold-backup", "version": 7,
             "exported_at": datetime.now(timezone.utc).isoformat(), "data": data}
 
 
@@ -143,7 +143,7 @@ def json_rows(value):
 
 
 def validate_backup(payload):
-    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4, 5, 6):
+    if not isinstance(payload, dict) or payload.get("format") != "tillfold-backup" or type(payload.get("version")) is not int or payload["version"] not in (1, 2, 3, 4, 5, 6, 7):
         invalid()
     version = payload["version"]
     data = payload.get("data")
@@ -167,7 +167,13 @@ def validate_backup(payload):
         if count > 100_000:
             invalid()
         columns = fields(model)
-        required = {column.name for column in columns if not (model is Pocket and version < 6 and column.name == "allocation_amount")}
+        legacy_fields = set()
+        if model is Pocket:
+            if version < 6:
+                legacy_fields.add("allocation_amount")
+            if version < 7:
+                legacy_fields.add("allocation_start_date")
+        required = {column.name for column in columns if column.name not in legacy_fields}
         rows, keys = [], set()
         for row in data[name]:
             if model is Transaction and isinstance(row, dict) and version < 5:
@@ -266,6 +272,32 @@ def validate_backup(payload):
                 invalid()
         if sum(item["amount"] for item in allocations) > indexes["transactions"][row["transaction_id"]]["amount"]:
             invalid()
+    if version < 7:
+        # Legacy allocations describe a cycle budget. Anchor them to the cycle
+        # at export time so restoring them does not deduct older spending again.
+        from zoneinfo import ZoneInfo
+        from app.core.config import settings
+        from app.api.v1.endpoints.analytics import get_monthly_date_bounds
+        try:
+            reference = datetime.fromisoformat(payload["exported_at"]).astimezone(ZoneInfo(settings.TIMEZONE)).date()
+        except (KeyError, ValueError, TypeError):
+            reference = datetime.now(ZoneInfo(settings.TIMEZONE)).date()
+        cfg = next(iter(parsed["paycheck_configs"]), {})
+        days = max(1, cfg.get("cycle_days") or 30)
+        if cfg.get("cycle_type", "monthly_date") == "monthly_date":
+            start, _ = get_monthly_date_bounds(reference, cfg.get("paycheck_day") or 25)
+        else:
+            anchor = cfg.get("cycle_start_date") or reference.replace(day=1)
+            start = anchor + timedelta(days=((reference - anchor).days // days) * days)
+        recorded = [(row["start_date"], row["end_date"]) for row in parsed["legacy_paycheck_cycles"]]
+        sessions = {row["id"]: row for row in parsed["paycheck_sessions"]}
+        recorded.extend((sessions[row["session_id"]]["date"], row["end_date"]) for row in parsed["paycheck_cycles"]
+                        if sessions[row["session_id"]]["status"] != "cancelled")
+        recorded.extend((indexes["transactions"][row["transaction_id"]]["date"], row["cycle_end"])
+                        for row in parsed["paycheck_receipts"] if row["cycle_end"] is not None)
+        start = max((day for day, end in recorded if day <= reference <= end), default=start)
+        for row in parsed["pockets"]:
+            row["allocation_start_date"] = start
     return parsed
 
 

@@ -6,6 +6,7 @@ from sqlalchemy import desc
 
 from app.models.transaction import Transaction
 from app.models.account import Account
+from app.models.user import User
 from app.bot.bot import get_safe_to_spend_snippet
 
 logger = logging.getLogger("receipt-service")
@@ -32,12 +33,17 @@ def record_receipt_mutation(
     if not clean_ref:
         return {"ok": False, "error": "Nomor referensi wajib diisi"}
 
+    if tx_type not in ("expense", "income"):
+        return {"ok": False, "error": "Struk hanya dapat mencatat pengeluaran atau pemasukan."}
+    # Serialize reference checks per owner, including requests for different accounts.
+    db.query(User).filter(User.id == user_id).with_for_update().one()
+
     # 1. Idempotency Check
     existing = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         (
-            Transaction.raw_text.like(f"%[receipt_radar:ref_{clean_ref}]%") |
-            Transaction.description.like(f"%Ref: {clean_ref}%")
+            Transaction.raw_text.contains(f"[receipt_radar:ref_{clean_ref}]", autoescape=True) |
+            Transaction.description.endswith(f" - Ref: {clean_ref}", autoescape=True)
         )
     ).first()
 
@@ -60,23 +66,13 @@ def record_receipt_mutation(
             "message": f"Transaksi referensi {clean_ref} sudah pernah tercatat."
         }
 
-    # 2. Account Validation & Fallback
+    # Invalid or archived accounts must never redirect a financial write.
     acc = db.query(Account).filter(
-        Account.user_id == user_id,
-        Account.name == account_name
-    ).first()
-
-    if not acc:
-        logger.warning(f"Account '{account_name}' not found for user {user_id}, falling back to Mandiri")
-        acc = db.query(Account).filter(
-            Account.user_id == user_id,
-            Account.name == "Mandiri"
-        ).first()
-        if acc:
-            account_name = "Mandiri"
-        else:
-            first_acc = db.query(Account).filter(Account.user_id == user_id).first()
-            account_name = first_acc.name if first_acc else "Mandiri"
+        Account.user_id == user_id, Account.name == account_name,
+        Account.is_archived.is_(False),
+    ).with_for_update().first()
+    if acc is None:
+        return {"ok": False, "error": "Pilih rekening aktif yang terdaftar di akun Anda."}
 
     # 3. Create Transaction
     desc_str = f"{merchant} - Ref: {clean_ref}"

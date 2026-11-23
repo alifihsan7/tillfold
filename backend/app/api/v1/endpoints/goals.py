@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from typing import List, Optional
 import math
+import json
 from datetime import date, datetime, timedelta
 import zoneinfo
 
@@ -11,20 +12,43 @@ from app.models.goal import Goal
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES
 from app.models.user import User
-from app.models.paycheck import PaycheckConfig
+from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt
+from app.models.account import Account
 from app.api.deps import get_current_user
 from app.schemas.goal import GoalCreate, GoalUpdate, GoalResponse
 
 router = APIRouter()
 WIB = zoneinfo.ZoneInfo("Asia/Jakarta")
 
-ROUTINE_CYCLE_ALLOCATIONS = {
-    "BRI 2": 100000,
-    "Bibit": 200000,
-    "BRI 1": 100000,
-    "Bank Jago": 275000,
-    "Mandiri": 825000,
-}
+def goal_cycle_allocation(db: Session, user_id: int, account_name: str | None) -> int | None:
+    """Only forecast from an explicitly configured or recorded allocation."""
+    if not account_name:
+        return None
+    account = db.query(Account).filter(Account.user_id == user_id, Account.name == account_name).first()
+    if not account:
+        return None
+    cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
+    if cfg:
+        bucket = db.query(PaycheckBucket).filter(
+            PaycheckBucket.config_id == cfg.id, PaycheckBucket.account == account_name,
+        ).first()
+        if bucket and bucket.fixed_amount and bucket.fixed_amount > 0:
+            return bucket.fixed_amount
+    receipt = db.query(PaycheckReceipt).join(Transaction, Transaction.id == PaycheckReceipt.transaction_id).filter(
+        PaycheckReceipt.user_id == user_id, Transaction.user_id == user_id,
+    ).order_by(Transaction.date.desc(), Transaction.id.desc()).first()
+    if receipt:
+        return next((item["amount"] for item in json.loads(receipt.allocations_json)
+                     if item["account_id"] == account.id and item["amount"] > 0), None)
+    return None
+
+
+def require_goal_account(db: Session, user_id: int, name: str | None):
+    if name and not db.query(Account.id).filter(
+        Account.user_id == user_id, Account.name == name.strip(), Account.is_archived.is_(False),
+    ).first():
+        raise HTTPException(400, "Pilih rekening aktif yang terdaftar untuk target.")
+
 
 def get_account_balance(account_name: str, user_id: int, db: Session) -> int:
     val = db.query(
@@ -38,7 +62,7 @@ def get_account_balance(account_name: str, user_id: int, db: Session) -> int:
             ),
             0
         )
-    ).filter(Transaction.user_id == user_id, Transaction.account.ilike(account_name.strip())).scalar()
+    ).filter(Transaction.user_id == user_id, func.lower(Transaction.account) == account_name.strip().lower()).scalar()
     return int(val or 0)
 
 def compute_goal_metrics(goal: Goal, user_id: int, db: Session) -> dict:
@@ -63,12 +87,15 @@ def compute_goal_metrics(goal: Goal, user_id: int, db: Session) -> dict:
         est_finish_date = today
     else:
         cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user_id).first()
-        cycle_days = cfg.cycle_days if (cfg and cfg.cycle_days) else 14
-        alloc = ROUTINE_CYCLE_ALLOCATIONS.get(goal.linked_account or "", 100000)
-        if alloc > 0:
+        cycle_days = cfg.cycle_days if (cfg and cfg.cycle_days and cfg.cycle_days > 0) else 14
+        alloc = goal_cycle_allocation(db, user_id, goal.linked_account)
+        if alloc:
             est_cycles = math.ceil(remaining / alloc)
             days = est_cycles * cycle_days
-            est_finish_date = today + timedelta(days=days)
+            try:
+                est_finish_date = today + timedelta(days=days)
+            except (OverflowError, ValueError):
+                est_finish_date = None
             est_months = round(days / 30.417, 1)
 
     # Deadline check: flag goals whose estimate lands after the target date and
@@ -126,6 +153,7 @@ def create_goal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    require_goal_account(db, current_user.id, payload.linked_account)
     goal = Goal(
         user_id=current_user.id,
         name=payload.name.strip(),
@@ -155,7 +183,11 @@ def update_goal(
     if not goal:
         raise HTTPException(status_code=404, detail="Goal tidak ditemukan")
 
-    data = payload.dict(exclude_unset=True)
+    data = payload.model_dump(exclude_unset=True)
+    if "linked_account" in data:
+        require_goal_account(db, current_user.id, data["linked_account"])
+    if any(data.get(field) is None for field in ("name", "target_amount", "manual_current_amount", "is_active") if field in data):
+        raise HTTPException(422, "Nama, nominal, saldo manual, dan status target tidak boleh kosong.")
     for k, v in data.items():
         if k == "name" and v:
             setattr(goal, k, v.strip())

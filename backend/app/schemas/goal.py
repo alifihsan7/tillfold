@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import date, datetime
 
 class GoalBase(BaseModel):
-    name: str
-    target_amount: int
-    manual_current_amount: Optional[int] = 0
+    name: str = Field(min_length=1, max_length=100)
+    target_amount: int = Field(gt=0, le=9_000_000_000_000_000)
+    manual_current_amount: Optional[int] = Field(default=0, ge=0, le=9_000_000_000_000_000)
     linked_account: Optional[str] = None
     target_date: Optional[date] = None
     category: Optional[str] = "Tabungan"
@@ -15,12 +15,18 @@ class GoalBase(BaseModel):
     notes: Optional[str] = None
 
 class GoalCreate(GoalBase):
-    pass
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value):
+        if not value.strip():
+            raise ValueError("Nama target wajib diisi.")
+        return value.strip()
+
 
 class GoalUpdate(BaseModel):
-    name: Optional[str] = None
-    target_amount: Optional[int] = None
-    manual_current_amount: Optional[int] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    target_amount: Optional[int] = Field(default=None, gt=0, le=9_000_000_000_000_000)
+    manual_current_amount: Optional[int] = Field(default=None, ge=0, le=9_000_000_000_000_000)
     linked_account: Optional[str] = None
     target_date: Optional[date] = None
     category: Optional[str] = None

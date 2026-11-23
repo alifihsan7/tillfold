@@ -88,6 +88,35 @@ def ensure_pocket_schema(engine):
                     f"REFERENCES {ref_table}(id) ON DELETE SET NULL"
                 ))
 
+    if target_table:
+        # Add and initialize the anchor atomically once. Existing allocations were
+        # interpreted against the current cycle; preserve that starting balance.
+        with engine.begin() as connection:
+            if engine.dialect.name == "postgresql":
+                connection.execute(text(f"LOCK TABLE {target_table} IN ACCESS EXCLUSIVE MODE"))
+            elif engine.dialect.name == "sqlite":
+                connection.exec_driver_sql("BEGIN IMMEDIATE")
+            current_columns = {column["name"] for column in inspect(connection).get_columns(target_table)}
+            if "allocation_start_date" not in current_columns:
+                from datetime import datetime
+                from zoneinfo import ZoneInfo
+                from app.core.config import settings
+                from sqlalchemy.orm import Session
+
+                connection.execute(text(f"ALTER TABLE {target_table} ADD COLUMN allocation_start_date DATE"))
+                today = datetime.now(ZoneInfo(settings.TIMEZONE)).date()
+                required = {"paycheck_configs", "paycheck_sessions", "paycheck_cycles",
+                            "paycheck_receipts", "legacy_paycheck_cycles", "transactions"}
+                user_ids = list(connection.execute(text(f"SELECT DISTINCT user_id FROM {target_table}" )).scalars())
+                with Session(bind=connection) as db:
+                    for user_id in user_ids:
+                        start = today
+                        if required <= tables:
+                            from app.api.v1.endpoints.pockets import get_current_cycle_bounds
+                            start, _ = get_current_cycle_bounds(db, user_id, today)
+                        connection.execute(text(f"UPDATE {target_table} SET allocation_start_date=:start WHERE user_id=:user_id"),
+                                           {"start": start, "user_id": user_id})
+
 
 # Backward compatibility alias
 ensure_pocket_subscription_schema = ensure_pocket_schema

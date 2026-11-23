@@ -1,4 +1,5 @@
 import React from "react";
+import { getCategoryColorDef } from "@/lib/categoryColors";
 import {
   Plus,
   Target,
@@ -31,51 +32,8 @@ interface GoalsViewProps {
   loading?: boolean;
 }
 
-const COLOR_THEMES: Record<
-  string,
-  {
-    dot: string;
-    badgeBg: string;
-    badgeText: string;
-    badgeBorder: string;
-    barBg: string;
-  }
-> = {
-  emerald: {
-    dot: "bg-luma-sage",
-    badgeBg: "bg-luma-sage/10",
-    badgeText: "text-luma-sage",
-    badgeBorder: "border-luma-sage/30",
-    barBg: "bg-luma-sage",
-  },
-  cyan: {
-    dot: "bg-luma-gold",
-    badgeBg: "bg-luma-gold/10",
-    badgeText: "text-luma-gold",
-    badgeBorder: "border-luma-gold/30",
-    barBg: "bg-luma-gold",
-  },
-  amber: {
-    dot: "bg-luma-ember",
-    badgeBg: "bg-luma-ember/10",
-    badgeText: "text-luma-ember",
-    badgeBorder: "border-luma-ember/30",
-    barBg: "bg-luma-ember",
-  },
-  purple: {
-    dot: "bg-luma-ember",
-    badgeBg: "bg-luma-ember/10",
-    badgeText: "text-luma-ember",
-    badgeBorder: "border-luma-ember/30",
-    barBg: "bg-luma-ember",
-  },
-  rose: {
-    dot: "bg-luma-coral",
-    badgeBg: "bg-luma-coral/10",
-    badgeText: "text-luma-coral",
-    badgeBorder: "border-luma-coral/30",
-    barBg: "bg-luma-coral",
-  },
+const GOAL_COLOR_KEYS: Record<string, string> = {
+  emerald: "mintRise", cyan: "cyanHub", amber: "amberGold", purple: "purpleLock", rose: "coralFall",
 };
 
 function formatDateIndo(dateStr: string | null): string {
@@ -288,7 +246,7 @@ export function GoalsView({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-7 lg:gap-8">
           {goals.map((goal) => {
-            const theme = COLOR_THEMES[goal.color] || COLOR_THEMES.emerald;
+            const theme = getCategoryColorDef(GOAL_COLOR_KEYS[goal.color] || "mintRise");
             const isCompleted = goal.remaining_amount === 0;
 
             return (
@@ -301,24 +259,24 @@ export function GoalsView({
                   <div className="flex items-start justify-between gap-3.5">
                     <div className="flex items-center gap-3.5 min-w-0">
                       {/* Circular icon well */}
-                      <div className="ai7-account-icon w-12 h-12 rounded-xl border flex items-center justify-center shrink-0">
+                      <div className="ai7-account-icon w-12 h-12 rounded-full flex items-center justify-center shrink-0">
                         {renderGoalIcon(goal.icon, goal.name)}
                       </div>
 
                       <div className="min-w-0 space-y-1">
                         {/* Ghost badges with glowing status dot */}
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-luma-smokeline text-xs font-medium text-luma-smoke">
-                            <span className={`w-1.5 h-1.5 rounded-full ${theme.dot}`} />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] text-xs font-medium text-luma-smoke">
+                            <span className={`w-1.5 h-1.5 rounded-full ${theme.dotClass}`} />
                             {goal.category}
                           </span>
 
                           {goal.linked_account ? (
-                            <span className="text-xs font-sans text-luma-smoke bg-white/[0.04] border border-luma-smokeline px-2.5 py-0.5 rounded-full truncate">
+                            <span className="text-xs font-sans text-luma-smoke bg-white/[0.04] px-2.5 py-0.5 rounded-full truncate">
                               Rek. {goal.linked_account}
                             </span>
                           ) : (
-                            <span className="text-xs font-sans text-luma-smoke bg-white/[0.04] border border-luma-smokeline px-2.5 py-0.5 rounded-full">
+                            <span className="text-xs font-sans text-luma-smoke bg-white/[0.04] px-2.5 py-0.5 rounded-full">
                               Manual
                             </span>
                           )}
@@ -360,7 +318,7 @@ export function GoalsView({
                         {formatRupiah(goal.current_amount)}
                       </div>
                       <div
-                        className={`text-xs font-sans font-semibold px-3 py-1 rounded-full border tabular-nums ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}
+                        className={`text-xs font-sans font-semibold px-3 py-1 rounded-full tabular-nums ${theme.badgeBg} ${theme.badgeText}`}
                       >
                         {goal.percentage >= 100 ? "100%" : `${Number(goal.percentage).toFixed(1)}%`}
                       </div>
@@ -373,7 +331,7 @@ export function GoalsView({
                   {/* Luma progress bar */}
                   <div className="space-y-2 pt-1">
                     <div
-                      className="h-2 w-full bg-black/25 rounded-full overflow-hidden border border-luma-smokeline"
+                      className="fold-goal-progress h-2 w-full rounded-full overflow-hidden"
                       role="progressbar"
                       aria-valuenow={Math.round(Number(goal.percentage) || 0)}
                       aria-valuemin={0}
@@ -381,7 +339,7 @@ export function GoalsView({
                       aria-label={`Progres ${goal.name}`}
                     >
                       <div
-                        className={`h-full bg-luma-sage transition-all duration-700 rounded-full`}
+                        className={`h-full ${theme.dotClass} transition-all duration-700 rounded-full`}
                         style={{ width: `${Math.min(100, Math.max(3, goal.percentage))}%` }}
                       />
                     </div>

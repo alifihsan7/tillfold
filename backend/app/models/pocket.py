@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, ForeignKey, UniqueConstraint, Index, func
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, Index, func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -16,6 +16,7 @@ class Pocket(Base):
     balance = Column(BigInteger, nullable=False, default=0)
     target_amount = Column(BigInteger, nullable=False, default=0)
     allocation_amount = Column(BigInteger, nullable=True)
+    allocation_start_date = Column(Date, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

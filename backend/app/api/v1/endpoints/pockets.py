@@ -100,11 +100,9 @@ def get_current_cycle_bounds(db: Session, user_id: int, ref_date: Optional[date]
 
         return get_monthly_date_bounds(ref_date, paycheck_day)
     elif anchor_start:
-        cycle_start = anchor_start
+        offset = (ref_date - anchor_start).days // cycle_days
+        cycle_start = anchor_start + timedelta(days=offset * cycle_days)
         cycle_end = cycle_start + timedelta(days=cycle_days - 1)
-        while ref_date > cycle_end:
-            cycle_start = cycle_end + timedelta(days=1)
-            cycle_end = cycle_start + timedelta(days=cycle_days - 1)
         return cycle_start, cycle_end
     else:
         start_date = ref_date.replace(day=1)
@@ -212,6 +210,7 @@ def ensure_default_pockets(db: Session, user_id: int, account_id: Optional[int] 
                     balance=initial_target,
                     target_amount=initial_target,
                     allocation_amount=initial_target or None,
+                    allocation_start_date=datetime.now(WIB).date(),
                     is_active=True,
                 )
                 db.add(new_pocket)
@@ -269,6 +268,7 @@ def ensure_default_pockets(db: Session, user_id: int, account_id: Optional[int] 
                 balance=initial_target,
                 target_amount=initial_target,
                 allocation_amount=initial_target or None,
+                allocation_start_date=datetime.now(WIB).date(),
                 is_active=True,
             )
             db.add(new_pocket)
@@ -377,6 +377,10 @@ def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[Pocke
     if payment_pockets and tx.id in payment_pockets:
         return payment_pockets[tx.id]
 
+    explicit = next((p for p in pockets if p.id == tx.pocket_id), None)
+    if explicit is not None:
+        return explicit.slug
+
     p_slugs = {p.slug: p for p in pockets}
     if "gym" in p_slugs or "claude" in p_slugs:
         return classify_pocket_transaction(tx)
@@ -472,16 +476,18 @@ def compute_pockets_summary(
     if total_balance is None:
         total_balance = max(0, int(acc.initial_balance)) if acc and balance_through is None else 0
 
-    expenses = db.query(Transaction).filter(
+    expense_query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.type == "expense",
         func.lower(Transaction.account).in_(target_account_names),
-        Transaction.date >= cycle_start,
-        Transaction.date <= cycle_end,
-    ).all()
+    )
+    if balance_through is not None:
+        expense_query = expense_query.filter(Transaction.date <= balance_through)
+    expenses = expense_query.all()
 
     pocket_by_id = {p.id: p for p in ordered_pockets}
     spent_by_slug: dict[str, int] = defaultdict(int)
+    lifetime_spent: dict[str, int] = defaultdict(int)
     from app.services.subscription_payments import payment_pocket_slugs
     payment_pockets = payment_pocket_slugs(db, user_id, ordered_pockets)
     for tx in expenses:
@@ -489,7 +495,11 @@ def compute_pockets_summary(
             slug = pocket_by_id[tx.pocket_id].slug
         else:
             slug = classify_pocket_transaction_for_account(tx, ordered_pockets, payment_pockets)
-        spent_by_slug[slug] += int(tx.amount)
+        pocket = next((p for p in ordered_pockets if p.slug == slug), None)
+        if pocket is not None and (pocket.allocation_start_date is None or tx.date >= pocket.allocation_start_date):
+            lifetime_spent[slug] += int(tx.amount)
+        if cycle_start <= tx.date <= cycle_end:
+            spent_by_slug[slug] += int(tx.amount)
 
     linked_ids = [p.subscription_id for p in ordered_pockets if p.subscription_id]
     linked_subscriptions = {sub.id: sub for sub in db.query(Subscription).filter(
@@ -508,8 +518,10 @@ def compute_pockets_summary(
             target = int(sub.amount) if state == "active" else 0
             link_states[pocket.id] = state
         targets[pocket.id] = target
-    fixed_allocation = sum(p.allocation_amount or 0 for p in ordered_pockets if not p.uses_unallocated_cash)
-    allocated_spending = sum(spent_by_slug.get(p.slug, 0) for p in ordered_pockets)
+    fixed_remaining = sum(
+        (p.allocation_amount or 0) - lifetime_spent.get(p.slug, 0)
+        for p in ordered_pockets if not p.uses_unallocated_cash
+    )
 
     pocket_ids = [p.id for p in ordered_pockets]
     mutations_by_pocket: dict[int, list] = defaultdict(list)
@@ -542,12 +554,12 @@ def compute_pockets_summary(
 
     for p in ordered_pockets:
         target = targets[p.id]
-        allocation = p.allocation_amount or 0
-        if p.uses_unallocated_cash:
-            allocation = total_balance + allocated_spending - fixed_allocation
-
         spent = spent_by_slug.get(p.slug, 0)
-        remaining = allocation - spent
+        remaining = (p.allocation_amount or 0) - lifetime_spent.get(p.slug, 0)
+        if p.uses_unallocated_cash:
+            remaining = total_balance - fixed_remaining
+        # Show period funding and spend together, while cash survives a period change.
+        allocation = remaining + spent
         pocket_bal = remaining
         pct = round((spent / target * 100), 1) if target > 0 else 0.0
 
@@ -740,6 +752,7 @@ def create_pocket(
         balance=initial_amount,
         target_amount=payload.target_amount,
         allocation_amount=initial_amount if initial_amount or not slug.startswith("utama") else None,
+        allocation_start_date=datetime.now(WIB).date(),
         is_active=payload.is_active,
     )
     db.add(new_pocket)

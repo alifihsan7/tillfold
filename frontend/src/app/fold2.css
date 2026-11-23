@@ -307,6 +307,18 @@
   .fold-category-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
   .fold-category-filters .ui-segment { flex-direction: column; gap: 2px; min-width: 0; padding: 8px 4px; font-size: 12px; }
 }
+.tillfold-fold :is(.luma-inset, .luma-readout) { border-color: transparent; }
+.fold-goal-progress { background: var(--fold-edge); }
+.tillfold-fold .ui-selected { border-radius: 999px; }
+.light .tillfold-fold .ui-selected {
+  background: var(--fold-action-selected) !important;
+  color: var(--fold-action-selected-ink) !important;
+  font-weight: 700;
+}
+/* Forms keep one 44px control scale in both pointer modes. */
+.tillfold-fold .luma-dialog-panel :is(button, .ai7-select-trigger, .ai7-currency-field,
+  input:not([type="checkbox"], [type="radio"], [type="range"])) { min-height: 44px; }
+.tillfold-fold .luma-dialog-panel button[aria-label="Tutup dialog"] { width: 44px; height: 44px; }
 .fold-content :is(.luma-inset, .luma-readout) { border-radius: 20px; }
 .fold-content :is(.luma-data-state, .luma-guest-banner) {
   background: var(--fold-surface);
@@ -484,8 +496,8 @@
 
 .tillfold-fold .luma-dialog-backdrop { background: var(--fold-scrim); }
 .tillfold-fold .luma-dialog-panel { border-color: transparent; border-radius: 32px; background: var(--fold-surface); box-shadow: var(--fold-overlay-shadow); }
-.tillfold-fold .fold-sheet-panel { max-width: 560px; }
-.tillfold-fold .fold-sheet-panel .ai7-currency-field { min-height: 58px; }
+.tillfold-fold .fold-sheet-panel:has(.luma-form-scope) { max-width: 560px; }
+.tillfold-fold .fold-sheet-panel .luma-form-scope .ai7-currency-field { min-height: 58px; }
 .tillfold-fold .fold-sheet-panel .luma-form-scope .ai7-currency-field input {
   height: auto;
   font-size: 25px;

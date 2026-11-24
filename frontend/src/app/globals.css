@@ -916,3 +916,88 @@ textarea:focus-visible,
   outline: none;
   box-shadow: inset 0 -2px var(--luma-ember);
 }
+
+/* Reports: calm surfaces, a readable scale and one clear daily selection. */
+.fold-reports { display: grid; gap: 20px; padding-bottom: 8px; }
+.fold-report-panel { min-width: 0; padding: 24px; border-radius: var(--ai7-radius-panel); background: var(--luma-panel-surface); }
+.fold-report-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.fold-report-heading p, .fold-report-caption { margin-top: 5px; font-size: 12px; line-height: 1.6; color: var(--luma-smoke); }
+.fold-report-ratio { display: flex; align-items: baseline; gap: 8px; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fold-report-ratio > span { font-size: 11px; font-weight: 400; color: var(--luma-smoke); }
+.fold-report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 28px; }
+.fold-report-metrics dt { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--luma-smoke); }
+.fold-report-metric-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.fold-report-metrics dd { margin-top: 8px; font-size: clamp(20px, 2.2vw, 32px); font-weight: 600; letter-spacing: -.045em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fold-report-metrics .fold-report-metric-caption { margin-top: 5px; font-size: 11px; font-weight: 400; letter-spacing: normal; color: var(--luma-smoke); }
+.fold-report-opening { margin-top: 20px; font-size: 11px; line-height: 1.7; color: var(--luma-smoke); }
+.fold-report-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; color: var(--luma-smoke); }
+.fold-report-legend > button { display: inline-flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 8px; color: var(--luma-ivory); cursor: pointer; background: var(--ui-control-bg); min-height: 36px; }
+.fold-report-legend > button[aria-pressed="false"] { background: transparent; color: var(--luma-smoke); }
+.fold-report-legend > button[aria-pressed="false"] i { opacity: .3; }
+.fold-report-legend i { width: 8px; height: 8px; border-radius: 3px; }
+.fold-report-income { background: var(--luma-sage); }
+.fold-report-expense { background: var(--luma-coral); }
+.fold-report-chart-layout { display: grid; grid-template-columns: 64px minmax(0, 1fr); margin-top: 26px; padding-top: 10px; }
+.fold-report-y-axis { display: flex; flex-direction: column; justify-content: space-between; height: 216px; padding-right: 12px; text-align: right; font-size: 10px; font-variant-numeric: tabular-nums; color: var(--luma-smoke); }
+.fold-report-y-axis > span { transform: translateY(-50%); }
+.fold-report-chart-scroll { min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+.fold-report-plot { position: relative; height: 252px; }
+.fold-report-grid { position: absolute; inset: 0 0 36px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.fold-report-grid > span { width: 100%; border-top: 1px dashed var(--luma-smokeline); opacity: .65; }
+.fold-report-grid > span:last-child { border-top-style: solid; }
+.fold-report-days { position: relative; height: 100%; display: flex; gap: 3px; }
+.fold-report-day { flex: 1; min-width: 0; position: relative; height: 100%; padding: 0 3px; border: 0; background: transparent; border-radius: 6px 6px 0 0; color: var(--luma-smoke); cursor: pointer; touch-action: manipulation; }
+.fold-report-day:hover, .fold-report-day[aria-pressed="true"] { background: var(--ui-control-bg); color: var(--luma-ivory); }
+.fold-report-day[aria-pressed="true"] .fold-report-day-label { font-weight: 700; }
+.fold-report-bar-pair { height: calc(100% - 36px); display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.fold-report-bar-pair > span { flex: 1; max-width: 14px; border-radius: 4px 4px 0 0; transition: opacity .16s ease; }
+.fold-report-day:not([aria-pressed="true"]) .fold-report-bar-pair > span { opacity: .74; }
+.fold-report-day-label { display: flex; align-items: center; justify-content: center; height: 36px; white-space: nowrap; font-size: 10px; }
+.fold-report-scroll-hint { display: none; }
+.fold-report-chart-hint { margin-top: 10px; font-size: 11px; color: var(--luma-smoke); }
+.fold-report-day-detail { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-top: 20px; padding: 18px 20px; border-radius: 16px; background: var(--ui-control-bg); }
+.fold-report-selected-date { display: grid; gap: 5px; }
+.fold-report-selected-date > span, .fold-report-selected-date small { font-size: 10px; color: var(--luma-smoke); }
+.fold-report-selected-date strong { font-size: 13px; font-weight: 500; }
+.fold-report-day-detail dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.fold-report-day-detail dt { font-size: 10px; color: var(--luma-smoke); }
+.fold-report-day-detail dd { margin-top: 5px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fold-report-flow-notes { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; margin-top: 18px; font-size: 11px; line-height: 1.6; color: var(--luma-smoke); }
+.fold-report-flow-notes strong { font-weight: 500; color: var(--luma-ivory); }
+.fold-report-categories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 48px; margin-top: 26px; }
+.fold-report-categories li { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+.fold-report-rank { margin-top: 1px; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--luma-smoke); }
+.fold-report-category-body { flex: 1; min-width: 0; }
+.fold-report-category-body > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; font-size: 13px; }
+.fold-report-category-body > div:first-child > span { overflow-wrap: anywhere; }
+.fold-report-category-body strong { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fold-report-category-share { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.fold-report-category-share > span:last-child { min-width: 36px; font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; color: var(--luma-smoke); }
+.fold-report-category-track { height: 5px; min-width: 0; flex: 1; border-radius: 6px; background: var(--ui-control-bg); overflow: hidden; }
+.fold-report-category-track i { display: block; height: 100%; border-radius: inherit; background: var(--luma-coral); }
+.fold-report-empty { min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+.fold-report-empty h3 { margin-top: 16px; font-size: 14px; font-weight: 500; }
+.fold-report-empty p { max-width: 300px; margin-top: 6px; color: var(--luma-smoke); font-size: 12px; line-height: 1.7; }
+.fold-report-empty-bars { display: flex; height: 36px; align-items: flex-end; gap: 5px; opacity: .45; }
+.fold-report-empty-bars i { width: 7px; height: 40%; border-radius: 3px; background: var(--luma-smoke); }
+.fold-report-empty-bars i:nth-child(2n) { height: 70%; }
+.fold-report-empty-bars i:nth-child(3) { height: 100%; }
+.fold-report-category-empty { margin-top: 22px; font-size: 13px; color: var(--luma-smoke); }
+@media (max-width: 639px) {
+  .fold-reports { gap: 16px; }
+  .fold-report-scroll-hint { display: inline; }
+  .fold-report-panel { padding: 20px 16px; }
+  .fold-report-ratio { font-size: 16px; }
+  .fold-report-metrics { grid-template-columns: 1fr; gap: 18px; margin-top: 24px; }
+  .fold-report-metrics > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; }
+  .fold-report-metrics dd { margin-top: 0; font-size: 24px; text-align: right; }
+  .fold-report-metrics .fold-report-metric-caption { grid-column: 1 / -1; margin-top: 4px; text-align: left; }
+  .fold-report-chart-layout { grid-template-columns: 52px minmax(0, 1fr); }
+  .fold-report-y-axis { padding-right: 8px; font-size: 9px; }
+  .fold-report-day-detail { padding: 16px 12px; gap: 18px; }
+  .fold-report-day-detail dl { width: 100%; gap: 12px; }
+  .fold-report-day-detail dd { font-size: 12px; }
+  .fold-report-categories { grid-template-columns: 1fr; gap: 22px; }
+  .fold-report-flow-notes { flex-direction: column; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .fold-report-bar-pair > span { transition: none; } }

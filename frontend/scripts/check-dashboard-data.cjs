@@ -40,5 +40,8 @@ const base = (url) => url.includes('/transactions?') ? json([{ id: 1 }])
   await assert.rejects(loadDashboardData(async (url) => url.includes('/summary?')
     ? new Response('', { status: 401 }) : base(url), { type: 'cycle' }),
     (error) => error.status === 401 && error.message.includes('Masuk kembali'));
+  await assert.rejects(loadDashboardData(async (url) => url.endsWith('/goals')
+    ? new Response('', { status: 401 }) : base(url), { type: 'cycle' }),
+    (error) => error instanceof DashboardLoadError && error.status === 401);
   console.log('Dashboard data: period filters, optional failures, primary failure and expired session passed.');
 })().catch((error) => { console.error(error); process.exitCode = 1; });

@@ -1,4 +1,5 @@
 "use client";
+import { todayWib } from "@/lib/transactionCalendar";
 
 import { DateField } from "@/components/ui/DateField";
 import { useLatest } from "@/lib/useLatest";
@@ -88,7 +89,7 @@ export default function PaycheckModal({
 
   // Setup state
   const [totalAmountStr, setTotalAmountStr] = useState<string>("0");
-  const [cycleDate, setCycleDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [cycleDate, setCycleDate] = useState<string>(todayWib());
   const [cycleChoice, setCycleChoice] = useState("");
   const [customCycleEnd, setCustomCycleEnd] = useState("");
   const [saveCycleDefault, setSaveCycleDefault] = useState(false);

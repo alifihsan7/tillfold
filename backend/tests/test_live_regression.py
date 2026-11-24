@@ -1,89 +1,37 @@
-import os
-import sys
-import hmac
+"""Explicit opt-in integration checks; never discover or impersonate production users."""
 import hashlib
+import hmac
 import json
+import os
 import time
 from urllib.parse import urlencode
+
+import pytest
 import requests
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+pytestmark = pytest.mark.live
 
-from app.db.session import SessionLocal
-from app.models.user import User
-from app.core.config import settings
 
-def sign_init_data(data: dict, bot_token: str) -> str:
-    pairs = []
-    for k, v in data.items():
-        if isinstance(v, (dict, list)):
-            v = json.dumps(v, separators=(',', ':'))
-        pairs.append((k, str(v)))
-    
-    data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(pairs))
-    secret_key = hmac.new(b"WebAppData", bot_token.encode("utf-8"), hashlib.sha256).digest()
-    hash_val = hmac.new(secret_key, data_check_string.encode("utf-8"), hashlib.sha256).hexdigest()
-    
-    query_dict = dict(pairs)
-    query_dict["hash"] = hash_val
-    return urlencode(query_dict)
+def sign_init_data(data, bot_token):
+    pairs = {key: json.dumps(value, separators=(",", ":")) if isinstance(value, (dict, list)) else str(value)
+             for key, value in data.items()}
+    secret = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+    pairs["hash"] = hmac.new(secret, "\n".join(f"{k}={v}" for k, v in sorted(pairs.items())).encode(), hashlib.sha256).hexdigest()
+    return urlencode(pairs)
+
 
 def test_live():
-    print("=== STARTING LIVE END-TO-END REGRESSION & EXPLOIT TESTS ===")
-    db = SessionLocal()
-    user = db.query(User).filter(User.telegram_chat_id.isnot(None), User.is_active == True).first()
-    if not user:
-        print("No user found.")
-        sys.exit(1)
-    
-    now = int(time.time())
-
-    # 1. LIVE REGRESSION TEST: Legitimate shared bot login
-    print(f"\n[Test 1] Legitimate shared bot login for user {user.username} (chat_id: {user.telegram_chat_id})...")
-    init_data_legit = sign_init_data({
-        "auth_date": now,
-        "query_id": "AAHdF60gAAAAAN0XrSC3wB8z",
-        "user": {
-            "id": user.telegram_chat_id,
-            "first_name": user.full_name or "Test User",
-            "username": user.username
-        }
-    }, settings.TELEGRAM_BOT_TOKEN)
-
-    resp_legit = requests.post(
-        "http://127.0.0.1:8080/api/v1/auth/telegram-webapp",
-        json={"init_data": init_data_legit},
-        headers={"Content-Type": "application/json"}
-    )
-    print(f"HTTP Status: {resp_legit.status_code}")
-    assert resp_legit.status_code == 200, f"Legit login failed: {resp_legit.text}"
-    data = resp_legit.json()
-    assert data.get("user", {}).get("id") == user.id
-    print(f"PASS: Legitimate user authenticated with HTTP 200! User ID: {data.get('user', {}).get('id')}")
-
-    # 2. LIVE EXPLOIT TEST: Attacker signs payload with rogue token claiming victim's chat_id
-    print(f"\n[Test 2] Exploit attempt: Rogue bot signs victim's chat_id ({user.telegram_chat_id})...")
-    ROGUE_BOT_TOKEN = "999999:ROGUE_ATTACKER_BOT_TOKEN"
-    init_data_exploit = sign_init_data({
-        "auth_date": now,
-        "query_id": "AAHdF60gAAAAAN0XrSC3wB8x",
-        "user": {
-            "id": user.telegram_chat_id,
-            "first_name": "Victim",
-            "username": user.username
-        }
-    }, ROGUE_BOT_TOKEN)
-
-    resp_exploit = requests.post(
-        "http://127.0.0.1:8080/api/v1/auth/telegram-webapp",
-        json={"init_data": init_data_exploit},
-        headers={"Content-Type": "application/json"}
-    )
-    print(f"HTTP Status: {resp_exploit.status_code}, Response: {resp_exploit.text}")
-    assert resp_exploit.status_code == 401, f"Exploit was NOT blocked! Got status {resp_exploit.status_code}"
-    print("PASS: Exploit blocked by live service with HTTP 401 Unauthorized!")
-
-    print("\n=== ALL LIVE SERVICE TESTS PASSED SUCCESSFULLY ===")
-
-if __name__ == "__main__":
-    test_live()
+    required = ["TILLFOLD_LIVE_BASE_URL", "TILLFOLD_LIVE_USERNAME", "TILLFOLD_LIVE_CHAT_ID", "TILLFOLD_LIVE_BOT_TOKEN"]
+    missing = [key for key in required if not os.getenv(key)]
+    if missing:
+        pytest.skip("Missing explicit live integration configuration: " + ", ".join(missing))
+    username = os.environ["TILLFOLD_LIVE_USERNAME"]
+    assert username.startswith(("audit_", "test_", "e2e_")), "Use a dedicated test account, never a personal account"
+    base = os.environ["TILLFOLD_LIVE_BASE_URL"].rstrip("/")
+    assert base.startswith(("https://", "http://127.0.0.1:", "http://localhost:")), "Set an explicit safe integration URL"
+    data = {"auth_date": int(time.time()), "user": {"id": int(os.environ["TILLFOLD_LIVE_CHAT_ID"]), "username": username}}
+    valid = requests.post(base + "/api/v1/auth/telegram-webapp", json={"init_data": sign_init_data(data, os.environ["TILLFOLD_LIVE_BOT_TOKEN"])}, timeout=15)
+    assert valid.status_code == 200
+    assert valid.json()["user"]["username"] == username
+    rejected = requests.post(base + "/api/v1/auth/telegram-webapp", json={"init_data": sign_init_data(data, "999999:invalid-integration-token")}, timeout=15)
+    assert rejected.status_code == 401

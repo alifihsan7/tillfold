@@ -123,6 +123,29 @@ cp frontend/public/manifest.json static/
 
 ---
 
+## Pengujian
+
+Jalankan tes dari direktori `backend` memakai dependensi `requirements-dev.txt`:
+
+```bash
+python -m pytest -q
+```
+
+Konfigurasi tes membuat database SQLite sementara sebelum aplikasi diimpor, mengabaikan `.env`, dan menonaktifkan kredensial integrasi. Tes biasa tidak memerlukan database production atau bot Telegram.
+
+Tes integrasi live dilewati secara default. Untuk menjalankannya, gunakan akun khusus dengan username berawalan `audit_`, `test_`, atau `e2e_`, lalu siapkan `TILLFOLD_LIVE_BASE_URL`, `TILLFOLD_LIVE_USERNAME`, `TILLFOLD_LIVE_CHAT_ID`, dan `TILLFOLD_LIVE_BOT_TOKEN` melalui lingkungan lokal yang aman. Jalankan `python -m pytest tests/test_live_regression.py --run-live`. Tes ini mengirim permintaan autentikasi ke server pilihan; jangan gunakan akun pribadi.
+
+Pemeriksaan frontend dari direktori `frontend`:
+
+```bash
+for script in scripts/check-*.cjs; do node "$script" || exit 1; done
+npm run build
+```
+
+Jika email Google cocok dengan akun Tillfold yang belum tertaut, pengguna harus memasukkan kata sandi akun Tillfold sebelum Google ditautkan. Email lama dengan perbedaan kapitalisasi tetap bisa digunakan untuk login; jika beberapa akun berbagi email yang sama, gunakan username dan periksa email melalui profil. Saldo dan riwayat lama tidak diubah otomatis oleh pengaturan awal.
+
+---
+
 ## 💬 Format Penulisan Chat Bot Telegram
 
 Bot membaca teks bahasa Indonesia secara natural tanpa perlu format kaku:

@@ -47,6 +47,23 @@ export function setStoredUser(user: UserProfile | null) {
   }
 }
 
+export const SESSION_EXPIRED_EVENT = "tillfold:session-expired";
+
+export function apiErrorMessage(data: unknown, fallback: string): string {
+  const detail = data && typeof data === "object" && "detail" in data ? (data as { detail: unknown }).detail : data;
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "message" in detail && typeof detail.message === "string") return detail.message;
+  if (Array.isArray(detail)) {
+    const messages = detail.map((entry) => {
+      if (!entry || typeof entry !== "object") return "";
+      if (entry.type === "string_too_short" && (Array.isArray(entry.loc) && entry.loc.includes("password"))) return "Password minimal 8 karakter.";
+      return typeof entry.msg === "string" ? entry.msg.replace(/^Value error, /, "") : "";
+    }).filter(Boolean);
+    if (messages.length) return messages.join("\n");
+  }
+  return fallback;
+}
+
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
   const headers = new Headers(options.headers || {});
@@ -57,6 +74,12 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
     ...options,
     headers,
   });
+  // A delayed 401 from the previous account must not invalidate a newer login.
+  if (response.status === 401 && token && getAuthToken() === token) {
+    setAuthToken(null);
+    setStoredUser(null);
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
   if (response.headers.get("content-type")?.toLowerCase().includes("text/html")) {
     throw new Error("Layanan data belum tersedia. Muat ulang halaman atau coba lagi nanti.");
   }

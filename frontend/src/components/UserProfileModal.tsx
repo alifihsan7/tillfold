@@ -4,7 +4,7 @@ import { SelectionRail } from "./ui/SelectionRail";
 import React, { useEffect, useRef, useState } from "react";
 import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy, Check, RefreshCw } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
-import { authFetch, setStoredUser, UserProfile, syncGoogleSheets, sheetsSyncMessage } from "@/lib/api";
+import { apiErrorMessage, authFetch, setStoredUser, UserProfile, syncGoogleSheets, sheetsSyncMessage } from "@/lib/api";
 
 const SERVICE_ACCOUNT_EMAIL = "tillfold@tillfold.iam.gserviceaccount.com";
 
@@ -92,7 +92,7 @@ export function UserProfileModal({
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Gagal menyimpan profil.");
+      if (!response.ok) throw new Error(apiErrorMessage(data, "Gagal menyimpan profil."));
       updateUser(data);
       setNewPassword("");
       setMsg({ type: "success", text: "Profil diperbarui." });

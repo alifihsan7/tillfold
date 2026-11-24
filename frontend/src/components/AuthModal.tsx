@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useLatest } from "@/lib/useLatest";
 import { LogIn, UserPlus, Shield, AlertCircle, KeyRound, AtSign, User, Info } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
-import { setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
+import { apiErrorMessage, setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +18,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleHelpOpen, setGoogleHelpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [googleLinkCredential, setGoogleLinkCredential] = useState<string | null>(null);
+  const [googleLinkPassword, setGoogleLinkPassword] = useState("");
+  useEffect(() => {
+    setGoogleLinkCredential(null);
+    setGoogleLinkPassword("");
+  }, [isOpen, mode]);
 
   // Google OAuth Config
   const [googleConfig, setGoogleConfig] = useState<{ client_id: string | null; is_configured: boolean }>({
@@ -47,14 +54,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       .catch(() => {});
   }, [isOpen]);
 
-  const handleGoogleCredential = async (credential: string) => {
+  const handleGoogleCredential = async (credential: string, currentPassword?: string) => {
     setGoogleLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/v1/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ credential, current_password: currentPassword || undefined }),
       });
 
       let data: Record<string, unknown> | null = null;
@@ -64,10 +71,15 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         // non-JSON fallback
       }
 
-      if (!res.ok || !data) {
-        const detail = (data as { detail?: string })?.detail;
-        throw new Error(detail || `Gagal masuk dengan Google (Status: ${res.status})`);
+      const detail = data?.detail;
+      if (res.status === 409 && detail && typeof detail === "object" && "code" in detail && detail.code === "google_link_required") {
+        setGoogleLinkCredential(credential);
+        setGoogleLinkPassword("");
+        return;
       }
+      if (!res.ok || !data) throw new Error(apiErrorMessage(data, `Gagal masuk dengan Google (Status: ${res.status})`));
+      setGoogleLinkCredential(null);
+      setGoogleLinkPassword("");
 
       const authData = data as { access_token: string; user: UserProfile };
       setAuthToken(authData.access_token);
@@ -160,8 +172,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         // non-JSON response fallback
       }
       if (!res.ok || !data) {
-        const detail = (data as { detail?: string })?.detail;
-        throw new Error(detail || `Gagal masuk (Status: ${res.status}). Periksa username dan password.`);
+        throw new Error(apiErrorMessage(data, `Gagal masuk (Status: ${res.status}). Periksa username dan password.`));
       }
 
       const authData = data as { access_token: string; user: UserProfile };
@@ -185,8 +196,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       return;
     }
 
-    if (regPassword.length < 6) {
-      setError("Password minimal 6 karakter");
+    if (regPassword.length < 8) {
+      setError("Password minimal 8 karakter");
       return;
     }
 
@@ -215,8 +226,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         // non-JSON response fallback
       }
       if (!res.ok || !data) {
-        const detail = (data as { detail?: string })?.detail;
-        throw new Error(detail || `Gagal mendaftar akun baru (Status: ${res.status}).`);
+        throw new Error(apiErrorMessage(data, `Gagal mendaftar akun baru (Status: ${res.status}).`));
       }
 
       const authData = data as { access_token: string; user: UserProfile };
@@ -356,7 +366,26 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         )}
 
         {/* Login Form */}
-        {mode === "login" ? (
+        {googleLinkCredential ? (
+          <form className="space-y-4" onSubmit={(event) => {
+            event.preventDefault();
+            if (!googleLoading) void handleGoogleCredential(googleLinkCredential, googleLinkPassword);
+          }}>
+            <p className="text-sm text-luma-secondary">Email ini sudah memiliki akun Tillfold. Masukkan kata sandi akun tersebut untuk menautkan Google dengan aman.</p>
+            <div className="space-y-2">
+              <label htmlFor="auth-google-link-password" className="text-sm font-medium">Kata sandi akun Tillfold</label>
+              <input id="auth-google-link-password" type="password" autoComplete="current-password" required
+                value={googleLinkPassword} onChange={(event) => setGoogleLinkPassword(event.target.value)}
+                disabled={googleLoading} className="w-full rounded-2xl border border-luma-smokeline bg-obsidian-panel px-4 py-3 text-base" />
+            </div>
+            <button type="submit" className="luma-action-primary w-full" disabled={googleLoading || !googleLinkPassword}>
+              {googleLoading ? "Memeriksa…" : "Verifikasi dan tautkan Google"}
+            </button>
+            <button type="button" className="luma-action-secondary w-full" disabled={googleLoading} onClick={() => {
+              setGoogleLinkCredential(null); setGoogleLinkPassword(""); setError(null);
+            }}>Batalkan penautan</button>
+          </form>
+        ) : mode === "login" ? (
           <form key="login-form" onSubmit={handleLogin} className="space-y-3.5 animate-fadeIn duration-150">
             <div>
               <label htmlFor="auth-login-id" className="block text-xs font-medium text-luma-secondary mb-1.5">
@@ -477,7 +506,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   type="password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Min 6 karakter"
+                  placeholder="Min 8 karakter"
+                  minLength={8}
                   className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required
                 />

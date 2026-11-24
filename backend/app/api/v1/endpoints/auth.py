@@ -9,7 +9,8 @@ from urllib.parse import parse_qsl
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_, func
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
@@ -41,6 +42,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def commit_identity(db):
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Username, email, atau akun Google sudah digunakan. Muat ulang dan coba lagi.")
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, request: Request, db: Session = Depends(get_db)):
     register_limiter.check(request)
@@ -49,7 +59,7 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
     existing = db.query(User).filter(
         or_(
             User.username == clean_username,
-            (User.email == payload.email) if payload.email else False
+            (func.lower(User.email) == payload.email) if payload.email else False
         )
     ).first()
 
@@ -69,7 +79,7 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
         is_onboarded=False,
     )
     db.add(user)
-    db.commit()
+    commit_identity(db)
     db.refresh(user)
 
     token = create_access_token(subject=user.id)
@@ -83,12 +93,8 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
 def login(payload: UserLogin, request: Request, db: Session = Depends(get_db)):
     login_limiter.check(request)
     login_id = payload.username_or_email.strip().lower()
-    user = db.query(User).filter(
-        or_(
-            User.username == login_id,
-            User.email == login_id
-        )
-    ).first()
+    matches = db.query(User).filter(or_(User.username == login_id, func.lower(User.email) == login_id)).limit(2).all()
+    user = matches[0] if len(matches) == 1 else None
 
     if not user or not verify_password(payload.password, user.hashed_password):
         client_ip = (
@@ -130,7 +136,7 @@ def update_profile(
         user.full_name = payload.full_name.strip()
     if payload.email:
         # Check email uniqueness
-        existing = db.query(User).filter(User.email == payload.email, User.id != user.id).first()
+        existing = db.query(User).filter(func.lower(User.email) == payload.email, User.id != user.id).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email sudah digunakan akun lain")
         user.email = payload.email.strip()
@@ -143,7 +149,7 @@ def update_profile(
         else:
             user.google_spreadsheet_id = None
 
-    db.commit()
+    commit_identity(db)
     db.refresh(user)
     return UserResponse.from_orm(user)
 
@@ -196,7 +202,8 @@ def get_google_auth_config():
     }
 
 @router.post("/google", response_model=TokenResponse)
-def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
+def google_auth(payload: GoogleAuthRequest, request: Request, db: Session = Depends(get_db)):
+    auth_limiter.check(request)
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -209,14 +216,16 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
             google_requests.Request(),
             settings.GOOGLE_CLIENT_ID
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token autentikasi Google tidak valid: {str(e)}",
+            detail="Token autentikasi Google tidak valid. Coba masuk kembali.",
         )
 
-    google_id = str(id_info.get("sub"))
-    email = id_info.get("email")
+    google_id = id_info.get("sub")
+    email = (id_info.get("email") or "").strip().lower()
+    if not isinstance(google_id, str) or not google_id.strip() or id_info.get("email_verified") is not True:
+        raise HTTPException(401, "Verifikasi alamat email di akun Google sebelum masuk.")
     full_name = id_info.get("name") or "Pengguna Google"
     avatar = id_info.get("picture")
 
@@ -226,14 +235,27 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
     # 1. Cari user berdasarkan google_id
     user = db.query(User).filter(User.google_id == google_id).first()
     if not user:
-        # 2. Cari user berdasarkan email yang cocok
-        user = db.query(User).filter(User.email == email).first()
+        # An email match is only a link proposal, never proof of owning a Tillfold account.
+        matches = db.query(User).filter(func.lower(User.email) == email).with_for_update().limit(2).all()
+        if len(matches) > 1:
+            raise HTTPException(409, "Email cocok dengan beberapa akun. Masuk menggunakan username dan periksa email di profil.")
+        user = matches[0] if matches else None
         if user:
-            # Tautkan akun Google ke user eksisting
+            if not user.is_active:
+                raise HTTPException(403, "Akun ini telah dinonaktifkan")
+            if user.google_id and user.google_id != google_id:
+                raise HTTPException(409, "Akun Tillfold ini sudah ditautkan ke akun Google lain.")
+            if not payload.current_password:
+                raise HTTPException(409, detail={
+                    "code": "google_link_required",
+                    "message": "Email ini sudah terdaftar. Masukkan kata sandi akun Tillfold untuk menautkan Google.",
+                })
+            if not verify_password(payload.current_password, user.hashed_password):
+                raise HTTPException(401, "Kata sandi akun Tillfold tidak cocok.")
             user.google_id = google_id
             if avatar and not user.avatar_url:
                 user.avatar_url = avatar
-            db.commit()
+            commit_identity(db)
             db.refresh(user)
         else:
             # 3. Buat user baru
@@ -257,7 +279,7 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
                 is_onboarded=False, # Baru mendaftar -> picu Onboarding Wizard
             )
             db.add(user)
-            db.commit()
+            commit_identity(db)
             db.refresh(user)
 
     if not user.is_active:

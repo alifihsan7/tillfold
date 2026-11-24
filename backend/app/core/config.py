@@ -7,9 +7,15 @@ from dotenv import load_dotenv
 
 backend_dir = Path(__file__).resolve().parent.parent.parent
 root_dir = backend_dir.parent
-load_dotenv(root_dir / ".env")
-load_dotenv(backend_dir / ".env", override=True)
-load_dotenv()
+if os.getenv("TILLFOLD_TESTING") != "1":
+    load_dotenv(root_dir / ".env")
+    load_dotenv(backend_dir / ".env", override=True)
+    load_dotenv()
+else:
+    # Test collection must never load production credentials or initialize its database.
+    database = os.getenv("DATABASE_URL", "")
+    if not database.startswith("sqlite:"):
+        raise RuntimeError("TILLFOLD_TESTING memerlukan database SQLite terisolasi.")
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AI7 Finance API"

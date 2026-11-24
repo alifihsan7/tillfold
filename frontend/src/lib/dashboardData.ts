@@ -28,8 +28,12 @@ export async function loadDashboardData(fetcher: (url: string) => Promise<Respon
   const optional = async (url: string) => {
     try {
       const response = await fetcher(url);
+      if (response.status === 401) throw new DashboardLoadError(401, "sesi");
       return response.ok ? await response.json() : null;
-    } catch { return null; }
+    } catch (error) {
+      if (error instanceof DashboardLoadError && error.status === 401) throw error;
+      return null;
+    }
   };
   const [transactions, summary, subscriptions, accounts, goals, session, paycheck, categories] = await Promise.all([
     required(`/api/v1/transactions?${txParams}`, "transaksi"),

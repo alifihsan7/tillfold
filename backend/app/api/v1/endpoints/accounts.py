@@ -118,7 +118,8 @@ def get_accounts(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    ensure_default_accounts(db, current_user.id)
+    if current_user.is_onboarded:
+        ensure_default_accounts(db, current_user.id)
     
     # Hitung saldo riil all-time per akun dari ledger transaksi milik user ini
     acc_rows = db.query(

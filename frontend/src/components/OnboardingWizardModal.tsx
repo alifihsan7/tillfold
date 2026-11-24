@@ -1,4 +1,5 @@
 "use client";
+import { todayWib } from "@/lib/transactionCalendar";
 
 import { DateField } from "@/components/ui/DateField";
 import React, { useState } from "react";
@@ -17,7 +18,7 @@ import {
 import { CustomModal } from "./ui/CustomModal";
 import { CustomSelect } from "./ui/CustomSelect";
 import { CurrencyInput } from "./ui/CurrencyInput";
-import { authFetch, UserProfile, setStoredUser } from "@/lib/api";
+import { apiErrorMessage, authFetch, UserProfile, setStoredUser } from "@/lib/api";
 
 interface InitialAccountInput {
   name: string;
@@ -121,7 +122,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
   const [paycheckDay, setPaycheckDay] = useState(25);
   const [customDays, setCustomDays] = useState(14);
   const [pocketAccount, setPocketAccount] = useState("Rekening Utama");
-  const [startDateStr, setStartDateStr] = useState(new Date().toISOString().split("T")[0]);
+  const [startDateStr, setStartDateStr] = useState(todayWib());
 
   // Step 3: Paycheck & Gate
   const [sourceAccount, setSourceAccount] = useState("Rekening Utama");
@@ -250,8 +251,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
       }
 
       if (!res.ok || !data) {
-        const detail = (data as { detail?: string })?.detail;
-        throw new Error(detail || `Gagal menyelesaikan proses onboarding (Status: ${res.status})`);
+        throw new Error(apiErrorMessage(data, `Gagal menyelesaikan proses onboarding (Status: ${res.status})`));
       }
 
       const userData = data as unknown as UserProfile;

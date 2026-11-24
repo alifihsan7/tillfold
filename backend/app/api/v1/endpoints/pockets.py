@@ -370,10 +370,10 @@ def classify_pocket_transaction(tx: Transaction) -> str:
 classify_jago_transaction = classify_pocket_transaction
 
 
-def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[Pocket], payment_pockets=None) -> str:
+def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[Pocket], payment_pockets=None) -> Optional[str]:
     """Classifies an expense transaction to the most appropriate pocket slug for a parent account."""
     if not pockets:
-        return "utama"
+        return None
     if payment_pockets and tx.id in payment_pockets:
         return payment_pockets[tx.id]
 
@@ -383,7 +383,9 @@ def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[Pocke
 
     p_slugs = {p.slug: p for p in pockets}
     if "gym" in p_slugs or "claude" in p_slugs:
-        return classify_pocket_transaction(tx)
+        legacy_slug = classify_pocket_transaction(tx)
+        if legacy_slug != "utama":
+            return legacy_slug
 
     desc = (tx.description or "").lower()
     cat = (tx.category or "").lower()
@@ -405,9 +407,10 @@ def classify_pocket_transaction_for_account(tx: Transaction, pockets: List[Pocke
             return tagihan_p.slug
 
     # 3. Fallback to Utama or first operasional pocket
-    main_pocket = next((p for p in pockets if p.slug.startswith("utama")), None)
-    fallback_p = main_pocket or next((p for p in pockets if p.role == "operasional"), pockets[0])
-    return fallback_p.slug
+    main_pocket = next((p for p in pockets if p.slug.startswith("utama") and p.role == "operasional"), None)
+    fallback_p = main_pocket or next((p for p in pockets if p.role == "operasional"), None)
+    # General spending remains unallocated; protected pockets only receive explicit/matching expenses.
+    return fallback_p.slug if fallback_p else None
 
 
 def compute_pockets_summary(
@@ -495,6 +498,8 @@ def compute_pockets_summary(
             slug = pocket_by_id[tx.pocket_id].slug
         else:
             slug = classify_pocket_transaction_for_account(tx, ordered_pockets, payment_pockets)
+        if slug is None:
+            continue
         pocket = next((p for p in ordered_pockets if p.slug == slug), None)
         if pocket is not None and (pocket.allocation_start_date is None or tx.date >= pocket.allocation_start_date):
             lifetime_spent[slug] += int(tx.amount)

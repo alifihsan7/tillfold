@@ -90,3 +90,11 @@ const categoryMarkup = renderToStaticMarkup(React.createElement(CategoryGrid, {
 assert.match(text(categoryMarkup), /Rp800/);
 assert.match(text(categoryMarkup), /Rp200/);
 console.log("PASS: income and expense categories with the same name render their own totals.");
+
+const { AccountGrid } = loadComponent(path.resolve(__dirname, "../src/components/AccountGrid.tsx"));
+const emptyAccounts = renderToStaticMarkup(React.createElement(AccountGrid, {
+  summary: { expense: 0, accounts: [] }, customAccounts: [], formatRupiah: fixture.formatRupiah,
+}));
+assert.doesNotMatch(emptyAccounts, /ai7-account-card|Rekening Utama|Dana Darurat/);
+assert.match(text(emptyAccounts), /Belum ada rekening/);
+console.log("PASS: an empty session cannot fabricate account cards after sign-out.");

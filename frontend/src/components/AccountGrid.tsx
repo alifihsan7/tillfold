@@ -185,62 +185,6 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     ? summary.safe_to_spend.pocket_budget
     : 0;
 
-  // Akun default generic jika user belum memiliki rekening kustom
-  const genericDefaultAccounts = [
-    {
-      id: undefined,
-      name: "Rekening Utama",
-      tag: "Operasional & saku harian",
-      balance: 0,
-      spent: 0,
-      allocated: 0,
-      colorKey: "ember",
-      type: "operasional",
-      isPocket: true,
-      cycleBadge,
-      isCustom: false,
-    },
-    {
-      id: undefined,
-      name: "Tabungan",
-      tag: "Tabungan & simpanan",
-      balance: 0,
-      spent: 0,
-      allocated: 0,
-      colorKey: "sage",
-      type: "tabungan",
-      isPocket: false,
-      cycleBadge,
-      isCustom: false,
-    },
-    {
-      id: undefined,
-      name: "Investasi",
-      tag: "Investasi",
-      balance: 0,
-      spent: 0,
-      allocated: 0,
-      colorKey: "sage",
-      type: "investasi",
-      isPocket: false,
-      cycleBadge,
-      isCustom: false,
-    },
-    {
-      id: undefined,
-      name: "Dana Darurat",
-      tag: "Dana darurat",
-      balance: 0,
-      spent: 0,
-      allocated: 0,
-      colorKey: "amberGold",
-      type: "darurat",
-      isPocket: false,
-      cycleBadge,
-      isCustom: false,
-    },
-  ];
-
   const pocketAccountName = (summary.safe_to_spend?.pocket_account || "").toLowerCase();
   const lumaKeyFor = (color?: string) => {
     if (color === "teal") return "sage";
@@ -250,8 +194,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
     return "ember";
   };
 
-  const allDisplayAccounts = customAccounts.length > 0
-    ? customAccounts.map((ca) => {
+  const allDisplayAccounts = customAccounts.map((ca) => {
         const colorKey = lumaKeyFor(ca.color);
         const bal = ca.current_balance ?? balanceMap[ca.name] ?? 0;
         const isPocket = ca.name.toLowerCase() === pocketAccountName || (pocketAccountName === "" && ca.name.toLowerCase().includes("mandiri"));
@@ -271,12 +214,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
           isCustom: true,
           is_archived: !!ca.is_archived,
         };
-      })
-    : genericDefaultAccounts.map((acc) => ({
-        ...acc,
-        roleBadge: getAccountRoleBadge(acc.type),
-        is_archived: false,
-      }));
+      });
 
   if (loading) {
     return (
@@ -318,6 +256,7 @@ export function AccountGrid({ summary, customAccounts = [], formatRupiah, loadin
         ]} />
       {showArchived && <p className="text-sm text-luma-smoke">Saldo dan riwayat rekening arsip tetap tersimpan.</p>}
       {showArchived && !allDisplayAccounts.some((account) => account.is_archived) && <p className="luma-matte p-4 text-sm text-luma-smoke">Belum ada rekening yang diarsipkan.</p>}
+      {allDisplayAccounts.length === 0 && <p className="luma-matte p-4 text-sm text-luma-smoke">Belum ada rekening untuk ditampilkan.</p>}
       <div className="ai7-account-grid fold-stagger">
       {allDisplayAccounts.filter((account) => account.is_archived === showArchived).map((acc) => {
         const hasPlafon = acc.allocated > 0;

@@ -176,6 +176,10 @@ def test_loan_correction_and_pocket_history_survive_restore(recovery):
     payload = download(client)
     assert len(payload["data"]["pocket_mutations"]) == 6
     current[0] = users[1]
+    # Legacy completed accounts can still have automatically seeded empty defaults.
+    # Fresh unfinished accounts intentionally remain empty until onboarding completes.
+    users[1].is_onboarded = True
+    db.commit()
     defaults = client.get("/accounts").json()
     assert len(defaults) == 5
     client.get("/pockets")

@@ -21,6 +21,10 @@ def complete_onboarding(
     user: User = Depends(get_strict_current_user),
     db: Session = Depends(get_db)
 ):
+    # Serialize completion with account seeding; replay must never duplicate opening money.
+    user = db.query(User).filter(User.id == user.id).populate_existing().with_for_update().one()
+    if user.is_onboarded:
+        return user
     try:
         now_wib = datetime.now(WIB)
         tx_date = payload.cycle_start_date or now_wib.date()
@@ -28,31 +32,25 @@ def complete_onboarding(
         # 1. Create Accounts
         for acc in payload.initial_accounts:
             existing_acc = db.query(Account).filter(Account.user_id == user.id, Account.name == acc.name).first()
-            if not existing_acc:
-                new_acc = Account(
-                    user_id=user.id,
-                    name=acc.name,
-                    type=acc.type,
-                    tag=acc.tag,
-                    color=acc.color,
-                    initial_balance=acc.initial_balance,
-                )
-                db.add(new_acc)
-                db.flush()
-
-                # Record initial balance transaction if > 0
-                if acc.initial_balance > 0:
-                    init_tx = Transaction(
-                        user_id=user.id,
-                        type="income",
-                        amount=acc.initial_balance,
-                        account=acc.name,
-                        category="Saldo Awal",
-                        description=f"Saldo Awal Onboarding ({acc.name})",
-                        raw_text=f"Saldo Awal {acc.name} Rp {acc.initial_balance:,}",
-                        date=tx_date,
-                    )
-                    db.add(init_tx)
+            if existing_acc:
+                if db.query(Transaction.id).filter(
+                    Transaction.user_id == user.id, Transaction.account == existing_acc.name,
+                ).first() or existing_acc.initial_balance:
+                    raise HTTPException(409, "Rekening sudah memiliki saldo atau riwayat. Periksa sebelum menyelesaikan pengaturan awal.")
+                existing_acc.type = acc.type
+                existing_acc.tag = acc.tag
+                existing_acc.color = acc.color
+                existing_acc.initial_balance = acc.initial_balance
+            else:
+                db.add(Account(user_id=user.id, name=acc.name, type=acc.type, tag=acc.tag,
+                               color=acc.color, initial_balance=acc.initial_balance))
+            db.flush()
+            if acc.initial_balance > 0:
+                db.add(Transaction(
+                    user_id=user.id, type="income", amount=acc.initial_balance, account=acc.name,
+                    category="Saldo Awal", description=f"Saldo Awal Onboarding ({acc.name})",
+                    raw_text=f"Saldo Awal {acc.name} Rp {acc.initial_balance:,}", date=tx_date,
+                ))
 
         # 2. Create or Update PaycheckConfig
         cfg = db.query(PaycheckConfig).filter(PaycheckConfig.user_id == user.id).first()
@@ -101,9 +99,12 @@ def complete_onboarding(
         db.refresh(user)
 
         return user
-    except Exception as e:
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Gagal menyelesaikan onboarding: {str(e)}"
+            detail="Gagal menyelesaikan pengaturan awal. Silakan coba lagi."
         )

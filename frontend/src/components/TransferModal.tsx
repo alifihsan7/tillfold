@@ -1,3 +1,4 @@
+import { todayWib } from "@/lib/transactionCalendar";
 import { DateField } from "@/components/ui/DateField";
 import React, { useState } from "react";
 import { ArrowLeftRight, CheckCircle2 } from "@/components/icons";
@@ -30,9 +31,11 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions, init
     : options[1]?.value ?? options[0]?.value ?? "");
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayWib());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => { if (isOpen) setDate(todayWib()); }, [isOpen]);
 
   // Auto-sync initial accounts if options change
   React.useEffect(() => {

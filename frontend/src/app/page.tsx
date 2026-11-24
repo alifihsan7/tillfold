@@ -81,6 +81,7 @@ import { GlobalSearchModal, SearchResult } from "@/components/GlobalSearchModal"
 import { BackupModal } from "@/components/BackupModal";
 import {
   authFetch,
+  SESSION_EXPIRED_EVENT,
   getAuthToken,
   setStoredUser,
   setAuthToken,
@@ -674,6 +675,37 @@ export default function FinanceDashboard() {
   const [loansRefreshSignal, setLoansRefreshSignal] = useState(0);
   const [pocketsData, setPocketsData] = useState<PocketsSummaryResponse | null>(null);
 
+  const resetFinancialState = useCallback(() => {
+    dashboardRequestRef.current += 1;
+    dashboardBusyRef.current = false;
+    setTransactions([]); setCategories([]); setCustomAccounts([]); setGoals([]);
+    setSummary({ month: "", income: 0, expense: 0, net: 0, savings_rate: 0, total_balance: 0, accounts: [], categories: [] });
+    setSubsData({ total_monthly_commitment: 0, active_count: 0, upcoming_this_week: 0, items: [] });
+    setPaycheckConfig(null); setPaycheckBuckets([]); setActivePaycheckSession(null); setPocketsData(null);
+    setSelectedPeriod({ id: "cycle_current", type: "cycle", label: "Siklus aktif", start: "", end: "", is_current: true });
+    observeTransactions([], "guest");
+    setOverviewError(null); setLoading(false); setToastMessage(null);
+    setIsModalOpen(false); setIsGlobalSearchOpen(false); setIsPaycheckModalOpen(false); setIsPayrollSettingsOpen(false);
+    setIsSubModalOpen(false); setIsTransferModalOpen(false); setWalletTransferSource(undefined); setWalletReconcileId(undefined);
+    setIsAddAccountModalOpen(false); setAccountToEdit(null); setSubToDelete(null); setSubToEdit(null);
+    setTxToDelete(null); setTxToEdit(null); setDeleteTxError(""); setDeleteLoading(false);
+    setIsAddGoalModalOpen(false); setGoalToEdit(null); setGoalToDelete(null); setIsManageCategoriesOpen(false);
+    setIsBackupModalOpen(false); setIsOnboardingModalOpen(false); setIsProfileModalOpen(false);
+    setIsUtilitiesMenuOpen(false); setIsMobileDrawerOpen(false);
+    setSubName(""); setSubAmount(""); setSubCategory("Lainnya"); setSubAccount(""); setSubNotes("");
+    setSubBillingType("fixed_day"); setSubBillingDay("1"); setSubExactDueDate("");
+  }, [observeTransactions]);
+
+  const endSession = useCallback(() => {
+    setAuthToken(null); setStoredUser(null); setCurrentUser(null);
+    resetFinancialState(); setIsAuthModalOpen(true);
+  }, [resetFinancialState]);
+
+  useEffect(() => {
+    window.addEventListener(SESSION_EXPIRED_EVENT, endSession);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, endSession);
+  }, [endSession]);
+
   const pocketsCount = (pocketsData?.pockets ?? pocketsData?.items)?.length ?? 0;
 
   useEffect(() => {
@@ -790,7 +822,7 @@ export default function FinanceDashboard() {
     const requestId = ++dashboardRequestRef.current;
     if (!background) setOverviewError(null);
     const token = getAuthToken();
-    if (!token) {
+    if (!token || !currentUser?.is_onboarded) {
       setTransactions([]);
       setCategories([]);
       setSummary({
@@ -821,7 +853,7 @@ export default function FinanceDashboard() {
       if (!background) setLoading(true);
 
       const data = await loadDashboardData(authFetch, selectedPeriod);
-      if (requestId !== dashboardRequestRef.current) return;
+      if (requestId !== dashboardRequestRef.current || getAuthToken() !== token) return;
       setOverviewError(null);
       if (Array.isArray(data.transactions)) {
         observeTransactions(data.transactions, JSON.stringify([currentUser?.id, selectedPeriod.id, selectedPeriod.start, selectedPeriod.end]));
@@ -852,8 +884,8 @@ export default function FinanceDashboard() {
       // Refresh account pockets after any ledger-affecting fetch.
       setPocketsRefreshSignal((prev) => prev + 1);
     } catch (err) {
-      if (requestId !== dashboardRequestRef.current) return;
-      if (err instanceof DashboardLoadError && err.status === 401) setIsAuthModalOpen(true);
+      if (requestId !== dashboardRequestRef.current || getAuthToken() !== token) return;
+      if (err instanceof DashboardLoadError && err.status === 401) { endSession(); return; }
       setOverviewError(err instanceof Error ? err.message : "Koneksi terputus. Coba muat ulang ringkasan.");
       console.error("Fetch error:", err);
     } finally {
@@ -868,15 +900,15 @@ export default function FinanceDashboard() {
 
   const fetchDataRef = useLatest(fetchData);
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.is_onboarded) {
       fetchDataRef.current();
     }
   }, [selectedPeriod, currentUser, fetchDataRef]);
 
   const externalRefreshRef = useRef(() => {});
-  externalRefreshRef.current = () => { if (currentUser) void fetchDashboard(true); };
+  externalRefreshRef.current = () => { if (currentUser?.is_onboarded) void fetchDashboard(true); };
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.is_onboarded) return;
     const refresh = () => { if (document.visibilityState === "visible") externalRefreshRef.current(); };
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
@@ -1141,7 +1173,7 @@ export default function FinanceDashboard() {
   };
 
   return (
-    <div className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
+    <div key={currentUser?.id ?? "guest"} className="luma-app tillfold-fold bg-luma-charcoal text-luma-ivory flex flex-col md:flex-row antialiased font-sans overflow-hidden">
       <aside id="desktop-sidebar" aria-label="Sidebar" data-collapsed={sidebarCollapsed} data-motion={sidebarMotion} className="luma-sidebar hidden md:flex shrink-0 bg-luma-charcoal p-5 flex-col justify-between overflow-x-hidden overflow-y-auto">
         <div>
           <div className="luma-sidebar-heading flex items-center justify-between gap-1">
@@ -2913,8 +2945,8 @@ export default function FinanceDashboard() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(user, isNewUser) => {
+          resetFinancialState();
           setCurrentUser(user);
-          fetchData();
           if (isNewUser || !user.is_onboarded) {
             setIsOnboardingModalOpen(true);
           }
@@ -2930,7 +2962,6 @@ export default function FinanceDashboard() {
           setIsOnboardingModalOpen(false);
           setCurrentUser(updatedUser);
           setStoredUser(updatedUser);
-          fetchData();
         }}
       />
 
@@ -2952,14 +2983,7 @@ export default function FinanceDashboard() {
             setCurrentUser(updated);
             fetchData();
           }}
-          onLogout={() => {
-            setAuthToken(null);
-            setStoredUser(null);
-            setCurrentUser(null);
-            setIsProfileModalOpen(false);
-            setIsAuthModalOpen(true);
-            fetchData();
-          }}
+          onLogout={endSession}
         />
       )}
 

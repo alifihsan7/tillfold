@@ -943,3 +943,23 @@ html:not(.light) .fold-hero {
   .fold-pocket-button, .fold-pocket-skeleton { padding: 30px 18px 12px; }
   .fold-page .fold-pocket-actions > button { flex: 1 1 auto; min-height: 44px; }
 }
+
+@media (max-width: 767px) and (max-height: 700px) {
+  .tillfold-fold .fold-sheet-panel .luma-form-scope:has(.payroll-flow) {
+    padding-block: 0.5rem;
+  }
+
+  .payroll-flow .payroll-form,
+  .payroll-flow .payroll-form fieldset {
+    --payroll-field-gap: 0.5rem;
+  }
+
+  .payroll-flow .payroll-form > :not([hidden]) ~ :not([hidden]),
+  .payroll-flow .payroll-form fieldset > :not([hidden]) ~ :not([hidden]) {
+    margin-block-start: var(--payroll-field-gap);
+  }
+
+  .tillfold-fold .fold-sheet-panel .luma-form-scope .payroll-flow .ai7-currency-field {
+    min-height: 48px;
+  }
+}

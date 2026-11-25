@@ -1,7 +1,7 @@
 "use client";
 
 import { DateField } from "@/components/ui/DateField";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { authFetch } from "@/lib/api";
 import { CurrencyInput } from "./ui/CurrencyInput";
 import { CustomSelect } from "./ui/CustomSelect";
@@ -30,12 +30,54 @@ const percentage = new Intl.NumberFormat("id-ID", { style: "percent", maximumFra
 const share = (amount: number, total: number) => total > 0 ? percentage.format(amount / total) : "—";
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
 
+const PAGE_SIZE = 2;
+
+function pageOf<T>(items: T[], page: number, size = PAGE_SIZE) {
+  const last = Math.max(0, Math.ceil(items.length / size) - 1);
+  const current = Math.min(last, page);
+  return { current, last, rows: items.slice(current * size, (current + 1) * size) };
+}
+
+function AllocationPager({ current, last, onChange, disabled }: {
+  current: number;
+  last: number;
+  onChange: (page: number) => void;
+  disabled: boolean;
+}) {
+  if (last === 0) return null;
+  return (
+    <nav aria-label="Halaman rekening tujuan" className="flex items-center justify-between gap-1 text-sm">
+      <button type="button" className="luma-text-action px-1 disabled:opacity-50"
+        disabled={disabled || current === 0} onClick={() => onChange(current - 1)}>Sebelumnya</button>
+      <span className="tabular-nums text-luma-smoke" aria-live="polite">{current + 1} / {last + 1}</span>
+      <button type="button" className="luma-text-action px-1 disabled:opacity-50"
+        disabled={disabled || current === last} onClick={() => onChange(current + 1)}>Berikutnya</button>
+    </nav>
+  );
+}
+
 export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onClose, onSuccess, onConfigure }: Props) {
   const [amount, setAmount] = useState("");
   const [destinationAmounts, setDestinationAmounts] = useState<Record<number, string>>({});
   const [account, setAccount] = useState("");
   const [date, setDate] = useState(today);
-  const [cycleOpen, setCycleOpen] = useState(false);
+  const [step, setStep] = useState<"details" | "cycle" | "allocation">("details");
+  const [allocationPage, setAllocationPage] = useState(0);
+  const formId = useId();
+  const stepTitle = useRef<HTMLParagraphElement>(null);
+  const movedStep = useRef(false);
+
+  function goTo(next: typeof step) {
+    movedStep.current = true;
+    setStep(next);
+  }
+
+  useEffect(() => {
+    if (movedStep.current) {
+      stepTitle.current?.focus({ preventScroll: true });
+      movedStep.current = false;
+    }
+  }, [step]);
   const [startCycle, setStartCycle] = useState(true);
   const [cycleType, setCycleType] = useState("");
   const [cycleDays, setCycleDays] = useState("14");
@@ -59,7 +101,8 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
     setEditingAllocation(false);
     setShowAllocations(false);
     setError("");
-    setCycleOpen(false);
+    setStep("details");
+    setAllocationPage(0);
     void authFetch("/api/v1/paycheck/config?include_buckets=false").then(async (response) => {
       if (!response.ok || !active) return;
       const { config } = await response.json();
@@ -84,7 +127,14 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
   })).filter((item) => item.amount > 0);
   const draftTotal = allocations.reduce((sum, item) => sum + item.amount, 0);
   const draftRemaining = nominal - draftTotal;
-  const invalidDraft = !Number.isSafeInteger(nominal) || !Number.isSafeInteger(draftTotal) || draftRemaining < 0;
+  const invalidNominal = !Number.isSafeInteger(nominal) || nominal <= 0 || nominal > 9_000_000_000_000_000;
+  const invalidDraft = !Number.isSafeInteger(draftTotal) || draftRemaining < 0;
+  const invalidCycle = startCycle && cycleType === "custom" &&
+    (!Number.isInteger(Number(cycleDays)) || Number(cycleDays) < 1 || Number(cycleDays) > 365);
+  const destinationPage = pageOf(destinations, allocationPage);
+  const receiptRows = receipt?.allocations.filter((item) => item.amount > 0) ?? [];
+  const displayedReceipt = pageOf(receiptRows, allocationPage);
+  const draftPage = pageOf(allocationDraft, allocationPage, 1);
   const canResume = previousReceipt && (previousReceipt.allocations.some((item) => item.account && item.amount > 0 && !item.transfer_id) ||
     (previousReceipt.allocations.length === 0 && allocationAccounts.some((item) => item.name !== previousReceipt.account)));
   const cycleSummary = !startCycle ? "Pakai siklus berjalan" :
@@ -111,6 +161,7 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
       setPreviousReceipt(data);
       if (path === "/api/v1/paycheck/record") {
         setShowAllocations(data.allocations.length > 0);
+        setAllocationPage(0);
         setDestinationAmounts({});
         requestKey.current = "";
         setAmount("");
@@ -118,7 +169,7 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
         setSaveDefault(false);
         setStartCycle(true);
       }
-      if (method === "PUT") setEditingAllocation(false);
+      if (method === "PUT") { setEditingAllocation(false); setAllocationPage(0); }
       onSuccess(path === "/api/v1/paycheck/record" && data.cycle_end ? { start: data.date, end: data.cycle_end } : undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Perubahan gagal disimpan.");
@@ -135,45 +186,73 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
   const beginAllocationEdit = () => {
     if (!receipt) return;
     setAllocationDraft(receipt.allocations.map((item) => ({ ...item })));
+    setAllocationPage(0);
     setEditingAllocation(true);
     setError("");
   };
 
+  const footer = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {receipt ? (
+        editingAllocation ? <>
+          <button type="button" disabled={pending} className="luma-action-secondary" onClick={() => {
+            setEditingAllocation(false); setAllocationPage(0); setError("");
+          }}>Batal</button>
+          <button type="submit" form={formId} className="luma-action-primary"
+            disabled={pending || allocationRemaining < 0 || !Number.isSafeInteger(allocationTotal)}>
+            {pending ? "Menyimpan…" : "Simpan pembagian"}
+          </button>
+        </> : <>
+          <button type="button" disabled={pending} onClick={onClose} className="luma-action-secondary">Tutup</button>
+          {!showAllocations && allocationAccounts.some((item) => item.name !== receipt.account) && (
+            <button type="button" onClick={() => setShowAllocations(true)} className="luma-action-primary">Bagi gaji</button>
+          )}
+        </>
+      ) : <>
+        {step === "allocation" && <button type="button" disabled={pending}
+          className="luma-action-secondary" onClick={() => goTo("details")}>Kembali</button>}
+        <button type="submit" form={formId} className="luma-action-primary"
+          disabled={pending || (step === "cycle" ? invalidCycle : !selectedAccount || invalidNominal ||
+            (step === "allocation" && (invalidDraft || invalidCycle)))}>
+          {step === "cycle" ? "Pakai siklus ini" : step === "details" ? "Lanjut" : pending ? "Menyimpan…" : "Simpan gaji"}
+        </button>
+      </>}
+    </div>
+  );
+
   return (
     <CustomModal isOpen={isOpen} onClose={() => { if (!pending) onClose(); }}
-      title={showAllocations ? "Bagi gaji" : receipt ? "Gaji tercatat" : "Catat gaji"} maxWidth="md">
-      <div className="space-y-4">
+      title={showAllocations ? "Bagi gaji" : receipt ? "Gaji tercatat" : "Catat gaji"} maxWidth="md" footer={footer}>
+      <div className="payroll-flow space-y-3">
         {error && <p role="alert" className="text-sm text-luma-coral">{error}</p>}
         {receipt ? (
           <>
-            <div className="luma-matte space-y-1 p-4">
+            {!editingAllocation && <div className="luma-matte space-y-1 p-2.5">
               <p className="ai7-type-metric">{rupiah.format(receipt.amount)}</p>
-              <p className="text-sm text-luma-smoke">{receipt.account} · {receipt.date}</p>
-              {receipt.cycle_end && <p className="text-sm text-luma-smoke">Siklus sampai {receipt.cycle_end}</p>}
-            </div>
+              <p className="text-sm text-luma-smoke">{receipt.account} · {receipt.date}{receipt.cycle_end && ` · sampai ${receipt.cycle_end}`}</p>
+            </div>}
             {showAllocations && (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                {!editingAllocation && <div className="flex flex-wrap items-center justify-between gap-1">
                   <p className="text-sm text-luma-smoke">Catat transfer setelah uang dipindahkan.</p>
-                  {!editingAllocation && <button type="button" disabled={pending} className="luma-action-secondary" onClick={beginAllocationEdit}>Sesuaikan pembagian</button>}
-                </div>
+                  <button type="button" disabled={pending} className="luma-text-action" onClick={beginAllocationEdit}>Sesuaikan pembagian</button>
+                </div>}
                 {editingAllocation ? (
-                  <form className="payroll-form space-y-4" onSubmit={(event) => {
+                  <form id={formId} className="payroll-form space-y-3" onSubmit={(event) => {
                     event.preventDefault();
-                    if (allocationRemaining < 0) return;
+                    if (allocationRemaining < 0 || !Number.isSafeInteger(allocationTotal)) return;
                     void submit(`/api/v1/paycheck/record/${receipt.id}/allocations`, {
                       allocations: allocationDraft.map(({ account_id, amount, transfer_id }) => ({ account_id, amount, transfer_id })),
                       expected_allocations: receipt.allocations.map(({ account_id, amount, transfer_id }) => ({ account_id, amount, transfer_id })),
                     }, "PUT");
                   }}>
-                    <p className="text-sm text-luma-smoke">Atur nominal untuk gaji ini. Sisa dana tetap di {receipt.account}.</p>
-                    <ul className="space-y-3">
-                      {allocationDraft.map((item) => (
-                        <li key={item.account_id} className="space-y-2 border-b border-luma-smokeline pb-3">
+                    <ul>
+                      {draftPage.rows.map((item) => (
+                        <li key={item.account_id} className="space-y-1">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <label htmlFor={`salary-allocation-${item.account_id}`} className="text-sm font-medium">{item.account || "Rekening tidak tersedia"}</label>
                             {item.transfer_id ? <span className="text-sm text-luma-sage">Tercatat · terkunci</span> :
-                              <button type="button" disabled={pending} className="luma-text-action min-h-11" onClick={() => setAllocationDraft((rows) => rows.filter((row) => row.account_id !== item.account_id))}>Hapus alokasi</button>}
+                              <button type="button" disabled={pending} className="luma-text-action" onClick={() => setAllocationDraft((rows) => rows.filter((row) => row.account_id !== item.account_id))}>Hapus alokasi</button>}
                           </div>
                           <p className="text-xs text-luma-smoke">{share(item.amount, receipt.amount)} dari gaji</p>
                           {item.transfer_id ? <p className="text-sm">{rupiah.format(item.amount)}</p> :
@@ -182,29 +261,29 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
                         </li>
                       ))}
                     </ul>
+                    <AllocationPager {...draftPage} onChange={setAllocationPage} disabled={pending} />
                     {availableTargets.length > 0 && <div className="space-y-1">
                       <span className="text-sm">Tambah rekening tujuan</span>
                       <CustomSelect label="Tambah rekening tujuan" value="" placeholder="Pilih rekening" disabled={pending}
                         options={availableTargets.map((target) => ({ value: String(target.id), label: target.name }))}
                         onChange={(value) => {
                           const target = availableTargets.find((row) => row.id === Number(value));
-                          if (target) setAllocationDraft((rows) => [...rows, { account_id: target.id, account: target.name, amount: 0, transfer_id: null }]);
+                          if (target) {
+                            setAllocationPage(allocationDraft.length);
+                            setAllocationDraft((rows) => [...rows, { account_id: target.id, account: target.name, amount: 0, transfer_id: null }]);
+                          }
                         }} />
                     </div>}
-                    <div className="luma-matte space-y-1 p-3 text-sm" aria-live="polite">
+                    <div className="text-sm" aria-live="polite">
                       <p>Total pembagian: {rupiah.format(allocationTotal)}</p>
                       <p className={allocationRemaining < 0 ? "text-luma-coral" : "text-luma-smoke"}>
                         {allocationRemaining < 0 ? `Melebihi gaji ${rupiah.format(-allocationRemaining)}` : `Tetap di ${receipt.account}: ${rupiah.format(allocationRemaining)}`}
                       </p>
                     </div>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button type="button" disabled={pending} className="luma-action-secondary" onClick={() => { setEditingAllocation(false); setError(""); }}>Batal</button>
-                      <button type="submit" className="luma-action-primary" disabled={pending || allocationRemaining < 0 || !Number.isSafeInteger(allocationTotal)}>{pending ? "Menyimpan…" : "Simpan pembagian"}</button>
-                    </div>
                   </form>
                 ) : (
                   <ul className="space-y-2">
-                    {receipt.allocations.filter((item) => item.amount > 0).map((item) => (
+                    {displayedReceipt.rows.map((item) => (
                       <li key={item.account_id} className="flex flex-wrap items-center justify-between gap-2 border-b border-luma-smokeline py-2">
                         <div className="min-w-0"><p>{item.account || "Rekening tidak tersedia"}</p><p className="text-sm text-luma-smoke">{rupiah.format(item.amount)} · {share(item.amount, receipt.amount)}</p></div>
                         {item.transfer_id ? <span className="text-sm text-luma-sage">Tercatat</span> :
@@ -212,22 +291,23 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
                             onClick={() => void submit(`/api/v1/paycheck/record/${receipt.id}/transfer/${item.account_id}`)}>{item.account_archived ? "Rekening diarsipkan" : "Catat transfer"}</button>}
                       </li>
                     ))}
+                    <li><AllocationPager {...displayedReceipt} onChange={setAllocationPage} disabled={pending} /></li>
                     {receipt.allocations.length === 0 && <li className="text-sm text-luma-smoke">Belum ada pembagian. Pilih “Sesuaikan pembagian” untuk menambah tujuan.</li>}
                   </ul>
                 )}
               </>
             )}
-            <div className="flex flex-wrap justify-end gap-2">
-              <button type="button" disabled={pending} onClick={onClose} className="luma-action-secondary">Tutup</button>
-              {!showAllocations && allocationAccounts.some((item) => item.name !== receipt.account) && (
-                <button type="button" onClick={() => setShowAllocations(true)} className="luma-action-primary">Bagi gaji</button>
-              )}
-            </div>
           </>
         ) : (
-          <form className="payroll-form space-y-4" onSubmit={(event) => {
+          <form id={formId} className="payroll-form space-y-3" onSubmit={(event) => {
             event.preventDefault();
-            if (!selectedAccount || nominal <= 0 || invalidDraft) return;
+            if (step === "cycle") {
+              if (!invalidCycle) goTo("details");
+              return;
+            }
+            if (!selectedAccount || invalidNominal) return;
+            if (step === "details") { goTo("allocation"); return; }
+            if (invalidDraft || invalidCycle) return;
             requestKey.current ||= crypto.randomUUID();
             void submit("/api/v1/paycheck/record", {
               request_key: requestKey.current, total_amount: nominal, account: selectedAccount, date, allocations,
@@ -236,6 +316,10 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
               save_cycle_default: startCycle && !!cycleType && saveDefault,
             });
           }}>
+            <p ref={stepTitle} tabIndex={-1} className="text-xs text-luma-smoke">
+              {step === "details" ? "1 dari 2 · Detail gaji" : step === "cycle" ? "Durasi dan awal siklus" : "2 dari 2 · Pembagian gaji"}
+            </p>
+            {step === "details" && <>
             <div>
               <label htmlFor="paycheck-amount" className="mb-1 block">Nominal gaji</label>
               <CurrencyInput id="paycheck-amount" value={amount} onChange={setAmount} placeholder="0" required />
@@ -255,14 +339,20 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
               <label htmlFor="paycheck-received-date">Tanggal gaji masuk</label>
               <DateField id="paycheck-received-date" value={date} required max={today()} onChange={setDate} />
             </div>
-            <div className="luma-matte space-y-2 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm">{cycleSummary}</span>
-                <button type="button" className="luma-text-action px-2" aria-expanded={cycleOpen}
-                  onClick={() => setCycleOpen(!cycleOpen)}>Ubah</button>
-              </div>
-              {cycleOpen && (
-                <>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-luma-smoke">{cycleSummary}</span>
+              <button type="button" className="luma-text-action px-1" onClick={() => goTo("cycle")}>Ubah siklus</button>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+              {canResume && <button type="button" className="luma-text-action" disabled={pending} onClick={() => {
+                setAllocationPage(0);
+                setReceipt(previousReceipt);
+                setShowAllocations(true);
+              }}>Lanjut bagi gaji</button>}
+              <button type="button" className="luma-text-action" disabled={pending} onClick={onConfigure}>Atur rekening gaji</button>
+            </div>
+            </>}
+            {step === "cycle" && <>
                   <label className="flex min-h-11 items-center gap-2 text-sm">
                     <input type="checkbox" checked={startCycle} onChange={(event) => setStartCycle(event.target.checked)} />
                     Mulai siklus baru
@@ -292,14 +382,12 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
                       </label>}
                     </>
                   )}
-                </>
-              )}
-            </div>
-            {destinations.length > 0 && (
-              <fieldset className="luma-matte space-y-3 p-3">
-                <legend className="px-1 text-sm font-semibold">Pembagian gaji ini</legend>
-                <p className="text-xs text-luma-smoke">Isi nominal rekening tujuan. Persentase dihitung dari total gaji.</p>
-                {destinations.map(({ id, name }) => {
+            </>}
+            {step === "allocation" && (
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-semibold">{rupiah.format(nominal)} · {selectedAccount}</legend>
+                <p className="text-xs text-luma-smoke">Isi nominal tujuan. Kosongkan rekening yang tidak dapat bagian.</p>
+                {destinationPage.rows.map(({ id, name }) => {
                   const allocation = allocations.find((item) => item.account_id === id)?.amount ?? 0;
                   return (
                     <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-end gap-2" key={id}>
@@ -312,24 +400,13 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
                     </div>
                   );
                 })}
+                <AllocationPager {...destinationPage} onChange={setAllocationPage} disabled={pending} />
                 <p className={`text-sm ${invalidDraft ? "text-luma-coral" : "text-luma-smoke"}`} aria-live="polite">
                   {draftRemaining < 0 ? `Melebihi gaji ${rupiah.format(-draftRemaining)}` :
                     `Tetap di ${selectedAccount}: ${rupiah.format(draftRemaining)} · ${share(draftRemaining, nominal)}`}
                 </p>
               </fieldset>
             )}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-2">
-                {canResume && <button type="button" className="luma-text-action" disabled={pending} onClick={() => {
-                  setReceipt(previousReceipt);
-                  setShowAllocations(true);
-                }}>Lanjut bagi gaji</button>}
-                <button type="button" className="luma-text-action" disabled={pending} onClick={onConfigure}>Atur rekening gaji</button>
-              </div>
-              <button type="submit" className="luma-action-primary" disabled={pending || !selectedAccount || nominal <= 0 || invalidDraft}>
-                {pending ? "Menyimpan…" : "Simpan gaji"}
-              </button>
-            </div>
           </form>
         )}
       </div>

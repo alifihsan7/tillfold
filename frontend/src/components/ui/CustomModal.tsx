@@ -10,6 +10,7 @@ interface CustomModalProps {
   icon?: React.ReactNode;
   accent?: "amber" | "cyan" | "mint" | "coral" | "ember" | "sage" | "gold";
   children: React.ReactNode;
+  footer?: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl";
   mobileSheet?: boolean;
 }
@@ -21,6 +22,7 @@ export function CustomModal({
   subtitle,
   icon,
   children,
+  footer,
   maxWidth = "md",
   mobileSheet = true,
 }: CustomModalProps) {
@@ -144,6 +146,7 @@ export function CustomModal({
         <div className="p-5 sm:p-6 overflow-y-auto luma-form-scope">
           {children}
         </div>
+        {footer && <div className="shrink-0 px-5 pb-4 pt-2 sm:px-6 sm:pb-5">{footer}</div>}
       </div>
     </div>,
     document.querySelector(".luma-app") || document.body

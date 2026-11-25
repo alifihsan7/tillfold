@@ -378,6 +378,7 @@ export default function FinanceDashboard() {
   const dashboardBusyRef = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [isPaycheckModalOpen, setIsPaycheckModalOpen] = useState(false);
   const [isPayrollSettingsOpen, setIsPayrollSettingsOpen] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
@@ -690,7 +691,7 @@ export default function FinanceDashboard() {
     setSelectedPeriod({ id: "cycle_current", type: "cycle", label: "Siklus aktif", start: "", end: "", is_current: true });
     observeTransactions([], "guest");
     setOverviewError(null); setLoading(false); setToastMessage(null);
-    setIsModalOpen(false); setIsGlobalSearchOpen(false); setIsPaycheckModalOpen(false); setIsPayrollSettingsOpen(false);
+    setIsModalOpen(false); setIsGlobalSearchOpen(false); setGlobalSearchQuery(""); setIsPaycheckModalOpen(false); setIsPayrollSettingsOpen(false);
     setIsSubModalOpen(false); setIsTransferModalOpen(false); setWalletTransferSource(undefined); setWalletReconcileId(undefined);
     setIsAddAccountModalOpen(false); setAccountToEdit(null); setSubToDelete(null); setSubToEdit(null);
     setTxToDelete(null); setTxToEdit(null); setDeleteTxError(""); setDeleteLoading(false);
@@ -1634,10 +1635,21 @@ export default function FinanceDashboard() {
             {/* Slim utility toolbar: guest badge + consolidated utilities menu */}
             <div className="luma-toolbar flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
-              {currentUser && <button type="button" className="luma-action-secondary inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-3"
-                aria-label="Cari di Tillfold" title="Cari (Ctrl+K atau ⌘K)" onClick={() => { setIsUtilitiesMenuOpen(false); setIsGlobalSearchOpen(true); }}>
-                <Search className="h-4 w-4" aria-hidden="true" /><span className="hidden sm:inline">Cari</span>
-              </button>}
+              {currentUser && <form role="search" aria-label="Pencarian Tillfold"
+                className="fold-search-form inline-flex min-w-11 items-center rounded-full lg:w-[clamp(10rem,22vw,18rem)]"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setIsUtilitiesMenuOpen(false);
+                  setIsGlobalSearchOpen(true);
+                }}>
+                <input type="search" aria-label="Cari di Tillfold" placeholder="Cari di Tillfold" autoComplete="off" maxLength={120}
+                  value={globalSearchQuery} onChange={(event) => setGlobalSearchQuery(event.target.value)}
+                  className="hidden w-full min-w-0 flex-1 ps-3.5 pe-1 text-sm text-luma-ivory placeholder:text-luma-smoke lg:block" />
+                <button type="submit" aria-label="Buka pencarian" aria-haspopup="dialog" title="Cari (Ctrl+K atau ⌘K)"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center">
+                  <Search className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </form>}
               {/* Utilities menu */}
               <div className="relative" ref={utilitiesMenuRef}>
                 <button
@@ -2798,7 +2810,7 @@ export default function FinanceDashboard() {
         </form>
       </CustomModal>
 
-      <GlobalSearchModal isOpen={isGlobalSearchOpen && !!currentUser} onClose={() => setIsGlobalSearchOpen(false)} onChoose={chooseSearchResult} />
+      <GlobalSearchModal isOpen={isGlobalSearchOpen && !!currentUser} query={globalSearchQuery} onQueryChange={setGlobalSearchQuery} onClose={() => setIsGlobalSearchOpen(false)} onChoose={chooseSearchResult} />
       <RecordPaycheckModal
         isOpen={isPaycheckModalOpen && !activePaycheckSession && !isPayrollSettingsOpen}
         accounts={activeAccounts.map(({ name }) => name)}

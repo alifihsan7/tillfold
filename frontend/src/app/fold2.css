@@ -184,6 +184,13 @@
 .tillfold-fold .luma-period-controls { flex: 0 1 auto; min-width: 0; }
 .tillfold-fold .luma-period-selector { flex: 0 1 auto; max-width: min(100%, 18rem); }
 .fold-topbar-title { display: none; font-size: 22px; font-weight: 700; letter-spacing: -.025em; }
+.fold-search-form { background-color: var(--fold-control); }
+.fold-search-form input { min-height: 36px; background: transparent; }
+.fold-search-form:focus-within { background-color: var(--fold-field-active); }
+.fold-search-form button:hover { background-color: var(--fold-control-hover); }
+@media (min-width: 768px) and (pointer: fine) {
+  .fold-search-form button { width: 36px; height: 36px; }
+}
 .tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button {
   background: var(--fold-ink);
   color: var(--fold-on-ink);
@@ -232,7 +239,6 @@
   font-weight: 700;
 }
 .fold-period-check { display: grid; place-items: center; }
-.fold-period-option:focus-visible { outline-offset: -2px; }
 .luma-period-popup .fold-period-history {
   display: inline-flex;
   align-items: center;
@@ -268,12 +274,12 @@
   background: var(--fold-control-pressed);
   filter: none;
 }
-.light .tillfold-fold :is(.fold-theme-toggle, .luma-sidebar-toggle, .luma-mobile-header button[aria-label="Buka menu navigasi"]) {
+.tillfold-fold :is(.fold-theme-toggle, .luma-sidebar-toggle, .luma-mobile-header button[aria-label="Buka menu navigasi"]) {
   background: var(--fold-control);
   color: var(--fold-overview-text);
   border-color: transparent;
 }
-.light .tillfold-fold :is(.fold-theme-toggle, .luma-sidebar-toggle, .luma-mobile-header button[aria-label="Buka menu navigasi"]):hover {
+.tillfold-fold :is(.fold-theme-toggle, .luma-sidebar-toggle, .luma-mobile-header button[aria-label="Buka menu navigasi"]):hover {
   background: var(--fold-control-hover);
 }
 .light .tillfold-fold :is(.luma-sidebar nav, .luma-bottom-nav) button[aria-current] {
@@ -311,7 +317,7 @@
   .fold-category-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
   .fold-category-filters .ui-segment { flex-direction: column; gap: 2px; min-width: 0; padding: 8px 4px; font-size: 12px; }
 }
-.tillfold-fold :is(.luma-inset, .luma-readout) { border-color: transparent; }
+.tillfold-fold :is(.luma-inset, .luma-readout, .luma-glass, .luma-matte, .luma-hero, .ui-segmented, .ai7-tab-group) { border-color: transparent; }
 .fold-goal-progress { background: var(--fold-edge); }
 .tillfold-fold .ui-selected { border-radius: 999px; }
 .light .tillfold-fold .ui-selected {
@@ -423,7 +429,7 @@
   background-color: var(--fold-surface);
 }
 .tillfold-fold .fold-calendar-card .transaction-calendar-grid > button[data-expense-level="0"]:hover { background-color: var(--fold-panel); }
-.tillfold-fold .transaction-calendar-grid button[aria-pressed="true"] { box-shadow: inset 0 -2px var(--fold-focus); }
+.tillfold-fold .fold-calendar-card .transaction-calendar-grid button[aria-pressed="true"] { background-color: var(--fold-selected); }
 .transaction-calendar-grid [aria-current="date"] .fold-calendar-day-number {
   background: var(--fold-primary);
   color: var(--fold-primary-text);
@@ -431,13 +437,12 @@
   min-width: 1.5em;
   text-align: center;
 }
-.tillfold-fold .fold-calendar-card .transaction-calendar-grid button:focus-visible { outline-offset: -2px; }
 
 /* Form fields use fill to distinguish resting, focused and invalid states. */
 .tillfold-fold :is(.luma-main, .luma-dialog-panel) :is(
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"]),
   textarea, select
-):not(:where(.ai7-currency-field *, .tillfold-date-field *)),
+):not(:where(.ai7-currency-field *, .tillfold-date-field *, .fold-search-form input)),
 .tillfold-fold :is(.ai7-select-trigger, .ai7-currency-field, .tillfold-date-field) {
   background-color: var(--fold-field-fill, var(--fold-field));
   border: 1px solid transparent;
@@ -458,36 +463,25 @@
 .tillfold-fold .tillfold-date-field:has(input[aria-invalid="true"]) {
   --fold-field-fill: var(--fold-field-invalid);
 }
-.tillfold-fold :is(.luma-main, .luma-dialog-panel, .tillfold-date-field) :is(
-  input:not(:where([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"])),
-  textarea, select
-):focus-visible,
-.tillfold-fold .ai7-select-trigger:focus-visible,
-.tillfold-fold .ai7-currency-field:focus-within { outline: none; }
-.tillfold-fold .tillfold-date-field button:focus-visible {
-  background-color: var(--fold-field);
-  outline: none;
+/* Keyboard focus uses a filled surface across the app and floating controls. */
+:is(.luma-app.tillfold-fold, .ai7-select-menu, .tillfold-calendar) :focus-visible { outline: none; }
+:is(.luma-app.tillfold-fold, .ai7-select-menu, .tillfold-calendar)
+  :is(button, a[href], summary, input[type="checkbox"], input[type="radio"], [tabindex="0"]:not(input, textarea, select)):not(.ai7-select-trigger, .tillfold-date-field button, .fold-search-form button):focus-visible {
+  background-color: var(--fold-field-active) !important;
+  color: var(--fold-overview-text) !important;
 }
+.tillfold-fold :is(.tillfold-date-field, .fold-search-form) button:focus-visible { background-color: var(--fold-field); }
+.tillfold-fold .luma-topbar-inner .luma-period-selector > button:focus-visible svg { color: currentColor; }
+.tillfold-fold input[type="checkbox"] { background-color: var(--fold-control); border-color: transparent; }
+.tillfold-fold input[type="checkbox"]:checked { background-color: var(--fold-primary); color: var(--fold-primary-text); }
+.tillfold-fold input[type="checkbox"]:checked:focus-visible { color: var(--fold-overview-text); }
+.tillfold-fold .ai7-currency-field:focus-within { outline: none; }
 
 @media (forced-colors: active) {
-  .tillfold-fold :is(.luma-main, .luma-dialog-panel, .tillfold-date-field) :is(input, textarea, select):focus-visible,
-  .tillfold-fold .ai7-select-trigger:focus-visible,
-  .tillfold-fold .tillfold-date-field button:focus-visible {
+  :is(.luma-app.tillfold-fold, .ai7-select-menu, .tillfold-calendar) :focus-visible {
     outline: 2px solid Highlight;
     outline-offset: -2px;
   }
-}
-.tillfold-fold input[type="checkbox"] { background-color: var(--fold-field); }
-.tillfold-fold input[type="checkbox"]:checked { background-color: var(--fold-primary); color: var(--fold-primary-text); }
-.tillfold-fold :where(button, a[href], input, select, textarea, summary):focus-visible,
-:is(.ai7-select-menu, .tillfold-calendar) :where(button, input):focus-visible {
-  outline-color: var(--fold-focus);
-}
-.tillfold-fold :is(.luma-period-tabs .ui-segment, .luma-profile-tabs .ui-segment):focus-visible {
-  box-shadow: inset 0 -2px var(--fold-focus);
-}
-.tillfold-fold .luma-topbar .luma-period-selector > button:focus-visible {
-  box-shadow: inset 0 -2px var(--fold-on-ink-muted);
 }
 .ai7-select-menu button[data-selected="true"],
 .tillfold-calendar button[aria-pressed="true"] {
@@ -508,7 +502,7 @@
 .tillfold-fold .luma-toast {
   background: var(--fold-ink);
   color: var(--fold-on-ink);
-  border-color: var(--fold-corner);
+  border-color: transparent;
   border-radius: 24px;
   box-shadow: var(--fold-overlay-shadow);
 }
@@ -777,7 +771,6 @@ html:not(.light) .fold-hero {
 .fold-pocket-button:hover { background: rgb(255 255 255 / .18); }
 .fold-pocket-button > span:nth-of-type(3) { min-width: 0; }
 .fold-pocket-button :is(.fold-pocket-name, .fold-pocket-role) { display: block; }
-.fold-page .fold-pocket-button:focus-visible { outline-offset: -3px; }
 .fold-wallet-list > .fold-pocket:not(:first-child) { margin-top: -20px; }
 .fold-pocket-front {
   position: relative;
@@ -849,7 +842,7 @@ html:not(.light) .fold-hero {
 }
 .fold-choice-rail[data-measured="true"] > .fold-choice-indicator { display: block; }
 /* Keep the selected label's existing contrast, tone and focus ring. */
-.tillfold-fold .fold-choice-rail[data-measured="true"] > button:is([aria-pressed="true"], [aria-selected="true"]) {
+.tillfold-fold .fold-choice-rail[data-measured="true"] > button:is([aria-pressed="true"], [aria-selected="true"]):not(:focus-visible) {
   background: transparent !important;
 }
 .fold-choice-rail[data-tone="expense"] > .fold-choice-indicator { background: rgb(var(--fold-negative-rgb) / .12); }

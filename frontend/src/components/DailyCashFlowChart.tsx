@@ -77,8 +77,7 @@ export function DailyCashFlowChart({ days, start, end, formatRupiah, onOpenTrans
                   return <button key={day.date} ref={(element) => { buttons.current[index] = element; }} type="button"
                     className="fold-report-day" aria-pressed={active} tabIndex={active ? 0 : -1}
                     aria-label={`${granularity === "daily" ? formatShortDate(day.date) : formatDateRange(day.date, day.endDate)}, pemasukan ${formatRupiah(day.income)}, pengeluaran ${formatRupiah(day.expense)}`}
-                    onClick={() => setSelectedDate(day.date)} onFocus={() => setSelectedDate(day.date)}
-                    onPointerEnter={(event) => { if (event.pointerType === "mouse") setSelectedDate(day.date); }}
+                    onClick={() => setSelectedDate(day.date)}
                     onKeyDown={(event) => {
                       const next = event.key === "ArrowRight" ? Math.min(daily.length - 1, index + 1) : event.key === "ArrowLeft" ? Math.max(0, index - 1) : event.key === "Home" ? 0 : event.key === "End" ? daily.length - 1 : -1;
                       if (next >= 0) { event.preventDefault(); buttons.current[next]?.focus(); }

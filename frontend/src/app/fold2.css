@@ -507,6 +507,19 @@
   line-height: 1.1;
 }
 .tillfold-fold .fold-sheet-panel .ai7-currency-prefix { background: transparent; color: var(--luma-smoke); }
+.tillfold-fold .fold-sheet-panel .luma-form-scope .payroll-flow .ai7-currency-field { min-height: 44px; }
+.tillfold-fold .fold-sheet-panel .luma-form-scope .payroll-flow .ai7-currency-field input {
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.tillfold-fold .fold-sheet-panel .payroll-flow .ai7-currency-prefix {
+  padding: 0 12px;
+  font-size: 14px;
+}
 :is(.tillfold-fold .luma-period-popup, .tillfold-fold [role="menu"], .ai7-select-menu, .tillfold-calendar) {
   background-color: var(--fold-surface);
   border-color: var(--fold-edge);
@@ -960,9 +973,5 @@ html:not(.light) .fold-hero {
   .payroll-flow .payroll-form > :not([hidden]) ~ :not([hidden]),
   .payroll-flow .payroll-form fieldset > :not([hidden]) ~ :not([hidden]) {
     margin-block-start: var(--payroll-field-gap);
-  }
-
-  .tillfold-fold .fold-sheet-panel .luma-form-scope .payroll-flow .ai7-currency-field {
-    min-height: 48px;
   }
 }

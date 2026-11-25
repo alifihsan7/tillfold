@@ -500,15 +500,9 @@
 @media (min-width: 768px) {
   .luma-dialog-form { max-width: 48rem; }
 }
-.tillfold-fold .fold-sheet-panel .luma-form-scope .ai7-currency-field { min-height: 58px; }
-.tillfold-fold .fold-sheet-panel .luma-form-scope .ai7-currency-field input {
+.tillfold-fold .luma-dialog-panel .luma-form-scope .ai7-currency-field { min-height: 44px; }
+.tillfold-fold .luma-dialog-panel .luma-form-scope .ai7-currency-field input {
   height: auto;
-  font-size: 25px;
-  line-height: 1.1;
-}
-.tillfold-fold .fold-sheet-panel .ai7-currency-prefix { background: transparent; color: var(--luma-smoke); }
-.tillfold-fold .fold-sheet-panel .luma-form-scope .payroll-flow .ai7-currency-field { min-height: 44px; }
-.tillfold-fold .fold-sheet-panel .luma-form-scope .payroll-flow .ai7-currency-field input {
   min-width: 0;
   min-height: 0;
   padding: 8px 12px;
@@ -516,7 +510,9 @@
   font-weight: 500;
   line-height: 1.25;
 }
-.tillfold-fold .fold-sheet-panel .payroll-flow .ai7-currency-prefix {
+.tillfold-fold .luma-dialog-panel .ai7-currency-prefix {
+  background: transparent;
+  color: var(--luma-smoke);
   padding: 0 12px;
   font-size: 14px;
 }

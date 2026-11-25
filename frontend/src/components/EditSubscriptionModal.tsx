@@ -2,7 +2,8 @@
 
 import { DateField } from "@/components/ui/DateField";
 import React, { useState, useEffect } from "react";
-import { Calendar, Clock, Plus } from "@/components/icons";
+import { Plus } from "@/components/icons";
+import { BillingScheduleControl } from "./BillingScheduleControl";
 import { CustomModal } from "./ui/CustomModal";
 import { CurrencyInput } from "./ui/CurrencyInput";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";
@@ -136,7 +137,7 @@ export function EditSubscriptionModal({
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2 md:items-start">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:items-start">
           <div>
             <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Nama tagihan / layanan
@@ -150,55 +151,14 @@ export function EditSubscriptionModal({
             />
           </div>
 
-          {/* Pilihan Mode Siklus */}
-          <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-2">
-              Metode perhitungan jatuh tempo
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 md:grid-cols-3 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
-              <button
-                type="button"
-                aria-pressed={billingType === "fixed_day"}
-                onClick={() => setBillingType("fixed_day")}
-                className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  billingType === "fixed_day"
-                    ? "ui-selected"
-                    : "text-luma-smoke hover:text-white"
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span>Tanggal rutin</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={billingType === "exact_date"}
-                onClick={() => {
-                  setBillingType("exact_date");
-                  if (!exactDueDate) {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 30);
-                    setExactDueDate(d.toISOString().split("T")[0]);
-                  }
-                }}
-                className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  billingType === "exact_date"
-                    ? "ui-selected"
-                    : "text-luma-smoke hover:text-white"
-                }`}
-              >
-                <Calendar className="w-3.5 h-3.5 shrink-0" />
-                <span>Tanggal tertentu</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={billingType === "yearly"}
-                onClick={() => setBillingType("yearly")}
-                className={`col-span-2 rounded-xl md:col-span-1 px-2 py-2 text-xs font-semibold ${billingType === "yearly" ? "ui-selected" : "text-luma-smoke hover:text-luma-ivory"}`}
-              >
-                Tahunan
-              </button>
-            </div>
-          </div>
+          <BillingScheduleControl value={billingType} onChange={(value) => {
+            setBillingType(value);
+            if (value === "exact_date" && !exactDueDate) {
+              const d = new Date();
+              d.setDate(d.getDate() + 30);
+              setExactDueDate(d.toISOString().split("T")[0]);
+            }
+          }} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

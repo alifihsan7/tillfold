@@ -848,7 +848,11 @@ textarea:focus-visible,
 .ui-badge--transfer { color: var(--luma-transfer); background: rgb(var(--luma-transfer-rgb) / .1); }
 
 /* Dialog-level additions to the shared controls. */
-.ui-segmented--fill { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
+.ui-segmented { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+.ui-segmented > .ui-segment { flex-shrink: 0; }
+.ui-segmented--fill { display: flex; width: 100%; }
+.ui-segmented--fill > .ui-segment { flex-grow: 1; }
+.luma-app .billing-schedule-control > .ui-segment { padding-inline: 8px; font-size: 13px; }
 .ui-segment[data-tone="expense"][aria-pressed="true"] { color: var(--luma-coral); background: rgb(var(--luma-coral-rgb) / .15); }
 .ui-segment[data-tone="income"][aria-pressed="true"] { color: var(--luma-sage); background: rgb(var(--luma-sage-rgb) / .15); }
 /* Same silver selected state for hand-built pickers (icons, colors, steps). */

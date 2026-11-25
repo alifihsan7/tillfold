@@ -44,12 +44,12 @@ export function StrataAllocationBar({ distribution, periodLabel, formatRupiah, l
               <span key={account} style={{ flex: amount / total, backgroundColor: allocationColor(index) }} />
             ))}
           </div>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul tabIndex={0} aria-label="Rincian pembagian gaji" className="flex min-w-0 gap-3 overflow-x-auto">
             {distribution.map(({ account, amount, pending }, index) => (
-              <li key={account} className="allocation-legend-item min-w-0">
+              <li key={account} className="allocation-legend-item min-w-max flex-1 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <span className="size-2.5 rounded-sm shrink-0" aria-hidden="true" style={{ background: allocationColor(index) }} />
-                  <strong className="break-words font-medium">{account}</strong>
+                  <strong className="font-medium">{account}</strong>
                 </div>
                 <p className="text-sm tabular-nums">{formatRupiah(amount)} · {percentage.format(amount / total)}</p>
                 {pending > 0 && <p className="text-xs text-luma-smoke">Belum ditransfer: {formatRupiah(pending)}</p>}

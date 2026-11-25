@@ -24,8 +24,6 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   ArrowRight,
-  Clock,
-  Calendar,
   Menu,
   X,
   FileSpreadsheet,
@@ -40,6 +38,7 @@ import {
   PanelLeftOpen,
   WalletCards,
 } from "@/components/icons";
+import { BillingScheduleControl } from "@/components/BillingScheduleControl";
 import { StrataAllocationBar } from "@/components/StrataAllocation";
 import { LumaOverview } from "@/components/LumaOverview";
 import { LumaAccountStrip } from "@/components/LumaAccountStrip";
@@ -2673,7 +2672,7 @@ export default function FinanceDashboard() {
         maxWidth="form"
       >
         <form onSubmit={handleCreateSubscription} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 md:items-start">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:items-start">
             <div>
               <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
                 Nama tagihan / layanan
@@ -2688,55 +2687,14 @@ export default function FinanceDashboard() {
               />
             </div>
 
-            {/* Switch Mode Siklus */}
-            <div>
-              <label className="block text-xs font-semibold text-luma-smoke mb-2">
-                Metode perhitungan jatuh tempo
-              </label>
-              <div className="grid grid-cols-2 gap-2 p-1 md:grid-cols-3 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
-                <button
-                  type="button"
-                  aria-pressed={subBillingType === "fixed_day"}
-                  onClick={() => setSubBillingType("fixed_day")}
-                  className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    subBillingType === "fixed_day"
-                      ? "ui-selected"
-                      : "text-luma-smoke hover:text-white"
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                  <span>Tanggal rutin</span>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={subBillingType === "exact_date"}
-                  onClick={() => {
-                    setSubBillingType("exact_date");
-                    if (!subExactDueDate) {
-                      const d = new Date(`${todayWib()}T12:00:00Z`);
-                      d.setUTCDate(d.getUTCDate() + 30);
-                      setSubExactDueDate(d.toISOString().split("T")[0]);
-                    }
-                  }}
-                  className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    subBillingType === "exact_date"
-                      ? "ui-selected"
-                      : "text-luma-smoke hover:text-white"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5 shrink-0" />
-                  <span>Tanggal tertentu</span>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={subBillingType === "yearly"}
-                  onClick={() => setSubBillingType("yearly")}
-                  className={`col-span-2 rounded-xl md:col-span-1 px-2 py-2 text-xs font-semibold ${subBillingType === "yearly" ? "ui-selected" : "text-luma-smoke hover:text-luma-ivory"}`}
-                >
-                  Tahunan
-                </button>
-              </div>
-            </div>
+            <BillingScheduleControl value={subBillingType} onChange={(value) => {
+              setSubBillingType(value);
+              if (value === "exact_date" && !subExactDueDate) {
+                const d = new Date(`${todayWib()}T12:00:00Z`);
+                d.setUTCDate(d.getUTCDate() + 30);
+                setSubExactDueDate(d.toISOString().split("T")[0]);
+              }
+            }} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

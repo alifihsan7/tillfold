@@ -49,7 +49,8 @@ const empty = renderToStaticMarkup(React.createElement(DailyCashFlowChart, { ...
 assert.match(empty, /Belum ada arus kas/);
 assert.doesNotMatch(empty, /fold-report-day-detail|fold-report-y-axis/);
 const populated = renderToStaticMarkup(React.createElement(DailyCashFlowChart, { ...props, days }));
-assert.match(populated, /Rincian hari terpilih/);
+assert.match(populated, /aria-label="Detail arus kas"/);
+assert.match(populated, /Bar per hari/);
 assert.match(populated, /−Rp 250.000/);
 assert.match(populated, /aria-pressed="true" tabindex="0" aria-label="26 Nov/);
 assert.match(populated, /Transfer dan saldo awal di luar arus kas/);

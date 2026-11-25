@@ -61,23 +61,8 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
   const [destinationAmounts, setDestinationAmounts] = useState<Record<number, string>>({});
   const [account, setAccount] = useState("");
   const [date, setDate] = useState(today);
-  const [step, setStep] = useState<"details" | "cycle" | "allocation">("details");
   const [allocationPage, setAllocationPage] = useState(0);
   const formId = useId();
-  const stepTitle = useRef<HTMLParagraphElement>(null);
-  const movedStep = useRef(false);
-
-  function goTo(next: typeof step) {
-    movedStep.current = true;
-    setStep(next);
-  }
-
-  useEffect(() => {
-    if (movedStep.current) {
-      stepTitle.current?.focus({ preventScroll: true });
-      movedStep.current = false;
-    }
-  }, [step]);
   const [startCycle, setStartCycle] = useState(true);
   const [cycleType, setCycleType] = useState("");
   const [cycleDays, setCycleDays] = useState("14");
@@ -101,7 +86,6 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
     setEditingAllocation(false);
     setShowAllocations(false);
     setError("");
-    setStep("details");
     setAllocationPage(0);
     void authFetch("/api/v1/paycheck/config?include_buckets=false").then(async (response) => {
       if (!response.ok || !active) return;
@@ -131,7 +115,6 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
   const invalidDraft = !Number.isSafeInteger(draftTotal) || draftRemaining < 0;
   const invalidCycle = startCycle && cycleType === "custom" &&
     (!Number.isInteger(Number(cycleDays)) || Number(cycleDays) < 1 || Number(cycleDays) > 365);
-  const destinationPage = pageOf(destinations, allocationPage);
   const receiptRows = receipt?.allocations.filter((item) => item.amount > 0) ?? [];
   const displayedReceipt = pageOf(receiptRows, allocationPage);
   const draftPage = pageOf(allocationDraft, allocationPage, 1);
@@ -208,15 +191,12 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
             <button type="button" onClick={() => setShowAllocations(true)} className="luma-action-primary">Bagi gaji</button>
           )}
         </>
-      ) : <>
-        {step === "allocation" && <button type="button" disabled={pending}
-          className="luma-action-secondary" onClick={() => goTo("details")}>Kembali</button>}
+      ) : (
         <button type="submit" form={formId} className="luma-action-primary"
-          disabled={pending || (step === "cycle" ? invalidCycle : !selectedAccount || invalidNominal ||
-            (step === "allocation" && (invalidDraft || invalidCycle)))}>
-          {step === "cycle" ? "Pakai siklus ini" : step === "details" ? "Lanjut" : pending ? "Menyimpan…" : "Simpan gaji"}
+          disabled={pending || !selectedAccount || invalidNominal || invalidDraft || invalidCycle}>
+          {pending ? "Menyimpan…" : "Simpan gaji"}
         </button>
-      </>}
+      )}
     </div>
   );
 
@@ -299,16 +279,9 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
             )}
           </>
         ) : (
-          <form id={formId} className={step === "details" ? "payroll-form space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0" : "payroll-form space-y-3"}
-            onSubmit={(event) => {
+          <form id={formId} className="grid gap-4 md:grid-cols-2 md:items-start" onSubmit={(event) => {
             event.preventDefault();
-            if (step === "cycle") {
-              if (!invalidCycle) goTo("details");
-              return;
-            }
-            if (!selectedAccount || invalidNominal) return;
-            if (step === "details") { goTo("allocation"); return; }
-            if (invalidDraft || invalidCycle) return;
+            if (!selectedAccount || invalidNominal || invalidDraft || invalidCycle) return;
             requestKey.current ||= crypto.randomUUID();
             void submit("/api/v1/paycheck/record", {
               request_key: requestKey.current, total_amount: nominal, account: selectedAccount, date, allocations,
@@ -317,52 +290,45 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
               save_cycle_default: startCycle && !!cycleType && saveDefault,
             });
           }}>
-            <p ref={stepTitle} tabIndex={-1} className="md:col-span-2 text-xs text-luma-smoke">
-              {step === "details" ? "1 dari 2 · Detail gaji" : step === "cycle" ? "Durasi dan awal siklus" : "2 dari 2 · Pembagian gaji"}
-            </p>
-            {step === "details" && <>
-            <div>
-              <label htmlFor="paycheck-amount" className="mb-1 block">Nominal gaji</label>
-              <CurrencyInput id="paycheck-amount" value={amount} onChange={setAmount} placeholder="0" required />
-            </div>
-            <div className="space-y-1 text-sm">
-              <span>Rekening penerima</span>
-              <CustomSelect label="Rekening penerima" value={selectedAccount} onChange={(value) => { setAccount(value); setDestinationAmounts((rows) => {
-                  const next = { ...rows };
-                  const source = allocationAccounts.find((item) => item.name === value);
-                  if (source) delete next[source.id];
-                  return next;
-                }); }}
-                disabled={!accounts.length} placeholder="Tambahkan rekening dulu"
-                options={accounts.map((name) => ({ value: name, label: name }))} />
-            </div>
-            <div className="space-y-1 text-sm">
-              <label htmlFor="paycheck-received-date">Tanggal gaji masuk</label>
-              <DateField id="paycheck-received-date" value={date} required max={today()} onChange={setDate} />
-            </div>
-            <div className="flex items-center justify-between gap-2 md:self-end">
-              <span className="text-sm text-luma-smoke">{cycleSummary}</span>
-              <button type="button" className="luma-text-action px-1" onClick={() => goTo("cycle")}>Ubah siklus</button>
-            </div>
-            <div className="md:col-span-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
-              {canResume && <button type="button" className="luma-text-action" disabled={pending} onClick={() => {
-                setAllocationPage(0);
-                setReceipt(previousReceipt);
-                setShowAllocations(true);
-              }}>Lanjut bagi gaji</button>}
-              <button type="button" className="luma-text-action" disabled={pending} onClick={onConfigure}>Atur rekening gaji</button>
-            </div>
-            </>}
-            {step === "cycle" && <>
-                  <label className="flex min-h-11 items-center gap-2 text-sm">
+            <fieldset disabled={pending} className="min-w-0 space-y-2">
+              <legend className="pb-2 text-sm font-semibold">Detail gaji</legend>
+              <div>
+                <label htmlFor="paycheck-amount" className="mb-1 block">Nominal gaji</label>
+                <CurrencyInput id="paycheck-amount" value={amount} onChange={setAmount} placeholder="0" required />
+              </div>
+              <div className="space-y-1 text-sm">
+                <span>Rekening penerima</span>
+                <CustomSelect label="Rekening penerima" value={selectedAccount}
+                  onChange={(value) => {
+                    setAccount(value);
+                    const source = allocationAccounts.find((item) => item.name === value);
+                    if (source) setDestinationAmounts((rows) => {
+                      const next = { ...rows };
+                      delete next[source.id];
+                      return next;
+                    });
+                  }}
+                  disabled={pending || !accounts.length} placeholder="Tambahkan rekening dulu"
+                  options={accounts.map((name) => ({ value: name, label: name }))} />
+              </div>
+              <div className="space-y-1 text-sm">
+                <label htmlFor="paycheck-received-date">Tanggal gaji masuk</label>
+                <DateField id="paycheck-received-date" value={date} required max={today()} onChange={setDate} />
+              </div>
+              <details className="text-sm">
+                <summary className="min-h-11 cursor-pointer py-2.5">
+                  Ubah siklus <span className="text-luma-smoke">· {invalidCycle ? "Jumlah hari belum valid" : cycleSummary}</span>
+                </summary>
+                <div className="space-y-2">
+                  <label className="flex min-h-11 items-center gap-2">
                     <input type="checkbox" checked={startCycle} onChange={(event) => setStartCycle(event.target.checked)} />
                     Mulai siklus baru
                   </label>
                   {startCycle && (
                     <>
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-1">
                         <span>Durasi siklus</span>
-                        <CustomSelect label="Durasi siklus" value={cycleType}
+                        <CustomSelect label="Durasi siklus" value={cycleType} disabled={pending}
                           onChange={(value) => { setCycleType(value); setSaveDefault(false); }}
                           options={[
                             { value: "", label: `Default · ${cycleLabel}` },
@@ -372,40 +338,50 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
                             { value: "custom", label: "Kustom" },
                           ]} />
                       </div>
-                      {cycleType === "custom" && <label className="block space-y-1 text-sm">
+                      {cycleType === "custom" && <label className="block space-y-1">
                         <span>Jumlah hari</span>
                         <input className="w-full" type="number" required min={1} max={365} value={cycleDays}
                           onChange={(event) => setCycleDays(event.target.value)} />
                       </label>}
-                      {cycleType && <label className="flex min-h-11 items-center gap-2 text-sm">
+                      {cycleType && <label className="flex min-h-11 items-center gap-2">
                         <input type="checkbox" checked={saveDefault} onChange={(event) => setSaveDefault(event.target.checked)} />
                         Jadikan default
                       </label>}
                     </>
                   )}
-            </>}
-            {step === "allocation" && (
-              <fieldset className="space-y-3">
-                <legend className="text-sm font-semibold">{rupiah.format(nominal)} · {selectedAccount}</legend>
-                <p className="text-xs text-luma-smoke">Isi nominal tujuan. Kosongkan rekening yang tidak dapat bagian.</p>
-                <div className="grid gap-2 md:grid-cols-2 md:gap-3">
-                  {destinationPage.rows.map(({ id, name }) => {
+                </div>
+              </details>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                {canResume && <button type="button" className="luma-text-action" disabled={pending} onClick={() => {
+                  setAllocationPage(0);
+                  setReceipt(previousReceipt);
+                  setShowAllocations(true);
+                }}>Konfirmasi transfer gaji sebelumnya</button>}
+                <button type="button" className="luma-text-action" disabled={pending} onClick={onConfigure}>Atur rekening gaji</button>
+              </div>
+            </fieldset>
+            {destinations.length > 0 && (
+              <fieldset disabled={pending} className="min-w-0 space-y-2">
+                <legend className="pb-2 text-sm font-semibold">Pembagian gaji <span className="font-normal text-luma-smoke">· Opsional</span></legend>
+                <div className="grid gap-2">
+                  {destinations.map(({ id, name }) => {
                     const allocation = allocations.find((item) => item.account_id === id)?.amount ?? 0;
                     return (
-                      <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-end gap-2" key={id}>
-                        <label className="block space-y-1 text-sm" htmlFor={`paycheck-destination-${id}`}>
-                          <span>{name}</span>
-                          <CurrencyInput id={`paycheck-destination-${id}`} value={destinationAmounts[id] ?? ""}
-                            onChange={(value) => setDestinationAmounts((rows) => ({ ...rows, [id]: value }))} placeholder="0" />
-                        </label>
-                        <output className="pb-2 text-right text-sm text-luma-smoke tabular-nums">{share(allocation, nominal)}</output>
+                      <div className="min-w-0 space-y-1" key={id}>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <label htmlFor={`paycheck-destination-${id}`} className="min-w-0 break-words">{name}</label>
+                          <output className="shrink-0 text-xs text-luma-smoke tabular-nums">{share(allocation, nominal)}</output>
+                        </div>
+                        <CurrencyInput id={`paycheck-destination-${id}`} value={destinationAmounts[id] ?? ""} placeholder="0"
+                          onChange={(value) => {
+                            setAccount((current) => current || selectedAccount);
+                            setDestinationAmounts((rows) => ({ ...rows, [id]: value }));
+                          }} />
                       </div>
                     );
                   })}
                 </div>
-
-                <AllocationPager {...destinationPage} onChange={setAllocationPage} disabled={pending} />
-                <p className={`text-sm ${invalidDraft ? "text-luma-coral" : "text-luma-smoke"}`} aria-live="polite">
+                <p className={`break-words text-sm ${invalidDraft ? "text-luma-coral" : "text-luma-smoke"}`} aria-live="polite">
                   {draftRemaining < 0 ? `Melebihi gaji ${rupiah.format(-draftRemaining)}` :
                     `Tetap di ${selectedAccount}: ${rupiah.format(draftRemaining)} · ${share(draftRemaining, nominal)}`}
                 </p>

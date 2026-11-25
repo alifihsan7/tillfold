@@ -53,7 +53,7 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
       subtitle={`Rekening induk: ${accountName}`}
       icon={<Wallet className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
-      maxWidth="md"
+      maxWidth="form"
     >
       <form onSubmit={submit} className="space-y-4">
         {error && (

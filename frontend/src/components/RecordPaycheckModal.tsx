@@ -222,7 +222,7 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
 
   return (
     <CustomModal isOpen={isOpen} onClose={() => { if (!pending) onClose(); }}
-      title={showAllocations ? "Bagi gaji" : receipt ? "Gaji tercatat" : "Catat gaji"} maxWidth="md" footer={footer}>
+      title={showAllocations ? "Bagi gaji" : receipt ? "Gaji tercatat" : "Catat gaji"} maxWidth="form" footer={footer}>
       <div className="payroll-flow space-y-3">
         {error && <p role="alert" className="text-sm text-luma-coral">{error}</p>}
         {receipt ? (

@@ -291,7 +291,7 @@ export function UserProfileModal({
       title="Profil & pengaturan akun"
       subtitle={"Kelola akun @" + user.username}
       icon={<User className="h-4 w-4" />}
-      maxWidth="lg"
+      maxWidth="form"
     >
       <div className="space-y-5 text-sm text-luma-ivory">
         <div className="flex flex-wrap items-center justify-between gap-3">

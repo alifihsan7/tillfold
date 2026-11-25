@@ -81,7 +81,7 @@ export function BillPaymentModal({ subscriptionId, onClose, onChanged }: {
     }
   };
 
-  return <CustomModal isOpen onClose={close} title="Catat pembayaran" subtitle={data?.name || "Memuat tagihan"} maxWidth="md">
+  return <CustomModal isOpen onClose={close} title="Catat pembayaran" subtitle={data?.name || "Memuat tagihan"} maxWidth="form">
     <div className="space-y-4 text-sm text-luma-ivory">
       {!data && !error && <p role="status">Memuat tagihan…</p>}
       {data && <>

@@ -57,7 +57,7 @@ export function LinkPocketBillModal({ pockets, initialPocketId, accountName, for
     }
   };
 
-  return <CustomModal isOpen onClose={() => { if (!saving) onClose(); }} title="Hubungkan tagihan" subtitle={`Rekening induk: ${accountName}`} icon={<Link2 className="w-5 h-5 text-luma-smoke" />} maxWidth="lg">
+  return <CustomModal isOpen onClose={() => { if (!saving) onClose(); }} title="Hubungkan tagihan" subtitle={`Rekening induk: ${accountName}`} icon={<Link2 className="w-5 h-5 text-luma-smoke" />} maxWidth="form">
     <form onSubmit={submit} className="space-y-4">
       {error && <p role="alert" className="text-sm text-luma-coral">{error}</p>}
       <fieldset disabled={saving}>

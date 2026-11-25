@@ -496,7 +496,10 @@
 
 .tillfold-fold .luma-dialog-backdrop { background: var(--fold-scrim); }
 .tillfold-fold .luma-dialog-panel { border-color: transparent; border-radius: 32px; background: var(--fold-surface); box-shadow: var(--fold-overlay-shadow); }
-.tillfold-fold .fold-sheet-panel:has(.luma-form-scope) { max-width: 560px; }
+.tillfold-fold .fold-sheet-panel:not(.luma-dialog-form) { max-width: 560px; }
+@media (min-width: 768px) {
+  .luma-dialog-form { max-width: 48rem; }
+}
 .tillfold-fold .fold-sheet-panel .luma-form-scope .ai7-currency-field { min-height: 58px; }
 .tillfold-fold .fold-sheet-panel .luma-form-scope .ai7-currency-field input {
   height: auto;

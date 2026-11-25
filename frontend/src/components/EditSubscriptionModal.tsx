@@ -127,7 +127,7 @@ export function EditSubscriptionModal({
       title="Ubah tagihan"
       subtitle={`Perbarui parameter siklus dan tanggal jatuh tempo untuk ${subscription.name}`}
       accent="amber"
-      maxWidth="md"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
         {error && (

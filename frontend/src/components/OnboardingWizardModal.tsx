@@ -294,7 +294,7 @@ export function OnboardingWizardModal({ isOpen, user, onClose, onComplete }: Onb
       subtitle={`Selamat datang ${user?.full_name || ""}! Mari konfigurasi fondasi keuangan Anda`}
       icon={<Layers className="w-4 h-4 text-luma-smoke" />}
       accent="amber"
-      maxWidth="lg"
+      maxWidth="form"
     >
       <div className="space-y-5">
         {/* Step Progress Indicators */}

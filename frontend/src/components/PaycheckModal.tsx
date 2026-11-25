@@ -445,7 +445,7 @@ export default function PaycheckModal({
       }
       icon={<ArrowDownLeft className="w-5 h-5 text-mintRise" />}
       accent="mint"
-      maxWidth="xl"
+      maxWidth="form"
     >
       {errorMsg && (
         <div className="p-3.5 mb-4 rounded-2xl bg-coralFall/10 border border-coralFall/20 flex items-center gap-2.5 text-xs text-coralFall">

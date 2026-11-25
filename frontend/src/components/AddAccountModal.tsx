@@ -86,6 +86,7 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
   return (
     <CustomModal
       isOpen={isOpen}
+      maxWidth="form"
       onClose={onClose}
       title="Tambah rekening"
       subtitle="Tambahkan rekening bank, dompet digital, atau rekening investasi."

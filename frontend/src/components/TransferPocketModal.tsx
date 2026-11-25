@@ -177,7 +177,7 @@ export function TransferPocketModal({
       }
       icon={<ArrowLeftRight className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
-      maxWidth="md"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (

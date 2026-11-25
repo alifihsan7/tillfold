@@ -2670,7 +2670,7 @@ export default function FinanceDashboard() {
         subtitle="Pilih akun autodebet dan tanggal jatuh tempo untuk tagihan ini."
         icon={<Bell className="w-5 h-5" />}
         accent="amber"
-        maxWidth="md"
+        maxWidth="form"
       >
         <form onSubmit={handleCreateSubscription} className="space-y-4">
           <div>

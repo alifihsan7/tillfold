@@ -93,6 +93,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
   return (
     <CustomModal
       isOpen={isOpen}
+      maxWidth="form"
       onClose={onClose}
       title="Ubah rekening"
       subtitle={`Perbarui parameter rekening ${account.name}`}

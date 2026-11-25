@@ -105,7 +105,7 @@ export function EditTransactionModal({
       title="Ubah transaksi"
       subtitle={`Ubah data transaksi #${transaction.id}`}
       accent={type === "income" ? "mint" : "coral"}
-      maxWidth="md"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
         {error && (

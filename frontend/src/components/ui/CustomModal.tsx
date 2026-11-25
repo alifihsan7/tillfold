@@ -11,7 +11,7 @@ interface CustomModalProps {
   accent?: "amber" | "cyan" | "mint" | "coral" | "ember" | "sage" | "gold";
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "form";
   mobileSheet?: boolean;
 }
 
@@ -92,6 +92,7 @@ export function CustomModal({
     md: "max-w-lg",
     lg: "max-w-xl",
     xl: "max-w-2xl",
+    form: "luma-dialog-form",
   };
 
   return createPortal(

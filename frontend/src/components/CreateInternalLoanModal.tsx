@@ -246,7 +246,7 @@ export function CreateInternalLoanModal({
       subtitle="Pinjam saldo antar-rekening atau antar-kantong sendiri tanpa mengubah kekayaan bersih."
       icon={<HandCoins className="w-5 h-5 text-luma-smoke" />}
       accent="gold"
-      maxWidth="lg"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Error notification banner */}

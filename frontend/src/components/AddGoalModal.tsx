@@ -147,7 +147,7 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
       subtitle="Target tabungan atau investasi yang dipantau tiap siklus."
       icon={<Target className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
-      maxWidth="lg"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (

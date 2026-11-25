@@ -116,7 +116,7 @@ export function BackupModal({ isOpen, onClose, onRestored }: {
 
   return (
     <CustomModal isOpen={isOpen} onClose={() => { if (!inFlight.current) onClose(); }}
-      title="Cadangkan dan pulihkan" subtitle="Simpan dan pulihkan data keuangan" maxWidth="lg">
+      title="Cadangkan dan pulihkan" subtitle="Simpan dan pulihkan data keuangan" maxWidth="form">
       <div className="space-y-5 text-sm text-luma-ivory">
         <section className="space-y-3">
           <h3 className="font-medium">Backup lengkap</h3>

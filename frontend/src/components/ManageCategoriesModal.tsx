@@ -310,7 +310,7 @@ export function ManageCategoriesModal({
       subtitle="Atur kategori pengeluaran dan pemasukan. Nama kategori yang diubah ikut diperbarui di semua transaksinya."
       icon={<Tag className="w-5 h-5" />}
       accent={activeTab === "expense" ? "coral" : "mint"}
-      maxWidth="lg"
+      maxWidth="form"
     >
       <div className="space-y-5">
         <SegmentedControl<"expense" | "income">

@@ -100,7 +100,7 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions, init
       subtitle="Pindahkan saldo antar-rekening Anda sendiri."
       icon={<ArrowLeftRight className="w-5 h-5" />}
       accent="cyan"
-      maxWidth="md"
+      maxWidth="form"
     >
       {error && (
         <div className="mb-4 p-3 rounded-2xl bg-coralFall/10 border border-coralFall/30 text-coralFall text-xs font-sans">

@@ -77,7 +77,7 @@ export function ReconcileAccountModal({ accountId, onClose, onSuccess }: {
   };
 
   return <CustomModal isOpen onClose={close}
-    title="Cocokkan saldo" subtitle={snapshot?.account || "Memuat rekening"} maxWidth="md">
+    title="Cocokkan saldo" subtitle={snapshot?.account || "Memuat rekening"} maxWidth="form">
     <div className="space-y-4 text-sm text-luma-ivory">
       {saved ? <>
         <p role="status" className="text-mintRise">Penyesuaian tersimpan. Saldo rekening diperbarui.</p>

@@ -99,7 +99,7 @@ export function EditPocketsModal({
       subtitle="Target adalah patokan. Dana yang sudah dialokasikan tetap sama."
       icon={<Landmark className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
-      maxWidth="lg"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (

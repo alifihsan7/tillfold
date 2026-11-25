@@ -528,7 +528,7 @@ export function CategoryGrid({
         subtitle="Buat pos alokasi transaksi baru untuk pengeluaran atau pemasukan."
         icon={<Plus className="w-5 h-5 text-luma-secondary" />}
         accent="amber"
-        maxWidth="md"
+        maxWidth="form"
       >
         <form onSubmit={handleAddCategory} className="space-y-4">
           {/* Tipe Selector: Expense vs Income */}
@@ -621,7 +621,7 @@ export function CategoryGrid({
         subtitle="Perubahan nama otomatis diperbarui ke seluruh riwayat transaksi terkait."
         icon={<Edit2 className="w-5 h-5 text-luma-secondary" />}
         accent="amber"
-        maxWidth="md"
+        maxWidth="form"
       >
         <form onSubmit={handleUpdateCategory} className="space-y-4">
           {/* Tipe Selector */}

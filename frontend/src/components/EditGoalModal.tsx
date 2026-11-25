@@ -182,7 +182,7 @@ export function EditGoalModal({ goal, isOpen, onClose, onSuccess, availableAccou
       subtitle="Ubah nominal, rekening tertaut, atau tanggal target."
       icon={<Target className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
-      maxWidth="lg"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (

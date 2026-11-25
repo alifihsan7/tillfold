@@ -98,7 +98,7 @@ export function SettleInternalLoanModal({
       subtitle={`Pelunasan kewajiban dari ${loan.target_account_name} kembali ke ${loan.source_account_name}.`}
       icon={<Coins className="w-5 h-5 text-luma-sage" />}
       accent="sage"
-      maxWidth="md"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Error banner */}

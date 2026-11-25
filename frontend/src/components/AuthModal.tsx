@@ -262,7 +262,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
       subtitle="Masuk untuk membuka catatan keuangan Anda."
       icon={<Shield className="w-4 h-4 text-luma-smoke" />}
       accent="amber"
-      maxWidth="md"
+      maxWidth="form"
     >
       <div className="space-y-4">
         {notice && <p role="status" className="luma-inset p-3 rounded-xl text-sm text-luma-secondary">{notice}</p>}

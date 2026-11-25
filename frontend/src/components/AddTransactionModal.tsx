@@ -178,7 +178,7 @@ export function AddTransactionModal({
       subtitle="Saldo rekening dan kantong ikut diperbarui."
       icon={<Plus className="w-5 h-5" />}
       accent={formType === "expense" ? "coral" : "mint"}
-      maxWidth="md"
+      maxWidth="form"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <SegmentedControl fill label="Jenis transaksi" value={formType} onChange={setFormType} options={[

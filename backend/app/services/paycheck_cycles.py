@@ -1,5 +1,8 @@
 from datetime import date, timedelta
 import json
+from collections import Counter
+
+from app.models.account import Account
 
 from sqlalchemy.orm import Session
 
@@ -74,3 +77,48 @@ def legacy_cycle_covers(db: Session, user_id: int):
         LegacyPaycheckCycle.start_date <= Transaction.date,
         LegacyPaycheckCycle.end_date >= Transaction.date,
     ).exists()
+
+
+
+def salary_distribution(db: Session, user_id: int, start: date, end: date) -> list[dict]:
+    """Use saved receipt amounts and legacy payroll income, scoped to the period."""
+    receipts = db.query(PaycheckReceipt, Transaction).join(
+        Transaction, Transaction.id == PaycheckReceipt.transaction_id,
+    ).filter(
+        PaycheckReceipt.user_id == user_id,
+        Transaction.user_id == user_id,
+        Transaction.type == "income",
+        Transaction.category != "Saldo Awal",
+        Transaction.date.between(start, end),
+    ).order_by(Transaction.date, Transaction.id).all()
+    account_names = dict(db.query(Account.id, Account.name).filter(Account.user_id == user_id).all())
+    amounts, pending = Counter(), Counter()
+    for receipt, tx in receipts:
+        allocations = receipt_allocations(db, receipt)
+        allocated = 0
+        for row in allocations:
+            name = account_names.get(row["account_id"], "Rekening tidak tersedia")
+            amount = max(0, row["amount"])
+            amounts[name] += amount
+            if not row["transfer_id"]:
+                pending[name] += amount
+            allocated += amount
+        amounts[tx.account] += max(0, tx.amount - allocated)
+
+    # Legacy payroll put the distributed amounts directly in the income ledger.
+    historical = db.query(Transaction.account, Transaction.amount).filter(
+        Transaction.user_id == user_id,
+        Transaction.type == "income",
+        Transaction.category.in_(["Gajian", "Uang Saku Ortu"]),
+        Transaction.date.between(start, end),
+        ~db.query(PaycheckReceipt.transaction_id).filter(
+            PaycheckReceipt.transaction_id == Transaction.id,
+        ).exists(),
+    ).all()
+    for account, amount in historical:
+        amounts[account] += amount
+
+    return [
+        {"account": account, "amount": amount, "pending": pending[account]}
+        for account, amount in amounts.most_common() if amount > 0
+    ]

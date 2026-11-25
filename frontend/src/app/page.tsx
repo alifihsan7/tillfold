@@ -110,6 +110,7 @@ interface MonthlySummary {
   categories: { category: string; total: number; count: number; percentage: number }[];
   income_categories?: { category: string; total: number; count: number; percentage: number }[];
   daily_trend?: { date: string; income: number; expense: number }[];
+  salary_distribution?: { account: string; amount: number; pending: number }[];
   safe_to_spend?: {
     cycle_start: string;
     cycle_end: string;
@@ -495,8 +496,6 @@ export default function FinanceDashboard() {
   const [subToEdit, setSubToEdit] = useState<SubscriptionItem | null>(null);
 
   // Paycheck configuration & buckets state
-  const [paycheckConfig, setPaycheckConfig] = useState<{ id?: number; total_salary?: number; pocket_account?: string; source_account?: string; cycle_days?: number; cycle_type?: string } | null>(null);
-  const [paycheckBuckets, setPaycheckBuckets] = useState<{ account: string; percentage: number; purpose?: string }[]>([]);
 
   const billAccountOptions = useMemo(() => {
     const options = activeAccounts.map(({ name }) => ({ value: name, label: name }));
@@ -688,7 +687,7 @@ export default function FinanceDashboard() {
     setTransactions([]); setCategories([]); setCustomAccounts([]); setGoals([]);
     setSummary({ month: "", income: 0, expense: 0, net: 0, savings_rate: 0, total_balance: 0, accounts: [], categories: [] });
     setSubsData({ total_monthly_commitment: 0, active_count: 0, upcoming_this_week: 0, items: [] });
-    setPaycheckConfig(null); setPaycheckBuckets([]); setActivePaycheckSession(null); setPocketsData(null);
+    setActivePaycheckSession(null); setPocketsData(null);
     setSelectedPeriod({ id: "cycle_current", type: "cycle", label: "Siklus aktif", start: "", end: "", is_current: true });
     observeTransactions([], "guest");
     setOverviewError(null); setLoading(false); setToastMessage(null);
@@ -931,8 +930,6 @@ export default function FinanceDashboard() {
       if (Array.isArray(data.accounts)) setCustomAccounts(data.accounts);
       if (Array.isArray(data.goals)) setGoals(data.goals);
       setActivePaycheckSession(data.session?.id && data.session.status === "in_progress" ? data.session : null);
-      if (data.paycheck?.config) setPaycheckConfig(data.paycheck.config);
-      if (Array.isArray(data.paycheck?.buckets)) setPaycheckBuckets(data.paycheck.buckets);
       if (Array.isArray(data.categories)) setCategories(data.categories);
 
       // Refresh account pockets after any ledger-affecting fetch.
@@ -1041,24 +1038,7 @@ export default function FinanceDashboard() {
   }, [customAccounts]);
 
   // Dynamic strata allocation buckets mapped from paycheck config or custom accounts
-  const dynamicStrataBuckets = useMemo(() => {
-    if (paycheckBuckets && paycheckBuckets.length > 0) {
-      return paycheckBuckets.map((b) => ({
-        account: b.account,
-        percentage: Number(b.percentage) || 0,
-        purpose: b.purpose || "Pos Rekening",
-      }));
-    }
-    if (customAccounts.length > 0) {
-      const defaultPct = Math.round((100 / customAccounts.length) * 10) / 10;
-      return customAccounts.map((a, i) => ({
-        account: a.name,
-        percentage: i === customAccounts.length - 1 ? Math.max(0, 100 - defaultPct * (customAccounts.length - 1)) : defaultPct,
-        purpose: a.tag || a.type || "Alokasi Rekening",
-      }));
-    }
-    return [];
-  }, [paycheckBuckets, customAccounts]);
+
 
   const pocketAccountName = (summary.safe_to_spend?.pocket_account || "").toLowerCase();
   const overviewAccount = activeAccounts.find((account) => account.name.toLowerCase() === pocketAccountName)
@@ -2006,10 +1986,8 @@ export default function FinanceDashboard() {
               )}
             </section>
             <StrataAllocationBar
-              cycleType={summary.safe_to_spend?.cycle_type}
-              cycleDays={summary.safe_to_spend?.cycle_days}
-              totalSalary={paycheckConfig?.total_salary || 0}
-              buckets={dynamicStrataBuckets}
+              distribution={summary.salary_distribution ?? []}
+              periodLabel={summary.period_label}
               formatRupiah={formatRupiah}
               loading={loading}
             />

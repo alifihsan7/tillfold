@@ -35,11 +35,11 @@ export async function loadDashboardData(fetcher: (url: string) => Promise<Respon
       return null;
     }
   };
-  const [transactions, summary, subscriptions, accounts, goals, session, paycheck, categories] = await Promise.all([
+  const [transactions, summary, subscriptions, accounts, goals, session, categories] = await Promise.all([
     required(`/api/v1/transactions?${txParams}`, "transaksi"),
     required(`/api/v1/analytics/summary?${summaryParams}`, "ringkasan"),
     optional("/api/v1/subscriptions"), optional("/api/v1/accounts"), optional("/api/v1/goals"),
-    optional("/api/v1/paycheck/session/active"), optional("/api/v1/paycheck/config"), optional("/api/v1/categories"),
+    optional("/api/v1/paycheck/session/active"), optional("/api/v1/categories"),
   ]);
-  return { transactions, summary, subscriptions, accounts, goals, session, paycheck, categories };
+  return { transactions, summary, subscriptions, accounts, goals, session, categories };
 }

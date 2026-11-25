@@ -12,7 +12,7 @@ from app.db.session import get_db
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
 from app.models.paycheck import PaycheckConfig, PaycheckBucket
-from app.services.paycheck_cycles import legacy_cycle_covers, recorded_cycle_ends
+from app.services.paycheck_cycles import legacy_cycle_covers, recorded_cycle_ends, salary_distribution
 from app.models.account import Account
 from app.models.user import User
 from app.api.deps import get_current_user
@@ -494,6 +494,7 @@ def get_monthly_summary(
         daily_trend=daily_trend,
         safe_to_spend=safe_info,
         total_active_loan_amount=total_active_loan_amt,
+        salary_distribution=salary_distribution(db, current_user.id, start_date, min(end_date, today_wib)),
     )
 
 @router.post("/sync-sheets")

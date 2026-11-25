@@ -141,7 +141,14 @@ def compute_safe_to_spend_metrics(
     pocket_transfers_out = int(pocket_transfers_out or 0)
 
     base_pocket_budget = max(0, int(pocket_income) - pocket_transfers_out)
-    if int(pocket_entries or 0) == 0 and cfg:
+    if int(pocket_entries or 0) == 0 and cfg and not db.query(PaycheckReceipt.transaction_id).join(
+        Transaction, Transaction.id == PaycheckReceipt.transaction_id,
+    ).filter(
+        PaycheckReceipt.user_id == user_id,
+        Transaction.user_id == user_id,
+        Transaction.type == "income",
+        Transaction.date.between(cycle_start, cycle_end),
+    ).first():
         p_bucket = db.query(PaycheckBucket).filter(
             PaycheckBucket.config_id == cfg.id,
             PaycheckBucket.account == pocket_account

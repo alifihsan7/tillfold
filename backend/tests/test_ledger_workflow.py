@@ -614,3 +614,50 @@ def test_history_filters_transfer_adjustment_and_owner(ledger):
     assert transfer["income"] == transfer["expense"] == transfer["net"] == 0
     assert client.get("/transactions/history", params={"type": "adjustment"}).json()["total"] == 1
     assert client.get("/transactions/history", params={"account": "Peer"}).json()["total"] == 0
+
+
+def test_manual_salary_distribution_uses_receipts_not_configured_percentages(ledger):
+    client, db = ledger
+    today = datetime.now(analytics.WIB).date()
+    cfg = paycheck.get_or_seed_config(db, 1)
+    cfg.pocket_account = "Cash"
+    db.add(PaycheckBucket(config_id=cfg.id, account="Cash", percentage=40, fixed_amount=900, purpose="Legacy"))
+    db.commit()
+    ids = {row["name"]: row["id"] for row in client.get("/accounts").json()}
+    payload = {
+        "request_key": "ebb022c9-ed52-47fb-93c1-f49c59032e62",
+        "total_amount": 1000, "date": str(today), "account": "Bank", "cycle_type": "biweekly",
+        "allocations": [{"account_id": ids["Cash"], "amount": 315}],
+    }
+    for invalid in [
+        [{"account_id": ids["Cash"], "amount": 1001}],
+        [{"account_id": ids["Bank"], "amount": 5}],
+        [{"account_id": ids["Cash"], "amount": 10}, {"account_id": ids["Cash"], "amount": 20}],
+    ]:
+        assert client.post("/paycheck/record", json={**payload, "allocations": invalid}).status_code == 400
+        assert db.query(Transaction).count() == 0
+    response = client.post("/paycheck/record", json=payload)
+    assert response.status_code == 201, response.text
+    receipt = response.json()
+
+    def report(start=today, end=today + timedelta(days=13)):
+        res = client.get("/analytics/summary", params={"period_type": "cycle", "start": str(start), "end": str(end)})
+        assert res.status_code == 200, res.text
+        return res.json()
+
+    assert report()["salary_distribution"] == [
+        {"account": "Bank", "amount": 685, "pending": 0},
+        {"account": "Cash", "amount": 315, "pending": 315},
+    ]
+    assert report()["safe_to_spend"]["pocket_budget"] == 0
+    assert client.post(f"/paycheck/record/{receipt['id']}/transfer/{ids['Cash']}").status_code == 200
+    assert report()["salary_distribution"][1] == {"account": "Cash", "amount": 315, "pending": 0}
+    assert report()["safe_to_spend"]["pocket_budget"] == 315
+    assert report(today - timedelta(days=14), today - timedelta(days=1))["salary_distribution"] == []
+
+    empty = client.post("/paycheck/record", json={
+        **payload, "request_key": "c5b0be56-539c-46f3-8150-9eb9bc97f653", "allocations": [],
+    })
+    assert empty.status_code == 201
+    assert empty.json()["allocations"] == []
+    assert report()["salary_distribution"][0] == {"account": "Bank", "amount": 1685, "pending": 0}

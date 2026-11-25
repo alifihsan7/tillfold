@@ -85,8 +85,15 @@ def record_paycheck(
     if payload.date > datetime.now(WIB).date():
         raise HTTPException(400, "Tanggal gaji masuk belum terjadi.")
 
+    if payload.allocations is not None:
+        destinations = {account.id: account.name for account in accounts.values() if account.name != payload.account}
+        ids = {item.account_id for item in payload.allocations}
+        if len(ids) != len(payload.allocations) or not ids.issubset(destinations):
+            raise HTTPException(400, "Pilih rekening tujuan aktif yang berbeda, masing-masing sekali.")
+        if sum(item.amount for item in payload.allocations) > payload.total_amount:
+            raise HTTPException(400, "Total pembagian melebihi nominal gaji.")
+
     cfg = get_or_seed_config(db, user_id)
-    buckets = get_or_seed_buckets(db, cfg.id)
     end_date = None
     if payload.start_cycle:
         days = {"weekly": 7, "biweekly": 14, "monthly": 30, "custom": payload.cycle_days}.get(
@@ -109,14 +116,15 @@ def record_paycheck(
             cfg.cycle_type = payload.cycle_type
             cfg.cycle_days = days
 
-    amounts = compute_bucket_amounts(payload.total_amount, buckets)
-    remaining = payload.total_amount
-    allocations = []
-    for account, amount in amounts.items():
-        if account != payload.account and account in accounts and amount > 0 and remaining > 0:
-            amount = min(amount, remaining)
-            allocations.append({"account_id": accounts[account].id, "amount": amount, "transfer_id": None})
-            remaining -= amount
+    if payload.allocations is not None:
+        allocations = [{**item.model_dump(), "transfer_id": None} for item in payload.allocations if item.amount > 0]
+    else:
+        # Older clients omitted allocations and relied on saved percentages.
+        amounts = compute_bucket_amounts(payload.total_amount, get_or_seed_buckets(db, cfg.id))
+        allocations = [
+            {"account_id": accounts[account].id, "amount": amount, "transfer_id": None}
+            for account, amount in amounts.items() if account != payload.account and account in accounts and amount > 0
+        ]
 
     from app.api.v1.endpoints.transactions import require_owned_accounts
     require_owned_accounts(db, user_id, payload.account)
@@ -485,11 +493,12 @@ def format_session_out(session: PaycheckSession) -> PaycheckSessionOut:
 
 @router.get("/config")
 def get_paycheck_config_and_buckets(
+    include_buckets: bool = True,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     cfg = get_or_seed_config(db, current_user.id)
-    buckets = get_or_seed_buckets(db, cfg.id)
+    buckets = get_or_seed_buckets(db, cfg.id) if include_buckets else []
     active_names = {row.name for row in db.query(Account).filter(Account.user_id == current_user.id, Account.is_archived == False)}
     from app.services.internal_loans import get_internal_loans_summary
     loans_summary = get_internal_loans_summary(db, current_user.id)

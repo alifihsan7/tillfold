@@ -135,7 +135,7 @@ export default function PaycheckModal({
       }
 
       // If no active session, fetch config & buckets
-      const cfgRes = await authFetch("/api/v1/paycheck/config");
+      const cfgRes = await authFetch(settingsOnly ? "/api/v1/paycheck/config?include_buckets=false" : "/api/v1/paycheck/config");
       if (cfgRes.ok) {
         const data = await cfgRes.json();
         setConfig(data.config);
@@ -369,6 +369,12 @@ export default function PaycheckModal({
       const savedCfg = await cfgRes.json();
       setConfig(savedCfg);
 
+      if (settingsOnly) {
+        onSuccess?.();
+        onClose();
+        return;
+      }
+
       // 2. Update buckets
       const bRes = await authFetch("/api/v1/paycheck/buckets", {
         method: "PUT",
@@ -391,8 +397,7 @@ export default function PaycheckModal({
 
       // Re-init amounts
       initAmounts(numTotal, savedBuckets);
-      if (settingsOnly) onClose();
-      else setView("setup");
+      setView("setup");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyimpan perubahan alur";
       setErrorMsg(msg);
@@ -422,7 +427,7 @@ export default function PaycheckModal({
         view === "checklist"
           ? "Checklist transfer gajian"
           : view === "customize"
-          ? "Atur alokasi gaji"
+          ? settingsOnly ? "Atur rekening gaji" : "Atur alokasi gaji"
           : config.cycle_type === "monthly" || config.cycle_days === 30
           ? "Alokasi gajian bulanan"
           : config.cycle_type === "weekly" || config.cycle_days === 7
@@ -435,7 +440,7 @@ export default function PaycheckModal({
         view === "checklist"
           ? "Centang setiap transfer yang sudah dilakukan."
           : view === "customize"
-          ? "Pilih rekening penerima dan atur pembagiannya."
+          ? (settingsOnly ? "Pilih rekening penerima gaji dan rekening belanja harian." : "Pilih rekening penerima dan atur pembagiannya.")
           : "Atur siklus dan cek pembagian gaji."
       }
       icon={<ArrowDownLeft className="w-5 h-5 text-mintRise" />}
@@ -891,6 +896,7 @@ export default function PaycheckModal({
             </label>
           </fieldset>
 
+          {!settingsOnly && <>
           {/* Buckets Editor */}
           <div className="p-5 rounded-3xl luma-inset space-y-3 shadow-sm">
             <div className="flex justify-between items-center pb-2 border-b border-luma-smokeline">
@@ -1038,6 +1044,8 @@ export default function PaycheckModal({
             )}
           </fieldset>
 
+          </>}
+
           <div className="pt-3 flex justify-end gap-3 border-t border-luma-smokeline">
             <button
               type="button"
@@ -1052,7 +1060,7 @@ export default function PaycheckModal({
               disabled={loading}
               className="luma-action-primary"
             >
-              {loading ? "Menyiapkan..." : "Simpan alokasi"}
+              {loading ? "Menyiapkan..." : settingsOnly ? "Simpan rekening" : "Simpan alokasi"}
             </button>
           </div>
         </div>

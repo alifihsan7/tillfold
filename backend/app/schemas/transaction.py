@@ -76,6 +76,12 @@ class SafeToSpendInfo(BaseModel):
     ideal_pace_today: int
     burn_chart: List[CycleBurnDay]
 
+class SalaryDistributionItem(BaseModel):
+    account: str
+    amount: int
+    pending: int = 0
+
+
 class MonthlySummary(BaseModel):
     period_type: str = "cycle"  # cycle | week | month | custom
     period_label: str = ""
@@ -97,6 +103,7 @@ class MonthlySummary(BaseModel):
     daily_trend: List[DailyTrendItem]
     safe_to_spend: Optional[SafeToSpendInfo] = None
     total_active_loan_amount: Optional[int] = 0
+    salary_distribution: List[SalaryDistributionItem] = Field(default_factory=list)
 
 class PaycheckRequest(BaseModel):
     total_amount: int = Field(1500000, gt=0, le=9_000_000_000_000_000, description="Nominal alokasi gajian wajib > 0 dan <= 9.000.000.000.000.000")

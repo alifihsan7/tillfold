@@ -1,159 +1,63 @@
-import React from "react";
 import { Skeleton } from "./ui/Skeleton";
 
-export interface BucketAllocationItem {
+interface DistributionItem {
   account: string;
-  percentage: number;
-  purpose?: string;
+  amount: number;
+  pending: number;
 }
 
 interface StrataAllocationBarProps {
-  cycleType?: string;
-  cycleDays?: number;
-  totalSalary?: number;
-  buckets?: BucketAllocationItem[];
-  formatRupiah?: (val: number) => string;
+  distribution: DistributionItem[];
+  periodLabel?: string;
+  formatRupiah: (amount: number) => string;
   loading?: boolean;
 }
 
-const ALLOCATION_COLORS = Array.from({ length: 8 }, (_, index) => `var(--allocation-${index + 1})`);
+const percentage = new Intl.NumberFormat("id-ID", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
 
-const DEFAULT_BUCKETS: BucketAllocationItem[] = [
-  { account: "Rekening Utama", percentage: 50.0, purpose: "Belanja & operasional" },
-  { account: "Tabungan", percentage: 30.0, purpose: "Simpanan & cadangan" },
-  { account: "Investasi", percentage: 20.0, purpose: "Pertumbuhan aset" },
-];
+function allocationColor(index: number) {
+  return `var(--allocation-${index % 8 + 1})`;
+}
 
-export function StrataAllocationBar({
-  cycleType = "biweekly",
-  cycleDays = 14,
-  totalSalary,
-  buckets = DEFAULT_BUCKETS,
-  formatRupiah = (n: number) => `Rp ${n.toLocaleString("id-ID")}`,
-  loading,
-}: StrataAllocationBarProps) {
-  if (loading) {
-    return (
-      <section aria-label="Distribusi alokasi anggaran" className="luma-glass p-6 sm:p-7 space-y-5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div>
-            <Skeleton className="w-48 h-5 rounded-md" />
-            <Skeleton className="w-72 h-3.5 rounded-md mt-1.5" />
-          </div>
-          <Skeleton className="w-36 h-6 rounded-full" />
-        </div>
-        <Skeleton className="w-full h-9 rounded-full" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="p-3.5 rounded-2xl luma-inset space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Skeleton className="w-3.5 h-3.5 rounded-full" />
-                <Skeleton className="w-16 h-3 rounded-md" />
-              </div>
-              <Skeleton className="w-20 h-4 rounded-md" />
-              <Skeleton className="w-12 h-3 rounded-md" />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  // Determine standard baseline salary based on cycle duration if explicitly passed
-  const effectiveSalary = totalSalary && totalSalary > 0 ? totalSalary : 0;
-
-  // Determine friendly formula badge
-  const formulaLabel = cycleDays === 30 || cycleType === "monthly" || cycleType === "monthly_date"
-    ? `Formula bulanan (${cycleDays} hari)`
-    : cycleDays === 7 || cycleType === "weekly"
-    ? "Formula mingguan (7 hari)"
-    : cycleDays === 14 || cycleType === "biweekly"
-    ? "Formula 2 mingguan (14 hari)"
-    : `Formula anggaran (${cycleDays} hari)`;
-
-  const activeBuckets = buckets && buckets.length > 0 ? buckets : DEFAULT_BUCKETS;
+export function StrataAllocationBar({ distribution, periodLabel, formatRupiah, loading }: StrataAllocationBarProps) {
+  const total = distribution.reduce((sum, item) => sum + item.amount, 0);
+  const pending = distribution.reduce((sum, item) => sum + item.pending, 0);
 
   return (
-    <section aria-label="Distribusi alokasi anggaran" className="allocation-panel luma-glass p-6 sm:p-7 space-y-5">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div>
-          <h2 className="ai7-type-section text-luma-ivory tracking-tight">
-            Distribusi alokasi anggaran
-          </h2>
-          <p className="text-xs sm:text-sm text-luma-smoke mt-0.5 tabular-nums">
-            {effectiveSalary > 0
-              ? `Alokasi anggaran ${formatRupiah(effectiveSalary)} / ${cycleDays} hari dipecah ke ${activeBuckets.length} pos rekening`
-              : `Proporsi alokasi dipecah ke ${activeBuckets.length} pos rekening sesuai rasio alur gajian`}
+    <section aria-labelledby="salary-distribution-title" aria-busy={loading} className="allocation-panel luma-glass p-5 sm:p-7 space-y-4">
+      <header className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="salary-distribution-title" className="ai7-type-section">Pembagian gaji</h2>
+        {periodLabel && <span className="text-xs text-luma-smoke">{periodLabel}</span>}
+      </header>
+      {loading ? <Skeleton className="h-20 w-full" /> : total === 0 ? (
+        <p className="text-sm text-luma-smoke">Belum ada gaji tercatat untuk periode ini. Isi pembagian saat mencatat gaji.</p>
+      ) : (
+        <>
+          <p className="text-sm text-luma-smoke">
+            Total {formatRupiah(total)}{pending > 0 ? ` · ${formatRupiah(pending)} belum dicatat sebagai transfer` : ""}
           </p>
-        </div>
-        <span className="ui-badge ui-badge--neutral shrink-0 self-start sm:self-center">
-          {formulaLabel}
-        </span>
-      </div>
-
-      <div
-        className="fold-allocation-bar flex gap-0.5 min-h-[44px] rounded-xl overflow-hidden p-1 bg-luma-charcoal border border-luma-smokeline"
-        role="img"
-        aria-label={`Proporsi alokasi: ${activeBuckets.map((b) => `${b.account} ${b.percentage.toFixed(1)} persen`).join(", ")}`}
-      >
-        {activeBuckets.map((b, idx) => {
-          const seg = ALLOCATION_COLORS[idx % ALLOCATION_COLORS.length];
-          const isFirst = idx === 0;
-          const isLast = idx === activeBuckets.length - 1;
-          const showText = b.percentage >= 4;
-
-          return (
-            <div
-              key={b.account}
-              style={{ flex: b.percentage, backgroundColor: seg }}
-              className={`${isFirst ? "rounded-l-md" : ""} ${isLast ? "rounded-r-md" : ""} min-w-0 overflow-hidden flex items-center justify-center`}
-              title={`${b.account}: ${b.percentage.toFixed(1)}%`}
-            >
-              {showText ? (
-                <span className="allocation-bar-label text-xs leading-none select-none font-semibold font-sans px-1 whitespace-nowrap">
-                  {Number(b.percentage.toFixed(1))}%
-                </span>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3 pt-1">
-        {activeBuckets.map((b, idx) => {
-          const seg = ALLOCATION_COLORS[idx % ALLOCATION_COLORS.length];
-          const allocatedAmt = Math.round((b.percentage / 100) * effectiveSalary);
-          const shortPurpose = b.purpose
-            ? b.purpose.split("(")[0].trim()
-            : "Alokasi pos";
-
-          return (
-            <div
-              key={b.account}
-              style={{ "--allocation-color": seg } as React.CSSProperties}
-              className="allocation-legend-item rounded-2xl border p-3.5 min-w-0"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span
-                  aria-hidden="true"
-                  className="w-3 h-3 rounded-[3px] shrink-0"
-                  style={{ backgroundColor: seg }}
-                />
-                <span className="text-luma-ivory font-semibold text-xs sm:text-sm break-words leading-snug">
-                  {b.account}
-                </span>
-              </div>
-              <div className="text-luma-smoke font-sans text-xs sm:text-xs mt-1.5 tabular-nums break-words leading-relaxed">
-                {b.percentage.toFixed(1)}%
-                {effectiveSalary > 0 ? ` · ${formatRupiah(allocatedAmt)}` : ""}
-              </div>
-              <div className="text-luma-smoke text-xs mt-0.5 break-words leading-snug">
-                {shortPurpose}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          <div className="fold-allocation-bar flex overflow-hidden gap-0.5" aria-hidden="true">
+            {distribution.map(({ account, amount }, index) => (
+              <span key={account} style={{ flex: amount / total, backgroundColor: allocationColor(index) }} />
+            ))}
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {distribution.map(({ account, amount, pending }, index) => (
+              <li key={account} className="allocation-legend-item min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-sm shrink-0" aria-hidden="true" style={{ background: allocationColor(index) }} />
+                  <strong className="break-words font-medium">{account}</strong>
+                </div>
+                <p className="text-sm tabular-nums">{formatRupiah(amount)} · {percentage.format(amount / total)}</p>
+                {pending > 0 && <p className="text-xs text-luma-smoke">Belum ditransfer: {formatRupiah(pending)}</p>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

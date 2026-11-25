@@ -39,7 +39,7 @@ export function ConfirmModal({
           {message}
         </p>
 
-        <div className="flex justify-end gap-3 pt-3 border-t border-luma-smokeline">
+        <div className="ui-dialog-actions">
           <button
             type="button"
             onClick={onClose}

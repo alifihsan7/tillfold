@@ -113,7 +113,7 @@ export function SettleInternalLoanModal({
         )}
 
         {/* Loan Overview Card */}
-        <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
+        <div className="rounded-2xl luma-inset p-4 space-y-3.5">
           <div className="flex items-center justify-between gap-2 border-b border-luma-smokeline/60 pb-3">
             <span className="text-sm font-semibold text-luma-ivory">
               Pinjaman #{loan.id}
@@ -124,7 +124,7 @@ export function SettleInternalLoanModal({
           </div>
 
           {/* Direction Flow */}
-          <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-black/20 border border-luma-smokeline/40">
+          <div className="flex items-center justify-between gap-2 p-3 rounded-xl luma-readout">
             {/* Debtor (Yang membayar balik) */}
             <div className="min-w-0">
               <span className="text-xs uppercase font-semibold text-luma-smoke tracking-wider block">
@@ -162,7 +162,7 @@ export function SettleInternalLoanModal({
 
           {/* Balance comparison */}
           <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="p-2.5 rounded-xl bg-white/[0.02] border border-luma-smokeline/40">
+            <div className="p-2.5 rounded-xl luma-readout">
               <span className="text-xs text-luma-smoke block">Pinjaman awal</span>
               <p className="text-xs sm:text-sm font-medium text-luma-smoke mt-0.5 tabular-nums">
                 {formatRupiah(loan.amount)}
@@ -273,7 +273,7 @@ export function SettleInternalLoanModal({
         </div>
 
         {/* Invariant guarantee footnote */}
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-xs text-luma-smoke flex items-center gap-2">
+        <div className="p-3 rounded-xl luma-inset text-xs text-luma-smoke flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-luma-sage shrink-0" />
           <span>
             Dana akan dipindahkan dari {loan.target_account_name} kembali ke {loan.source_account_name} secara atomik.
@@ -281,7 +281,7 @@ export function SettleInternalLoanModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-luma-smokeline">
+        <div className="ui-dialog-actions">
           <button
             type="button"
             onClick={onClose}

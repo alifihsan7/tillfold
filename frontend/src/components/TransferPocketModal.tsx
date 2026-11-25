@@ -296,7 +296,7 @@ export function TransferPocketModal({
 
           {/* Real-time Balance Preview */}
           {numericAmount > 0 && sourcePocket && targetPocket && fromPocketId !== toPocketId && (
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-2">
+            <div className="p-3.5 rounded-2xl luma-inset space-y-2">
               <span className="text-xs text-luma-smoke font-medium block">
                 Saldo setelah dipindah
               </span>
@@ -340,7 +340,7 @@ export function TransferPocketModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-2.5 pt-4 border-t border-luma-smokeline">
+        <div className="ui-dialog-actions">
           <button
             type="button"
             onClick={onClose}

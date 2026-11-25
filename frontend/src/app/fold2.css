@@ -287,7 +287,7 @@
 .fold-heading h1 { font-weight: 750; letter-spacing: -.035em; }
 .fold-content :is(.ai7-type-section, .ai7-type-card) { font-weight: 750; letter-spacing: -.015em; }
 .fold-content .ai7-type-metric { font-weight: 750; letter-spacing: -.035em; }
-.fold-subnav { padding-bottom: 12px; border-bottom: 1px solid var(--fold-edge); }
+.fold-subnav { padding-bottom: 8px; }
 .fold-content :is(.luma-glass, .luma-matte, .ai7-section, .fold-metric-grid > div) {
   background-color: var(--fold-surface);
   border-color: transparent;
@@ -322,7 +322,7 @@
 .fold-content :is(.luma-inset, .luma-readout) { border-radius: 20px; }
 .fold-content :is(.luma-data-state, .luma-guest-banner) {
   background: var(--fold-surface);
-  border: 1px solid var(--fold-edge);
+  border-color: transparent;
   border-radius: 28px;
 }
 .tillfold-fold .fold-content .allocation-legend-item { border-radius: 14px; }
@@ -429,33 +429,34 @@
 }
 .tillfold-fold .fold-calendar-card .transaction-calendar-grid button:focus-visible { outline-offset: -2px; }
 
-/* Form boundaries are drawn on the outer control, including date and currency wrappers. */
+/* A single bottom edge identifies resting fields. Keyboard focus uses a separate visible ring. */
 .tillfold-fold :is(.luma-main, .luma-dialog-panel) :is(
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"]),
   textarea, select
 ):not(:where(.ai7-currency-field *, .tillfold-date-field *, [aria-invalid="true"])),
-.tillfold-fold .ai7-select-trigger:not([aria-invalid="true"]),
+.tillfold-fold .ai7-select-trigger:not(:where([aria-invalid="true"])),
 .tillfold-fold :is(.ai7-currency-field, .tillfold-date-field) {
   background-color: var(--fold-field);
-  border: 1px solid var(--fold-field-edge);
+  border: 1px solid transparent;
   border-radius: 14px;
-  box-shadow: none;
+  box-shadow: inset 0 -1px var(--fold-field-edge);
 }
 .tillfold-fold :is(.ai7-currency-field, .tillfold-date-field) :is(input, input:focus) { background: transparent; }
 .tillfold-fold .ai7-currency-prefix { background: var(--fold-panel); }
-.tillfold-fold :is(.ai7-select-trigger, .ai7-currency-field, .tillfold-date-field):hover:not(:disabled) {
-  border-color: var(--fold-field-hover);
+.tillfold-fold :is(.ai7-select-trigger, .ai7-currency-field, .tillfold-date-field):where(
+  :hover:not(:disabled), :focus-within, [aria-expanded="true"]
+) {
+  box-shadow: inset 0 -1px var(--fold-field-hover);
 }
-.tillfold-fold .luma-dialog-panel :is(input, textarea, select):not([aria-invalid="true"]):focus-visible {
-  outline-color: var(--fold-focus);
-}
-.tillfold-fold :is(.ai7-select-trigger[aria-expanded="true"], .ai7-currency-field:focus-within) {
-  border-color: var(--fold-field-hover);
-}
+.tillfold-fold :is(.ai7-currency-field, .tillfold-date-field) input:focus-visible,
 .tillfold-fold .ai7-currency-field:focus-within { outline: none; }
-.tillfold-fold .ai7-currency-field:has(input:focus-visible) {
+.tillfold-fold :is(.ai7-currency-field, .tillfold-date-field):has(input:focus-visible) {
   outline: 2px solid var(--fold-focus);
   outline-offset: 1px;
+}
+.tillfold-fold :is(input, textarea, select, .ai7-select-trigger)[aria-invalid="true"]:not(.tillfold-date-field input),
+.tillfold-fold .tillfold-date-field:has(input[aria-invalid="true"]) {
+  box-shadow: inset 0 -2px var(--fold-overview-negative);
 }
 .tillfold-fold input[type="checkbox"] { background-color: var(--fold-field); }
 .tillfold-fold input[type="checkbox"]:checked { background-color: var(--fold-primary); color: var(--fold-primary-text); }
@@ -518,7 +519,7 @@
 }
 :is(.tillfold-fold .luma-period-popup, .tillfold-fold [role="menu"], .ai7-select-menu, .tillfold-calendar) {
   background-color: var(--fold-surface);
-  border-color: var(--fold-edge);
+  border-color: transparent;
   border-radius: 20px;
   box-shadow: var(--fold-overlay-shadow);
 }
@@ -943,7 +944,7 @@ html:not(.light) .fold-hero {
   .fold-page :is(.fold-action, .fold-icon-button, .fold-link) { min-height: 44px; }
   .fold-page .fold-icon-button { width: 44px; }
   .fold-budget { padding: 17px 18px; }
-  .fold-flow { padding: 14px 16px; border: 1px solid var(--fold-edge); border-radius: 22px; background: var(--fold-surface); }
+  .fold-flow { padding: 14px 16px; border-radius: 22px; background: var(--fold-surface); }
   .fold-flow dl { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .fold-flow dl > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
   .fold-flow dl > div + div { border-top: 1px solid var(--fold-edge); }

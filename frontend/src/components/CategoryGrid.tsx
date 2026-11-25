@@ -383,7 +383,7 @@ export function CategoryGrid({
           {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 space-y-3"
+              className="ai7-category-card rounded-2xl p-4 sm:p-5 space-y-3"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
@@ -400,7 +400,7 @@ export function CategoryGrid({
           ))}
         </div>
       ) : filteredList.length === 0 ? (
-        <div className="p-8 sm:p-10 text-center bg-obsidian-card/40 rounded-2xl border border-luma-smokeline text-luma-smoke text-xs sm:text-sm space-y-3">
+        <div className="p-8 sm:p-10 text-center luma-inset rounded-2xl text-luma-smoke text-xs sm:text-sm space-y-3">
           <p>Belum ada kategori yang sesuai dengan filter ini.</p>
           <button
             type="button"

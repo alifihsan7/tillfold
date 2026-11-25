@@ -262,7 +262,7 @@ export function CreateInternalLoanModal({
 
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
           {/* Source Account & Pocket Card */}
-          <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
+          <div className="rounded-2xl luma-inset p-4 space-y-3.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold text-luma-ivory">
                 Dari rekening (pemberi pinjaman)
@@ -324,7 +324,7 @@ export function CreateInternalLoanModal({
           </div>
 
           {/* Target Account & Pocket Card */}
-          <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
+          <div className="rounded-2xl luma-inset p-4 space-y-3.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold text-luma-ivory">
                 Ke rekening (peminjam)
@@ -424,7 +424,7 @@ export function CreateInternalLoanModal({
         </div>
 
         {/* Informational invariant disclaimer */}
-        <div className="p-3 rounded-xl bg-white/[0.02] border border-luma-smokeline/50 text-xs text-luma-smoke flex items-center gap-2">
+        <div className="p-3 rounded-xl luma-inset text-xs text-luma-smoke flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-luma-sage shrink-0" />
           <span>
             Dicatat sebagai transfer antar-rekening, jadi total kekayaan Anda tidak berubah.
@@ -432,7 +432,7 @@ export function CreateInternalLoanModal({
         </div>
 
         {/* Modal Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-luma-smokeline">
+        <div className="ui-dialog-actions">
           <button
             type="button"
             onClick={onClose}

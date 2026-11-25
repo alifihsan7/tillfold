@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLatest } from "@/lib/useLatest";
 import { LogIn, UserPlus, Shield, AlertCircle, KeyRound, AtSign, User, Info } from "@/components/icons";
+import { SegmentedControl } from "./ui/controls";
 import { CustomModal } from "./ui/CustomModal";
 import { apiErrorMessage, getAuthToken, setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
 
@@ -266,33 +267,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
     >
       <div className="space-y-4">
         {notice && <p role="status" className="luma-inset p-3 rounded-xl text-sm text-luma-secondary">{notice}</p>}
-        {/* Mode Switcher Tabs */}
-        <div className="flex items-center bg-obsidian-panel p-1 rounded-2xl border border-luma-smokeline">
-          <button
-            type="button"
-            onClick={() => { attemptRef.current += 1; setMode("login"); setError(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
-              mode === "login"
-                ? "ui-selected"
-                : "text-luma-smoke hover:text-white border border-transparent"
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            Masuk
-          </button>
-          <button
-            type="button"
-            onClick={() => { attemptRef.current += 1; setMode("register"); setError(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
-              mode === "register"
-                ? "ui-selected"
-                : "text-luma-smoke hover:text-white border border-transparent"
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            Daftar baru
-          </button>
-        </div>
+        <SegmentedControl fill label="Akun Tillfold" value={mode} options={[
+          { value: "login", label: "Masuk", icon: <LogIn /> },
+          { value: "register", label: "Daftar baru", icon: <UserPlus /> },
+        ]} onChange={(nextMode) => {
+          attemptRef.current += 1;
+          setMode(nextMode);
+          setError(null);
+        }} />
 
         {/* Google Sign-in Section */}
         <div className="space-y-2">
@@ -342,7 +324,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
               </button>
 
               {googleHelpOpen && (
-                <div className="mt-2.5 p-3.5 rounded-2xl bg-obsidian-panel border border-luma-smokeline text-xs text-luma-secondary space-y-2 animate-fadeIn">
+                <div className="mt-2.5 p-3.5 rounded-2xl luma-inset text-xs text-luma-secondary space-y-2 animate-fadeIn">
                   <div className="flex items-center gap-1.5 text-luma-ivory font-medium text-xs">
                     <Info className="w-3.5 h-3.5" />
                     <span>Langkah menghubungkan Google OAuth:</span>

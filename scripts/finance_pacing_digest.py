@@ -34,10 +34,13 @@ API_URL = "http://127.0.0.1:8080/api/v1/analytics/summary"
 
 sys.path.insert(0, os.path.join(BASE_DIR, "backend"))
 try:
-    from app.core.security import create_access_token
-    AUTH_HEADERS = {"Authorization": f"Bearer {create_access_token(1)}"}
+    from app.core.security import create_local_job_token
+    from app.db.session import SessionLocal
+    with SessionLocal() as session:
+        AUTH_HEADERS = {"Authorization": f"Bearer {create_local_job_token(session, 1)}"}
 except Exception:
-    AUTH_HEADERS = {}
+    print("Akun pengingat tidak dapat diautentikasi; pengiriman dibatalkan.", file=sys.stderr)
+    sys.exit(1)
 
 try:
     wib = zoneinfo.ZoneInfo("Asia/Jakarta")

@@ -50,6 +50,7 @@ import { CategoryGrid } from "@/components/CategoryGrid";
 import { AccountPockets } from "@/components/AccountPockets";
 import { InternalLoansWidget } from "@/components/InternalLoansWidget";
 import { Transaction } from "@/components/TransactionTable";
+import { CashFlowRange } from "@/lib/dailyCashFlow";
 import { TransactionLedgerView } from "@/components/TransactionLedgerView";
 import { SubscriptionsView, SubscriptionItem, SubscriptionsData } from "@/components/SubscriptionsView";
 import { GoalsView } from "@/components/GoalsView";
@@ -667,7 +668,12 @@ export default function FinanceDashboard() {
     items: [],
   });
 
+  const [reportFilter, setReportFilter] = useState<CashFlowRange | null>(null);
+  useEffect(() => { if (activeNav !== "Transaksi") setReportFilter(null); }, [activeNav]);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const activeSessionTokenRef = useRef<string | null>(null);
+  const sessionSyncRef = useRef(0);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -678,6 +684,7 @@ export default function FinanceDashboard() {
   const resetFinancialState = useCallback(() => {
     dashboardRequestRef.current += 1;
     dashboardBusyRef.current = false;
+    setReportFilter(null);
     setTransactions([]); setCategories([]); setCustomAccounts([]); setGoals([]);
     setSummary({ month: "", income: 0, expense: 0, net: 0, savings_rate: 0, total_balance: 0, accounts: [], categories: [] });
     setSubsData({ total_monthly_commitment: 0, active_count: 0, upcoming_this_week: 0, items: [] });
@@ -697,6 +704,9 @@ export default function FinanceDashboard() {
   }, [observeTransactions]);
 
   const endSession = useCallback(() => {
+    sessionSyncRef.current += 1;
+    activeSessionTokenRef.current = null;
+    setAuthNotice(null);
     setAuthToken(null); setStoredUser(null); setCurrentUser(null);
     resetFinancialState(); setIsAuthModalOpen(true);
   }, [resetFinancialState]);
@@ -705,6 +715,40 @@ export default function FinanceDashboard() {
     window.addEventListener(SESSION_EXPIRED_EVENT, endSession);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, endSession);
   }, [endSession]);
+
+  const synchronizeSession = useCallback(async () => {
+    const revision = ++sessionSyncRef.current;
+    const token = getAuthToken();
+    activeSessionTokenRef.current = null;
+    setCurrentUser(null);
+    resetFinancialState();
+    setIsAuthModalOpen(false);
+    setAuthNotice(null);
+    if (!token) { setIsAuthModalOpen(true); return; }
+    setLoading(true);
+    try {
+      const response = await authFetch("/api/v1/auth/me");
+      const user = response.ok ? await response.json() : null;
+      if (revision !== sessionSyncRef.current || getAuthToken() !== token) return;
+      if (!user) { endSession(); return; }
+      activeSessionTokenRef.current = token;
+      setCurrentUser(user);
+      setIsOnboardingModalOpen(!user.is_onboarded);
+    } catch {
+      if (revision === sessionSyncRef.current && getAuthToken() === token) endSession();
+    } finally {
+      if (revision === sessionSyncRef.current) setLoading(false);
+    }
+  }, [endSession, resetFinancialState]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.storageArea && event.storageArea !== localStorage) return;
+      if (event.key === null || event.key === "ai7_token" || event.key === "ai7_user") void synchronizeSession();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [synchronizeSession]);
 
   const pocketsCount = (pocketsData?.pockets ?? pocketsData?.items)?.length ?? 0;
 
@@ -741,6 +785,7 @@ export default function FinanceDashboard() {
 
   useEffect(() => {
     const initUser = async () => {
+      const revision = sessionSyncRef.current;
       try {
         // Cek integrasi Telegram Mini App (TWA)
         if (typeof window !== "undefined" && window.Telegram?.WebApp) {
@@ -764,6 +809,8 @@ export default function FinanceDashboard() {
               });
               if (tgRes.ok) {
                 const authData = await tgRes.json();
+                if (revision !== sessionSyncRef.current) return;
+                activeSessionTokenRef.current = authData.access_token;
                 setAuthToken(authData.access_token);
                 setStoredUser(authData.user);
                 setCurrentUser(authData.user);
@@ -790,8 +837,11 @@ export default function FinanceDashboard() {
         }
 
         const res = await authFetch("/api/v1/auth/me");
+        if (revision !== sessionSyncRef.current || getAuthToken() !== token) return;
         if (res.ok) {
           const u = await res.json();
+          if (revision !== sessionSyncRef.current || getAuthToken() !== token) return;
+          activeSessionTokenRef.current = token;
           setCurrentUser(u);
           setStoredUser(u);
           if (!u.is_onboarded) {
@@ -805,12 +855,13 @@ export default function FinanceDashboard() {
           setIsAuthModalOpen(true);
         }
       } catch {
+        if (revision !== sessionSyncRef.current) return;
         setAuthToken(null);
         setStoredUser(null);
         setCurrentUser(null);
         setIsAuthModalOpen(true);
       } finally {
-        setLoading(false);
+        if (revision === sessionSyncRef.current) setLoading(false);
       }
     };
     initUser();
@@ -822,6 +873,9 @@ export default function FinanceDashboard() {
     const requestId = ++dashboardRequestRef.current;
     if (!background) setOverviewError(null);
     const token = getAuthToken();
+    if (token && token !== activeSessionTokenRef.current) {
+      void synchronizeSession(); return;
+    }
     if (!token || !currentUser?.is_onboarded) {
       setTransactions([]);
       setCategories([]);
@@ -1905,6 +1959,8 @@ export default function FinanceDashboard() {
             <TransactionLedgerView
               key={currentUser?.id ?? "guest"}
               transactions={transactions}
+              initialFilter={reportFilter ?? undefined}
+              onBackToReport={() => { setActiveNav("Laporan"); window.location.hash = "#/reports"; }}
               accounts={allAccountTabs}
               categories={categories}
               currentCycle={
@@ -2207,6 +2263,7 @@ export default function FinanceDashboard() {
               }}
               formatRupiah={formatRupiah}
               loading={loading}
+              onOpenTransactions={(range) => { setReportFilter(range); setActiveNav("Transaksi"); window.location.hash = "#/transactions"; }}
             />
           </div>
         )}
@@ -2943,8 +3000,12 @@ export default function FinanceDashboard() {
       {/* Auth Modal (Masuk / Daftar Akun) */}
       <AuthModal
         isOpen={isAuthModalOpen}
+        notice={authNotice}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(user, isNewUser) => {
+          sessionSyncRef.current += 1;
+          activeSessionTokenRef.current = getAuthToken();
+          setAuthNotice(null);
           resetFinancialState();
           setCurrentUser(user);
           if (isNewUser || !user.is_onboarded) {
@@ -2984,6 +3045,7 @@ export default function FinanceDashboard() {
             fetchData();
           }}
           onLogout={endSession}
+          onPasswordChanged={() => { endSession(); setAuthNotice("Password diperbarui dan semua sesi lama telah dicabut. Silakan masuk kembali."); }}
         />
       )}
 

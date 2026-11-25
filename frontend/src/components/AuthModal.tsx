@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLatest } from "@/lib/useLatest";
 import { LogIn, UserPlus, Shield, AlertCircle, KeyRound, AtSign, User, Info } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
-import { apiErrorMessage, setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
+import { apiErrorMessage, getAuthToken, setAuthToken, setStoredUser, UserProfile } from "@/lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
+  notice?: string | null;
   onClose: () => void;
   onSuccess: (user: UserProfile, isNewUser: boolean) => void;
 }
 
-export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps) {
+  const attemptRef = useRef(0);
+  useEffect(() => { attemptRef.current += 1; return () => { attemptRef.current += 1; }; }, [isOpen]);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -55,6 +58,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   }, [isOpen]);
 
   const handleGoogleCredential = async (credential: string, currentPassword?: string) => {
+    const attempt = ++attemptRef.current;
+    const startingSession = getAuthToken();
     setGoogleLoading(true);
     setError(null);
     try {
@@ -71,6 +76,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         // non-JSON fallback
       }
 
+      if (attempt !== attemptRef.current || getAuthToken() !== startingSession) return;
       const detail = data?.detail;
       if (res.status === 409 && detail && typeof detail === "object" && "code" in detail && detail.code === "google_link_required") {
         setGoogleLinkCredential(credential);
@@ -81,6 +87,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       setGoogleLinkCredential(null);
       setGoogleLinkPassword("");
 
+      if (attempt !== attemptRef.current || getAuthToken() !== startingSession) return;
       const authData = data as { access_token: string; user: UserProfile };
       setAuthToken(authData.access_token);
       setStoredUser(authData.user);
@@ -154,6 +161,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       return;
     }
 
+    const attempt = ++attemptRef.current;
+    const startingSession = getAuthToken();
     setLoading(true);
     try {
       const res = await fetch("/api/v1/auth/login", {
@@ -175,6 +184,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         throw new Error(apiErrorMessage(data, `Gagal masuk (Status: ${res.status}). Periksa username dan password.`));
       }
 
+      if (attempt !== attemptRef.current || getAuthToken() !== startingSession) return;
       const authData = data as { access_token: string; user: UserProfile };
       setAuthToken(authData.access_token);
       setStoredUser(authData.user);
@@ -206,6 +216,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       return;
     }
 
+    const attempt = ++attemptRef.current;
+    const startingSession = getAuthToken();
     setLoading(true);
     try {
       const res = await fetch("/api/v1/auth/register", {
@@ -229,6 +241,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         throw new Error(apiErrorMessage(data, `Gagal mendaftar akun baru (Status: ${res.status}).`));
       }
 
+      if (attempt !== attemptRef.current || getAuthToken() !== startingSession) return;
       const authData = data as { access_token: string; user: UserProfile };
       setAuthToken(authData.access_token);
       setStoredUser(authData.user);
@@ -252,11 +265,12 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       maxWidth="md"
     >
       <div className="space-y-4">
+        {notice && <p role="status" className="luma-inset p-3 rounded-xl text-sm text-luma-secondary">{notice}</p>}
         {/* Mode Switcher Tabs */}
         <div className="flex items-center bg-obsidian-panel p-1 rounded-2xl border border-luma-smokeline">
           <button
             type="button"
-            onClick={() => { setMode("login"); setError(null); }}
+            onClick={() => { attemptRef.current += 1; setMode("login"); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
               mode === "login"
                 ? "ui-selected"
@@ -268,7 +282,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           </button>
           <button
             type="button"
-            onClick={() => { setMode("register"); setError(null); }}
+            onClick={() => { attemptRef.current += 1; setMode("register"); setError(null); }}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition cursor-pointer ${
               mode === "register"
                 ? "ui-selected"
@@ -454,6 +468,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <User className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-register-name"
+                  maxLength={100}
                   type="text"
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
@@ -472,9 +487,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <AtSign className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-register-username"
+                  minLength={3}
+                  maxLength={50}
+                  pattern="[a-z0-9_-]{3,50}"
+                  title="Gunakan 3–50 huruf kecil, angka, garis bawah, atau tanda hubung."
                   type="text"
                   value={regUsername}
-                  onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                  onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
                   placeholder="contoh: user_baru"
                   className="w-full bg-obsidian-panel border border-luma-smokeline text-white placeholder-luma-smoke rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-luma-ember transition"
                   required

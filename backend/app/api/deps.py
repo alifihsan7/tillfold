@@ -45,6 +45,10 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Tokens issued before the migration belong to version zero, never to a later session.
+    if payload.get("ver", 0) != user.session_version:
+        raise HTTPException(401, "Sesi telah dicabut. Masuk kembali.", headers={"WWW-Authenticate": "Bearer"})
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

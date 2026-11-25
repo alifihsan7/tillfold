@@ -1001,3 +1001,9 @@ textarea:focus-visible,
   .fold-report-flow-notes { flex-direction: column; gap: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .fold-report-bar-pair > span { transition: none; } }
+
+.fold-report-chart-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; }
+.fold-report-chart-toolbar > span { font-size: 11px; color: var(--luma-smoke); }
+.fold-report-category-link { display: flex; align-items: flex-start; gap: 14px; min-width: 0; width: 100%; text-align: left; border-radius: 10px; cursor: pointer; }
+.fold-report-category-link:hover { color: var(--luma-ivory); }
+.fold-report-category-link:hover .fold-report-category-track { background: var(--luma-smokeline); }

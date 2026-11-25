@@ -54,7 +54,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
-def create_access_token(subject: Union[str, int], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(subject: Union[str, int], expires_delta: Optional[timedelta] = None, *, session_version: int = 0, auth_method: str = "password", auth_time: Optional[int] = None) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -62,6 +62,9 @@ def create_access_token(subject: Union[str, int], expires_delta: Optional[timede
     
     payload = {
         "sub": str(subject),
+        "ver": session_version,
+        "amr": auth_method,
+        "auth_time": auth_time if auth_time is not None else (int(datetime.now(timezone.utc).timestamp()) if auth_method == "password" else None),
         "exp": expire,
         "iat": datetime.now(timezone.utc),
     }
@@ -74,3 +77,12 @@ def decode_access_token(token: str) -> Optional[dict]:
         return decoded
     except (jwt.PyJWTError, Exception):
         return None
+
+
+def create_local_job_token(db, user_id: int) -> str:
+    """Trusted local jobs must follow the account's current session version too."""
+    from app.models.user import User
+    user = db.get(User, user_id)
+    if user is None or not user.is_active:
+        raise ValueError("Akun pengingat tidak tersedia atau dinonaktifkan.")
+    return create_access_token(user.id, session_version=user.session_version, auth_method="service")

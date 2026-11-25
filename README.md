@@ -196,6 +196,14 @@ journalctl -u tillfold-web -f
 
 ## 🔒 Keamanan & Privasi
 
+- Pergantian akun dan logout disinkronkan antar-tab. Respons dari sesi sebelumnya tidak diterapkan ke akun baru.
+- Perubahan password memerlukan password saat ini, atau login Google/Telegram terverifikasi dalam lima menit terakhir. Setelah password disimpan, seluruh sesi lama dicabut dan pengguna diminta masuk kembali.
+- Kolom `users.session_version` ditambahkan secara idempotent saat inisialisasi. Sesi lama tetap kompatibel sebagai versi nol sampai password akun tersebut diganti. Jangan menghapus atau mereset nilai kolom ini saat memulihkan data.
+- Pendaftaran baru memerlukan username 3–50 karakter (huruf kecil, angka, `_`, `-`), nama tidak kosong, dan format email yang valid bila diisi. Identitas pengguna lama tidak ditulis ulang.
+
+Laporan mendukung tampilan harian, mingguan (Senin–Minggu), dan bulanan. Rentang lebih dari 90 hari dibuka sebagai bulanan secara default. Pilih kategori atau tombol **Lihat transaksi** pada rincian grafik untuk membuka riwayat dengan tanggal dan jenis transaksi yang sesuai; transfer dan saldo awal dikecualikan dari tautan arus kas.
+
+
 - **Pencegahan SQL Injection:** 100% menggunakan kueri terparameter lewat SQLAlchemy ORM.
 - **Isolasi Data Antar-Pengguna:** Setiap kueri database difilter ketat berdasarkan `user_id` pemilik akun.
 - **Bebas Kredensial di Repositori:** Token bot, sandi database, dan rahasia JWT sepenuhnya dibaca dari `.env` lokal yang masuk dalam daftar `.gitignore`.

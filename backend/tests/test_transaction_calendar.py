@@ -105,3 +105,21 @@ def test_calendar_requires_authentication(ledger):
     client, db = ledger
     del client.app.dependency_overrides[get_current_user]
     assert client.get("/transactions/calendar", params={"year": 2026, "month": 11}).status_code == 401
+
+
+def test_report_drilldown_matches_cash_flow_and_excludes_opening_transfers_and_other_users(ledger):
+    client, db = ledger
+    day = date(2026, 11, 25)
+    add(db, "income", 500000, day)
+    add(db, "expense", 75000, day)
+    add(db, "income", 1000000, day)
+    db.query(Transaction).filter(Transaction.amount == 1000000).update({"category": "Saldo Awal"})
+    for kind in ["transfer_in", "transfer_out", "adjustment_in", "adjustment_out"]:
+        add(db, kind, 999, day)
+    add(db, "expense", 123, date(2026, 11, 24))
+    db.add(User(id=2, username="other-drilldown", full_name="Other", hashed_password="x")); db.flush()
+    add(db, "expense", 88888, day, user_id=2)
+    db.commit()
+    result = client.get("/transactions/history", params={"type": "cash_flow", "start_date": str(day), "end_date": str(day)}).json()
+    assert (result["total"], result["income"], result["expense"], result["opening_balance"]) == (2, 500000, 75000, 0)
+    assert {item["amount"] for item in result["items"]} == {500000, 75000}

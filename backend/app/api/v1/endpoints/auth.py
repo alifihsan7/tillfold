@@ -33,10 +33,10 @@ from app.schemas.user import (
     GoogleAuthRequest,
     TelegramWebAppAuthRequest,
 )
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.core.config import settings
 from app.core.rate_limit import login_limiter, register_limiter, auth_limiter
-from app.api.deps import get_strict_current_user
+from app.api.deps import get_strict_current_user, oauth2_scheme
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
     commit_identity(db)
     db.refresh(user)
 
-    token = create_access_token(subject=user.id)
+    token = create_access_token(subject=user.id, session_version=user.session_version)
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -115,7 +115,7 @@ def login(payload: UserLogin, request: Request, db: Session = Depends(get_db)):
             detail="Akun ini telah dinonaktifkan",
         )
 
-    token = create_access_token(subject=user.id)
+    token = create_access_token(subject=user.id, session_version=user.session_version)
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -129,19 +129,38 @@ def get_current_user_profile(user: User = Depends(get_strict_current_user)):
 @router.put("/me", response_model=UserResponse)
 def update_profile(
     payload: UserUpdate,
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     user: User = Depends(get_strict_current_user),
     db: Session = Depends(get_db)
 ):
+    if payload.password:
+        auth_limiter.check(request)
+        user = db.query(User).filter(User.id == user.id).populate_existing().with_for_update().one()
+        claims = decode_access_token(token) or {}
+        if claims.get("ver", 0) != user.session_version:
+            raise HTTPException(401, "Sesi telah dicabut. Masuk kembali.")
+        if payload.current_password:
+            if not verify_password(payload.current_password, user.hashed_password):
+                raise HTTPException(403, "Password saat ini tidak cocok.")
+        else:
+            method = claims.get("amr")
+            issued = claims.get("auth_time")
+            recent = isinstance(issued, (int, float)) and 0 <= time.time() - issued <= 300
+            provider_bound = (method == "google" and bool(user.google_id)) or (method == "telegram" and bool(user.telegram_chat_id))
+            if not (recent and provider_bound):
+                raise HTTPException(403, "Konfirmasi password saat ini. Untuk akun Google atau Telegram, masuk ulang lalu coba lagi.")
     if payload.full_name:
         user.full_name = payload.full_name.strip()
-    if payload.email:
+    if "email" in payload.model_fields_set:
         # Check email uniqueness
-        existing = db.query(User).filter(func.lower(User.email) == payload.email, User.id != user.id).first()
+        existing = db.query(User).filter(func.lower(User.email) == payload.email, User.id != user.id).first() if payload.email else None
         if existing:
             raise HTTPException(status_code=400, detail="Email sudah digunakan akun lain")
-        user.email = payload.email.strip()
+        user.email = payload.email
     if payload.password:
         user.hashed_password = hash_password(payload.password)
+        user.session_version += 1
     if payload.model_fields_set.intersection({"google_spreadsheet_id", "google_sheet_url"}):
         raw_sheet = payload.google_spreadsheet_id if payload.google_spreadsheet_id is not None else payload.google_sheet_url
         if raw_sheet and raw_sheet.strip():
@@ -285,7 +304,7 @@ def google_auth(payload: GoogleAuthRequest, request: Request, db: Session = Depe
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Akun ini telah dinonaktifkan")
 
-    token = create_access_token(subject=user.id)
+    token = create_access_token(subject=user.id, session_version=user.session_version, auth_method="google", auth_time=id_info.get("iat"))
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -381,7 +400,7 @@ def telegram_webapp_auth(payload: TelegramWebAppAuthRequest, request: Request, d
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Akun ini telah dinonaktifkan")
 
-    token = create_access_token(subject=user.id)
+    token = create_access_token(subject=user.id, session_version=user.session_version, auth_method="telegram", auth_time=int(validated["auth_date"]))
     return TokenResponse(
         access_token=token,
         token_type="bearer",

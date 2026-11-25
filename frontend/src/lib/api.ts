@@ -64,6 +64,20 @@ export function apiErrorMessage(data: unknown, fallback: string): string {
   return fallback;
 }
 
+export class SessionChangedError extends Error {
+  constructor() { super("Akun telah berubah. Ulangi tindakan dari akun yang sedang aktif."); }
+}
+
+// This only selects the confirmation UI. The server independently verifies every claim.
+export function hasRecentFederatedSignIn(token: string | null, now = Date.now()): boolean {
+  try {
+    if (!token) return false;
+    const claims = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const age = now / 1000 - claims.auth_time;
+    return ["google", "telegram"].includes(claims.amr) && typeof claims.auth_time === "number" && age >= 0 && age <= 300;
+  } catch { return false; }
+}
+
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
   const headers = new Headers(options.headers || {});
@@ -74,6 +88,7 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
     ...options,
     headers,
   });
+  if (token && getAuthToken() !== token) throw new SessionChangedError();
   // A delayed 401 from the previous account must not invalidate a newer login.
   if (response.status === 401 && token && getAuthToken() === token) {
     setAuthToken(null);
@@ -82,6 +97,18 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   }
   if (response.headers.get("content-type")?.toLowerCase().includes("text/html")) {
     throw new Error("Layanan data belum tersedia. Muat ulang halaman atau coba lagi nanti.");
+  }
+  // Headers can arrive before a slow JSON body or backup download finishes.
+  // Check the session again at consumption time, not just when fetch resolves.
+  if (token) {
+    for (const method of ["json", "text", "blob", "arrayBuffer"] as const) {
+      const read = response[method].bind(response);
+      Object.defineProperty(response, method, { value: async () => {
+        const body = await read();
+        if (getAuthToken() !== token) throw new SessionChangedError();
+        return body;
+      } });
+    }
   }
   return response;
 }

@@ -54,3 +54,17 @@ assert.match(populated, /−Rp 250.000/);
 assert.match(populated, /aria-pressed="true" tabindex="0" aria-label="26 Nov/);
 assert.match(populated, /Transfer dan saldo awal di luar arus kas/);
 console.log("PASS: empty periods show no invented chart; populated periods expose a keyboard selection and signed daily detail.");
+
+const { cashFlowBuckets } = loadComponent(path.resolve(__dirname, "../src/lib/dailyCashFlow.ts"));
+const yearDays = cashFlowDays([{ date: "2026-01-01", income: 100, expense: 3 }, { date: "2026-12-31", income: 25, expense: 7 }], "2026-01-01", "2026-12-31");
+for (const grouping of ["weekly", "monthly"]) {
+  const buckets = cashFlowBuckets(yearDays, grouping);
+  assert.equal(buckets.reduce((sum, item) => sum + item.income, 0), 125);
+  assert.equal(buckets.reduce((sum, item) => sum + item.expense, 0), 10);
+  assert.equal(buckets[0].date, "2026-01-01");
+  assert.equal(buckets.at(-1).endDate, "2026-12-31");
+}
+assert.equal(cashFlowBuckets(yearDays, "monthly").length, 12);
+const monday = cashFlowBuckets(cashFlowDays([], "2026-12-27", "2027-01-04"), "weekly");
+assert.deepEqual(monday.map(item => [item.date, item.endDate]), [["2026-12-27", "2026-12-27"], ["2026-12-28", "2027-01-03"], ["2027-01-04", "2027-01-04"]]);
+console.log("PASS: weekly/monthly grouping preserves totals and clips partial weeks/months to the selected period.");

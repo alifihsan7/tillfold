@@ -1,3 +1,4 @@
+import re
 from typing import Optional, List, Literal
 from datetime import datetime, date
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -13,6 +14,29 @@ def clean_email(value):
     return str(value).strip().lower() or None
 
 
+def validate_email(value):
+    if value is None:
+        return None
+    if len(value) > 100 or value.count("@") != 1:
+        raise ValueError("Masukkan alamat email yang valid (maksimal 100 karakter).")
+    local, domain = value.rsplit("@", 1)
+    try:
+        domain = domain.encode("idna").decode("ascii")
+    except UnicodeError:
+        raise ValueError("Masukkan alamat email yang valid.")
+    labels = domain.split(".")
+    if (not local or len(local) > 64 or local.startswith(".") or local.endswith(".") or ".." in local
+            or not re.fullmatch(r"[a-z0-9.!#$%&'*+/=?^_`{|}~-]+", local)
+            or len(labels) < 2 or any(not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label) for label in labels)
+            or not re.fullmatch(r"(?:[a-z]{2,63}|xn--[a-z0-9-]+)", labels[-1])):
+        raise ValueError("Masukkan alamat email yang valid.")
+    return value
+
+
+def clean_name(value):
+    return value.strip() if isinstance(value, str) else value
+
+
 def validate_password(value):
     if value is not None and len(value.encode("utf-8")) > 72:
         raise ValueError("Password maksimal 72 byte.")
@@ -20,12 +44,20 @@ def validate_password(value):
 
 
 class UserCreate(BaseModel):
-    username: str
+    username: str = Field(min_length=3, max_length=50, pattern=r"^[a-z0-9_-]+$")
     email: Optional[str] = None
-    full_name: str
+    full_name: str = Field(min_length=1, max_length=100)
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value):
+        return value.strip().lower() if isinstance(value, str) else value
+
+    _name = field_validator("full_name", mode="before")(clean_name)
     password: str = Field(..., min_length=8, description="Password minimal 8 karakter")
 
     _email = field_validator("email", mode="before")(clean_email)
+    _valid_email = field_validator("email")(validate_email)
     _password = field_validator("password")(validate_password)
 
 class UserLogin(BaseModel):
@@ -33,13 +65,16 @@ class UserLogin(BaseModel):
     password: str
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
     email: Optional[str] = None
+    current_password: Optional[str] = None
+    _name = field_validator("full_name", mode="before")(clean_name)
     password: Optional[str] = Field(default=None, min_length=8)
     google_spreadsheet_id: Optional[str] = None
     google_sheet_url: Optional[str] = None
 
     _email = field_validator("email", mode="before")(clean_email)
+    _valid_email = field_validator("email")(validate_email)
     _password = field_validator("password")(validate_password)
 
 class UserResponse(BaseModel):

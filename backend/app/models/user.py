@@ -19,6 +19,7 @@ class User(Base):
     google_id = Column(String(100), unique=True, nullable=True, index=True)
     google_spreadsheet_id = Column(String(255), nullable=True)
     avatar_url = Column(String(255), nullable=True)
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
     is_active = Column(Boolean, nullable=False, default=True)
     is_onboarded = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -1,4 +1,5 @@
 import React from "react";
+import { CashFlowRange } from "@/lib/dailyCashFlow";
 import { formatDateRange } from "@/lib/format";
 import { DailyCashFlowChart } from "./DailyCashFlowChart";
 import { BurnRateChart } from "./BurnRateChart";
@@ -70,9 +71,10 @@ interface AnalyticsViewProps {
   summary: AnalyticsSummary;
   formatRupiah: (val: number) => string;
   loading?: boolean;
+  onOpenTransactions?: (range: CashFlowRange) => void;
 }
 
-export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewProps) {
+export function AnalyticsView({ summary, formatRupiah, loading, onOpenTransactions }: AnalyticsViewProps) {
   const safe = summary.safe_to_spend;
   const daily = summary.daily_trend;
   const categories = [...summary.categories].sort((a, b) => b.total - a.total);
@@ -102,7 +104,7 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
         {!loading && (summary.opening_balance ?? 0) > 0 && <p className="fold-report-opening">Saldo awal {formatRupiah(summary.opening_balance ?? 0)} dicatat terpisah dari pemasukan.</p>}
       </section>
 
-      {loading ? <section className="fold-report-panel" aria-label="Memuat arus kas harian"><Skeleton className="h-6 w-40" /><Skeleton className="mt-6 h-64 w-full" /></section> : <DailyCashFlowChart key={`${summary.start_date}-${summary.end_date}`} days={daily} start={summary.start_date} end={summary.end_date} formatRupiah={formatRupiah} />}
+      {loading ? <section className="fold-report-panel" aria-label="Memuat arus kas harian"><Skeleton className="h-6 w-40" /><Skeleton className="mt-6 h-64 w-full" /></section> : <DailyCashFlowChart key={`${summary.start_date}-${summary.end_date}`} days={daily} start={summary.start_date} end={summary.end_date} formatRupiah={formatRupiah} onOpenTransactions={onOpenTransactions} />}
 
       <section aria-labelledby="report-categories" className="fold-report-panel">
         <header className="fold-report-heading"><div><h2 id="report-categories" className="ai7-type-section">Pengeluaran terbesar</h2><p>Kategori yang paling banyak memakai dana periode ini.</p></div>{!loading && categories.length > 0 && <span className="fold-report-caption">{categories.length} kategori pengeluaran</span>}</header>
@@ -112,8 +114,10 @@ export function AnalyticsView({ summary, formatRupiah, loading }: AnalyticsViewP
           <ol className="fold-report-categories">
             {categories.slice(0, 5).map(({ category, total, percentage }, index) => (
               <li key={category}>
+                <button type="button" className="fold-report-category-link" aria-label={`Lihat transaksi pengeluaran ${category}`} onClick={() => onOpenTransactions?.({ start: summary.start_date, end: summary.end_date, category, type: "expense" })}>
                 <span className="fold-report-rank" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                 <div className="fold-report-category-body"><div><span>{category}</span><strong>{money(total)}</strong></div><div className="fold-report-category-share"><span className="fold-report-category-track" aria-hidden="true"><i style={{ width: `${Math.min(100, Math.max(0, percentage))}%`, opacity: 1 - index * .12 }} /></span><span>{percentage.toFixed(1)}%</span></div></div>
+                </button>
               </li>
             ))}
           </ol>

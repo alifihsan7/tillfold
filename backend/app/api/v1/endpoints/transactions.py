@@ -7,7 +7,7 @@ import zoneinfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, case, extract
+from sqlalchemy import desc, func, case, extract, or_
 
 from app.db.session import get_db
 from app.models.transaction import Transaction
@@ -87,7 +87,9 @@ def filtered_transactions(db, user_id, month=None, start_date=None, end_date=Non
         query = query.filter(Transaction.category == category)
     if account and account != "all":
         query = query.filter(Transaction.account == account)
-    if type and type != "all":
+    if type == "cash_flow":
+        query = query.filter(or_(is_earned_income(), Transaction.type == "expense"))
+    elif type and type != "all":
         types = {"transfer": ("transfer_in", "transfer_out"), "adjustment": ("adjustment_in", "adjustment_out")}
         query = query.filter(Transaction.type.in_(types[type])) if type in types else query.filter(Transaction.type == type)
     if search:

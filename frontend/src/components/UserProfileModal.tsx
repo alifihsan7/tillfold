@@ -4,7 +4,7 @@ import { SelectionRail } from "./ui/SelectionRail";
 import React, { useEffect, useRef, useState } from "react";
 import { User, Send, LogOut, Unlink, Trash2, ExternalLink, FileSpreadsheet, Copy, Check, RefreshCw } from "@/components/icons";
 import { CustomModal } from "./ui/CustomModal";
-import { apiErrorMessage, authFetch, setStoredUser, UserProfile, syncGoogleSheets, sheetsSyncMessage } from "@/lib/api";
+import { apiErrorMessage, authFetch, getAuthToken, hasRecentFederatedSignIn, setStoredUser, UserProfile, syncGoogleSheets, sheetsSyncMessage } from "@/lib/api";
 
 const SERVICE_ACCOUNT_EMAIL = "tillfold@tillfold.iam.gserviceaccount.com";
 
@@ -14,6 +14,7 @@ interface UserProfileModalProps {
   user: UserProfile;
   onUserUpdated: (updated: UserProfile) => void;
   onLogout: () => void;
+  onPasswordChanged: () => void;
   initialTab?: "profile" | "telegram" | "sheets";
 }
 
@@ -23,11 +24,14 @@ export function UserProfileModal({
   user,
   onUserUpdated,
   onLogout,
+  onPasswordChanged,
   initialTab = "profile",
 }: UserProfileModalProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "telegram" | "sheets">(initialTab);
   const [fullName, setFullName] = useState(user.full_name);
   const [email, setEmail] = useState(user.email || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const recentFederated = hasRecentFederatedSignIn(getAuthToken());
   const [newPassword, setNewPassword] = useState("");
   const [sheetUrl, setSheetUrl] = useState(
     user.google_spreadsheet_id
@@ -64,6 +68,7 @@ export function UserProfileModal({
           : ""
       );
       setMsg(null);
+      setNewPassword(""); setCurrentPassword("");
       setShowUnlinkSheetConfirm(false);
     }
   }, [isOpen, initialTab, user]);
@@ -82,15 +87,17 @@ export function UserProfileModal({
     setMsg(null);
     try {
       const payload: Record<string, unknown> = { full_name: fullName.trim(), email: email.trim() || null };
-      if (newPassword.trim()) {
-        if (newPassword.trim().length < 8) throw new Error("Password baru minimal 8 karakter.");
-        payload.password = newPassword.trim();
+      if (newPassword) {
+        if (newPassword.length < 8) throw new Error("Password baru minimal 8 karakter.");
+        payload.password = newPassword;
+        if (currentPassword) payload.current_password = currentPassword;
       }
       const response = await authFetch("/api/v1/auth/me", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (response.ok && payload.password) { setCurrentPassword(""); setNewPassword(""); onPasswordChanged(); return; }
       const data = await response.json();
       if (!response.ok) throw new Error(apiErrorMessage(data, "Gagal menyimpan profil."));
       updateUser(data);
@@ -377,6 +384,13 @@ export function UserProfileModal({
                 />
                 <p id="profile-password-help" className="text-xs text-luma-smoke">Kosongkan jika belum ingin mengganti password.</p>
               </div>
+              {newPassword && <div className="space-y-2">
+                {recentFederated ? <p className="text-xs text-luma-smoke">Identitas dikonfirmasi lewat Google atau Telegram. Setelah disimpan, semua sesi akan keluar.</p> : <>
+                  <label htmlFor="profile-current-password">Password saat ini</label>
+                  <input id="profile-current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className={fieldClass} required />
+                  <p className="text-xs text-luma-smoke">Mengganti password akan mengeluarkan semua sesi. Pengguna Google atau Telegram dapat masuk ulang untuk mengonfirmasi identitas.</p>
+                </>}
+              </div>}
               <button type="submit" disabled={loading} className="luma-action-primary cursor-pointer">
                 {loading ? "Menyimpan…" : "Simpan profil"}
               </button>

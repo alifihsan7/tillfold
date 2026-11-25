@@ -30,3 +30,25 @@ export function cashFlowCeiling(days: CashFlowDay[]): number {
   const step = ([1, 2, 2.5, 5, 10].find((value) => value * power >= interval) ?? 10) * power;
   return step * 4;
 }
+
+export type CashFlowGranularity = "daily" | "weekly" | "monthly";
+export interface CashFlowRange { start: string; end: string; category?: string; type: "expense" | "cash_flow"; }
+export interface CashFlowBucket extends CashFlowDay { endDate: string; }
+
+export function cashFlowBuckets(days: CashFlowDay[], granularity: CashFlowGranularity): CashFlowBucket[] {
+  const groups = new Map<string, CashFlowBucket>();
+  for (const day of days) {
+    let key = day.date;
+    if (granularity === "monthly") key = day.date.slice(0, 7);
+    if (granularity === "weekly") {
+      const monday = new Date(`${day.date}T00:00:00Z`);
+      monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
+      key = monday.toISOString().slice(0, 10);
+    }
+    const bucket = groups.get(key);
+    if (bucket) {
+      bucket.income += day.income; bucket.expense += day.expense; bucket.endDate = day.date;
+    } else groups.set(key, { ...day, endDate: day.date });
+  }
+  return Array.from(groups.values());
+}

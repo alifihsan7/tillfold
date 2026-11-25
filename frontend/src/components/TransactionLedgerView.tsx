@@ -1,3 +1,4 @@
+import { CashFlowRange } from "@/lib/dailyCashFlow";
 import { TransactionCalendar } from "./TransactionCalendar";
 import { formatSignedRupiah } from "@/lib/format";
 import { authFetch } from "@/lib/api";
@@ -41,6 +42,8 @@ interface TransactionLedgerViewProps {
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
   loading?: boolean;
+  initialFilter?: CashFlowRange;
+  onBackToReport?: () => void;
 }
 
 export function TransactionLedgerView({
@@ -51,16 +54,18 @@ export function TransactionLedgerView({
   formatRupiah,
   onEdit,
   onDelete,
+  initialFilter,
+  onBackToReport,
 }: TransactionLedgerViewProps) {
   // Filter States
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeAccount, setActiveAccount] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>(initialFilter?.type ?? "all");
+  const [categoryFilter, setCategoryFilter] = useState(initialFilter?.category ?? "all");
+  const [dateFilter, setDateFilter] = useState(initialFilter ? "custom" : "all");
+  const [customStartDate, setCustomStartDate] = useState(initialFilter?.start ?? "");
+  const [customEndDate, setCustomEndDate] = useState(initialFilter?.end ?? "");
   const [sortBy, setSortBy] = useState("date-desc");
 
   // Pagination State
@@ -76,17 +81,18 @@ export function TransactionLedgerView({
   const categoryOptions: SelectOption[] = useMemo(() => {
     const apiCats = categories ? categories.map((c) => c.name) : [];
     const txCats = [...transactions, ...history.items].map((tx) => tx.category).filter(Boolean);
-    const uniqueCats = Array.from(new Set([...apiCats, ...txCats])).sort();
+    const uniqueCats = Array.from(new Set([...apiCats, ...txCats, ...(initialFilter?.category ? [initialFilter.category] : [])])).sort();
 
     return [
       { value: "all", label: "Semua kategori" },
       ...uniqueCats.map((cat) => ({ value: cat, label: cat })),
     ];
-  }, [categories, transactions, history.items]);
+  }, [categories, transactions, history.items, initialFilter?.category]);
 
   // Type filter options
   const typeOptions: SelectOption[] = [
     { value: "all", label: "Semua tipe transaksi" },
+    { value: "cash_flow", label: "Arus kas (pemasukan & pengeluaran)" },
     { value: "adjustment", label: "Penyesuaian saldo" },
     { value: "expense", label: "Pengeluaran Saja (-)" },
     { value: "income", label: "Pemasukan Saja (+)" },
@@ -208,6 +214,7 @@ export function TransactionLedgerView({
 
   return (
     <div className="space-y-5">
+      {initialFilter && <div className="luma-inset p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs"><p>Dibuka dari laporan. Filter awal sudah diterapkan dan dapat diubah.</p><button type="button" className="luma-text-action" onClick={onBackToReport}>Kembali ke laporan</button></div>}
       <SegmentedControl label="Tampilan transaksi" value={viewMode} onChange={setViewMode} options={[
         { value: "list", label: "Daftar", icon: <Receipt /> },
         { value: "calendar", label: "Kalender", icon: <Calendar /> },

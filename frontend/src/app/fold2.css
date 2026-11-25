@@ -11,7 +11,9 @@
   --fold-overview-negative: #ff9e96;
   --fold-field: #2c323a;
   --fold-field-edge: #858d99;
-  --fold-field-hover: #aab2bd;
+  --fold-field-hover: #343d49;
+  --fold-field-active: #3f5473;
+  --fold-field-invalid: #4b3338;
   --fold-selected: #3b414a;
   --fold-control: var(--fold-panel);
   --fold-control-hover: var(--fold-selected);
@@ -65,7 +67,9 @@
   --fold-overview-negative: #b3352e;
   --fold-field: #f0f2f5;
   --fold-field-edge: #818c9a;
-  --fold-field-hover: #5f6773;
+  --fold-field-hover: #e8edf3;
+  --fold-field-active: #d2e0f7;
+  --fold-field-invalid: #fae6e6;
   --fold-selected: #eceff2;
   --fold-control: #e4e7eb;
   --fold-control-hover: #dce0e5;
@@ -429,34 +433,49 @@
 }
 .tillfold-fold .fold-calendar-card .transaction-calendar-grid button:focus-visible { outline-offset: -2px; }
 
-/* A single bottom edge identifies resting fields. Keyboard focus uses a separate visible ring. */
+/* Form fields use fill to distinguish resting, focused and invalid states. */
 .tillfold-fold :is(.luma-main, .luma-dialog-panel) :is(
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"]),
   textarea, select
-):not(:where(.ai7-currency-field *, .tillfold-date-field *, [aria-invalid="true"])),
-.tillfold-fold .ai7-select-trigger:not(:where([aria-invalid="true"])),
-.tillfold-fold :is(.ai7-currency-field, .tillfold-date-field) {
-  background-color: var(--fold-field);
+):not(:where(.ai7-currency-field *, .tillfold-date-field *)),
+.tillfold-fold :is(.ai7-select-trigger, .ai7-currency-field, .tillfold-date-field) {
+  background-color: var(--fold-field-fill, var(--fold-field));
   border: 1px solid transparent;
   border-radius: 14px;
-  box-shadow: inset 0 -1px var(--fold-field-edge);
+  box-shadow: none;
 }
 .tillfold-fold :is(.ai7-currency-field, .tillfold-date-field) :is(input, input:focus) { background: transparent; }
 .tillfold-fold .ai7-currency-prefix { background: var(--fold-panel); }
-.tillfold-fold :is(.ai7-select-trigger, .ai7-currency-field, .tillfold-date-field):where(
-  :hover:not(:disabled), :focus-within, [aria-expanded="true"]
-) {
-  box-shadow: inset 0 -1px var(--fold-field-hover);
+.tillfold-fold :is(.ai7-select-trigger, .ai7-currency-field, .tillfold-date-field):where(:hover:not(:disabled)) {
+  --fold-field-fill: var(--fold-field-hover);
 }
-.tillfold-fold :is(.ai7-currency-field, .tillfold-date-field) input:focus-visible,
-.tillfold-fold .ai7-currency-field:focus-within { outline: none; }
-.tillfold-fold :is(.ai7-currency-field, .tillfold-date-field):has(input:focus-visible) {
-  outline: 2px solid var(--fold-focus);
-  outline-offset: 1px;
+.tillfold-fold :is(input, textarea, select, .ai7-select-trigger):focus,
+.tillfold-fold :is(.ai7-currency-field, .tillfold-date-field):focus-within,
+.tillfold-fold .ai7-select-trigger[aria-expanded="true"] {
+  --fold-field-fill: var(--fold-field-active);
 }
-.tillfold-fold :is(input, textarea, select, .ai7-select-trigger)[aria-invalid="true"]:not(.tillfold-date-field input),
+.tillfold-fold :is(input, textarea, select, .ai7-select-trigger)[aria-invalid="true"],
 .tillfold-fold .tillfold-date-field:has(input[aria-invalid="true"]) {
-  box-shadow: inset 0 -2px var(--fold-overview-negative);
+  --fold-field-fill: var(--fold-field-invalid);
+}
+.tillfold-fold :is(.luma-main, .luma-dialog-panel, .tillfold-date-field) :is(
+  input:not(:where([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="submit"], [type="button"])),
+  textarea, select
+):focus-visible,
+.tillfold-fold .ai7-select-trigger:focus-visible,
+.tillfold-fold .ai7-currency-field:focus-within { outline: none; }
+.tillfold-fold .tillfold-date-field button:focus-visible {
+  background-color: var(--fold-field);
+  outline: none;
+}
+
+@media (forced-colors: active) {
+  .tillfold-fold :is(.luma-main, .luma-dialog-panel, .tillfold-date-field) :is(input, textarea, select):focus-visible,
+  .tillfold-fold .ai7-select-trigger:focus-visible,
+  .tillfold-fold .tillfold-date-field button:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }
 .tillfold-fold input[type="checkbox"] { background-color: var(--fold-field); }
 .tillfold-fold input[type="checkbox"]:checked { background-color: var(--fold-primary); color: var(--fold-primary-text); }

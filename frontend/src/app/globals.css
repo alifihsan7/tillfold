@@ -446,9 +446,7 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   border-radius: 10px; min-height: 44px; font-family: inherit;
 }
 .luma-form-scope input::placeholder, .luma-form-scope textarea::placeholder { color: var(--luma-smoke); }
-.luma-form-scope :is(input, textarea):focus,
-.ai7-select-trigger:hover:not(:disabled),
-.ai7-select-trigger[aria-expanded="true"] { background: var(--ai7-field-hover); }
+.luma-form-scope :is(input, textarea):focus { background: var(--ai7-field-hover); }
 .ai7-select-menu { background: var(--luma-panel-surface); border-color: transparent; box-shadow: 0 12px 28px rgb(0 0 0 / .18); }
 .ai7-select-menu button { border-radius: 6px; margin-inline: 4px; width: calc(100% - 8px); }
 .ai7-select-menu .text-amberGold, .ai7-select-menu button.bg-amberGold\/10 { color: var(--luma-ivory); }
@@ -884,14 +882,6 @@ textarea:focus-visible,
   background-color: var(--ui-readout-bg);
 }
 
-/* Form edges and floating surfaces remain legible against their parent panel. */
-.luma-app :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"]), textarea, select):not([aria-invalid="true"]),
-.luma-app :is(.ai7-currency-field, .tillfold-date-field, .ai7-select-trigger) {
-  box-shadow: inset 0 -1px var(--ai7-field-border);
-}
-.luma-app :is(.ai7-currency-field, .tillfold-date-field) input:not([aria-invalid="true"]) {
-  box-shadow: none;
-}
 :is(.luma-period-popup, .luma-topbar [role="menu"], .ai7-select-menu, .tillfold-calendar) {
   border-color: var(--luma-smokeline);
 }

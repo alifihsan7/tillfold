@@ -349,7 +349,7 @@ export function UserProfileModal({
         {/* Tab 1: Profil */}
         {activeTab === "profile" && (
           <div role="tabpanel" id="profile-panel" aria-labelledby="profile-tab" className="space-y-5">
-            <form onSubmit={handleSaveProfile} className="space-y-4">
+            <form onSubmit={handleSaveProfile} className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label htmlFor="profile-name">Nama lengkap</label>
                 <input
@@ -391,7 +391,7 @@ export function UserProfileModal({
                   <p className="text-xs text-luma-smoke">Mengganti password akan mengeluarkan semua sesi. Pengguna Google atau Telegram dapat masuk ulang untuk mengonfirmasi identitas.</p>
                 </>}
               </div>}
-              <button type="submit" disabled={loading} className="luma-action-primary cursor-pointer">
+              <button type="submit" disabled={loading} className="luma-action-primary cursor-pointer md:col-start-1 md:justify-self-start">
                 {loading ? "Menyimpan…" : "Simpan profil"}
               </button>
             </form>

@@ -61,36 +61,39 @@ export function AddPocketModal({ accountId, accountName, onClose, onCreated }: A
             {error}
           </div>
         )}
-        <div className="space-y-1.5">
-          <label htmlFor="pocket-name" className="text-xs font-semibold text-luma-secondary">
-            Nama kantong
-          </label>
-          <input
-            id="pocket-name"
-            required
-            maxLength={100}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={saving}
-            placeholder="Contoh: Tabungan Liburan, Biaya Sekolah"
-            className="w-full px-3.5 py-2.5 border border-luma-smokeline rounded-2xl bg-obsidian-panel text-luma-ivory text-xs sm:text-sm focus:outline-none focus:border-luma-ember transition"
-          />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <label htmlFor="pocket-name" className="text-xs font-semibold text-luma-secondary">
+              Nama kantong
+            </label>
+            <input
+              id="pocket-name"
+              required
+              maxLength={100}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={saving}
+              placeholder="Contoh: Tabungan Liburan, Biaya Sekolah"
+              className="w-full px-3.5 py-2.5 border border-luma-smokeline rounded-2xl bg-obsidian-panel text-luma-ivory text-xs sm:text-sm focus:outline-none focus:border-luma-ember transition"
+            />
+          </div>
+          <fieldset disabled={saving} className="space-y-1.5">
+            <legend className="text-xs font-semibold text-luma-secondary">Jenis kantong</legend>
+            <CustomSelect
+              value={role}
+              onChange={setRole}
+              disabled={saving}
+              options={[
+                { value: "operasional", label: "Operasional / umum" },
+                { value: "tagihan", label: "Tagihan / langganan" },
+                { value: "darurat", label: "Dana darurat" },
+                { value: "tabungan", label: "Tabungan / impian" },
+                { value: "investasi", label: "Investasi" },
+              ]}
+            />
+          </fieldset>
         </div>
-        <fieldset disabled={saving} className="space-y-1.5">
-          <legend className="text-xs font-semibold text-luma-secondary">Jenis kantong</legend>
-          <CustomSelect
-            value={role}
-            onChange={setRole}
-            disabled={saving}
-            options={[
-              { value: "operasional", label: "Operasional / umum" },
-              { value: "tagihan", label: "Tagihan / langganan" },
-              { value: "darurat", label: "Dana darurat" },
-              { value: "tabungan", label: "Tabungan / impian" },
-              { value: "investasi", label: "Investasi" },
-            ]}
-          />
-        </fieldset>
+
         <fieldset disabled={saving} className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label htmlFor="pocket-allocation" className="text-xs font-semibold text-luma-secondary">Alokasi awal</label>

@@ -89,14 +89,18 @@ export function ReconcileAccountModal({ accountId, onClose, onSuccess }: {
         {snapshot && <>
           <p>Saldo Tillfold <strong className="tabular-nums">{rupiah(snapshot.balance)}</strong></p>
           {!review ? <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (valid && note.trim()) setReview(true); }}>
-            <div className="space-y-2"><label htmlFor="reconcile-actual">Saldo aktual</label>
-              <CurrencyInput id="reconcile-actual" value={amount} onChange={setAmount} required /></div>
-            <label className="flex min-h-11 items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={negative} onChange={event => setNegative(event.target.checked)} />Saldo aktual negatif
-            </label>
-            <div className="space-y-2"><label htmlFor="reconcile-note">Catatan penyesuaian</label>
-              <textarea id="reconcile-note" value={note} onChange={event => setNote(event.target.value)} maxLength={120} required
-                className="w-full rounded-xl border border-luma-smokeline bg-luma-coal p-3 text-base" /></div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="space-y-2"><label htmlFor="reconcile-actual">Saldo aktual</label>
+                  <CurrencyInput id="reconcile-actual" value={amount} onChange={setAmount} required /></div>
+                <label className="flex min-h-11 items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={negative} onChange={event => setNegative(event.target.checked)} />Saldo aktual negatif
+                </label>
+              </div>
+              <div className="space-y-2"><label htmlFor="reconcile-note">Catatan penyesuaian</label>
+                <textarea id="reconcile-note" value={note} onChange={event => setNote(event.target.value)} maxLength={120} required
+                  className="w-full rounded-xl border border-luma-smokeline bg-luma-coal p-3 text-base" /></div>
+            </div>
             <p className="text-xs text-luma-smoke">Penyesuaian disimpan di riwayat. Koreksi berikutnya dilakukan lewat rekonsiliasi baru.</p>
             <button type="submit" disabled={!valid || !note.trim()} className="luma-action-primary">Periksa selisih</button>
           </form> : <div className="space-y-4">

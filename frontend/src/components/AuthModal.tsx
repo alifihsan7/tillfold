@@ -400,7 +400,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
             }}>Batalkan penautan</button>
           </form>
         ) : mode === "login" ? (
-          <form key="login-form" onSubmit={handleLogin} className="space-y-3.5 animate-fadeIn duration-150">
+          <form key="login-form" onSubmit={handleLogin} className="grid gap-4 md:grid-cols-2 animate-fadeIn duration-150">
             <div>
               <label htmlFor="auth-login-id" className="block text-xs font-medium text-luma-secondary mb-1.5">
                 Username atau email
@@ -437,7 +437,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="md:col-span-2 pt-2">
               <button
                 type="submit"
                 disabled={loading}
@@ -459,7 +459,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
           </form>
         ) : (
           /* Register Form */
-          <form key="register-form" onSubmit={handleRegister} className="space-y-3 animate-fadeIn duration-150">
+          <form key="register-form" onSubmit={handleRegister} className="grid gap-4 md:grid-cols-2 animate-fadeIn duration-150">
             <div>
               <label htmlFor="auth-register-name" className="block text-xs font-medium text-luma-secondary mb-1">
                 Nama lengkap
@@ -515,7 +515,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="md:col-span-2 grid grid-cols-2 gap-2.5">
               <div>
                 <label htmlFor="auth-register-password" className="block text-xs font-medium text-luma-secondary mb-1">
                   Password
@@ -547,7 +547,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, notice }: AuthModalProps
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="md:col-span-2 pt-2">
               <button
                 type="submit"
                 disabled={loading}

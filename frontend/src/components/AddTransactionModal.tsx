@@ -180,8 +180,8 @@ export function AddTransactionModal({
       accent={formType === "expense" ? "coral" : "mint"}
       maxWidth="form"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <SegmentedControl fill label="Jenis transaksi" value={formType} onChange={setFormType} options={[
+      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+        <SegmentedControl className="md:col-span-2" fill label="Jenis transaksi" value={formType} onChange={setFormType} options={[
           { value: "expense", label: "Pengeluaran", tone: "expense" },
           { value: "income", label: "Pemasukan", tone: "income" },
         ]} />
@@ -223,7 +223,7 @@ export function AddTransactionModal({
         </div>
 
         {/* Account and Category */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
+        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 relative z-20">
           <div>
             <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Akun rekening
@@ -244,29 +244,29 @@ export function AddTransactionModal({
               options={activeCategoryOptions}
             />
           </div>
-        </div>
 
-        {/* Date */}
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Tanggal transaksi
-          </label>
-          <DateField label="Tanggal transaksi"
-            required
-            value={formDate}
-            onChange={(dateValue) => setFormDate(dateValue)}
-          />
+          {/* Date */}
+          <div>
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+              Tanggal transaksi
+            </label>
+            <DateField label="Tanggal transaksi"
+              required
+              value={formDate}
+              onChange={(dateValue) => setFormDate(dateValue)}
+            />
+          </div>
         </div>
 
         {/* Error message */}
         {error && (
-          <div className="p-3 rounded-2xl bg-coralFall/10 border border-coralFall/20 text-coralFall text-xs">
+          <div className="md:col-span-2 p-3 rounded-2xl bg-coralFall/10 border border-coralFall/20 text-coralFall text-xs">
             {error}
           </div>
         )}
 
         {/* Actions */}
-        <div className="ui-dialog-actions mt-5">
+        <div className="md:col-span-2 ui-dialog-actions mt-5">
           <button type="button" onClick={onClose} disabled={loading} className="luma-action-secondary">
             Batal
           </button>

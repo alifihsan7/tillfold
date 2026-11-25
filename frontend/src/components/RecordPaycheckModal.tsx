@@ -299,7 +299,8 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
             )}
           </>
         ) : (
-          <form id={formId} className="payroll-form space-y-3" onSubmit={(event) => {
+          <form id={formId} className={step === "details" ? "payroll-form space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0" : "payroll-form space-y-3"}
+            onSubmit={(event) => {
             event.preventDefault();
             if (step === "cycle") {
               if (!invalidCycle) goTo("details");
@@ -316,7 +317,7 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
               save_cycle_default: startCycle && !!cycleType && saveDefault,
             });
           }}>
-            <p ref={stepTitle} tabIndex={-1} className="text-xs text-luma-smoke">
+            <p ref={stepTitle} tabIndex={-1} className="md:col-span-2 text-xs text-luma-smoke">
               {step === "details" ? "1 dari 2 · Detail gaji" : step === "cycle" ? "Durasi dan awal siklus" : "2 dari 2 · Pembagian gaji"}
             </p>
             {step === "details" && <>
@@ -339,11 +340,11 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
               <label htmlFor="paycheck-received-date">Tanggal gaji masuk</label>
               <DateField id="paycheck-received-date" value={date} required max={today()} onChange={setDate} />
             </div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 md:self-end">
               <span className="text-sm text-luma-smoke">{cycleSummary}</span>
               <button type="button" className="luma-text-action px-1" onClick={() => goTo("cycle")}>Ubah siklus</button>
             </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <div className="md:col-span-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
               {canResume && <button type="button" className="luma-text-action" disabled={pending} onClick={() => {
                 setAllocationPage(0);
                 setReceipt(previousReceipt);
@@ -387,19 +388,22 @@ export function RecordPaycheckModal({ isOpen, accounts, allocationAccounts, onCl
               <fieldset className="space-y-3">
                 <legend className="text-sm font-semibold">{rupiah.format(nominal)} · {selectedAccount}</legend>
                 <p className="text-xs text-luma-smoke">Isi nominal tujuan. Kosongkan rekening yang tidak dapat bagian.</p>
-                {destinationPage.rows.map(({ id, name }) => {
-                  const allocation = allocations.find((item) => item.account_id === id)?.amount ?? 0;
-                  return (
-                    <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-end gap-2" key={id}>
-                      <label className="block space-y-1 text-sm" htmlFor={`paycheck-destination-${id}`}>
-                        <span>{name}</span>
-                        <CurrencyInput id={`paycheck-destination-${id}`} value={destinationAmounts[id] ?? ""}
-                          onChange={(value) => setDestinationAmounts((rows) => ({ ...rows, [id]: value }))} placeholder="0" />
-                      </label>
-                      <output className="pb-2 text-right text-sm text-luma-smoke tabular-nums">{share(allocation, nominal)}</output>
-                    </div>
-                  );
-                })}
+                <div className="grid gap-2 md:grid-cols-2 md:gap-3">
+                  {destinationPage.rows.map(({ id, name }) => {
+                    const allocation = allocations.find((item) => item.account_id === id)?.amount ?? 0;
+                    return (
+                      <div className="grid grid-cols-[minmax(0,1fr)_5rem] items-end gap-2" key={id}>
+                        <label className="block space-y-1 text-sm" htmlFor={`paycheck-destination-${id}`}>
+                          <span>{name}</span>
+                          <CurrencyInput id={`paycheck-destination-${id}`} value={destinationAmounts[id] ?? ""}
+                            onChange={(value) => setDestinationAmounts((rows) => ({ ...rows, [id]: value }))} placeholder="0" />
+                        </label>
+                        <output className="pb-2 text-right text-sm text-luma-smoke tabular-nums">{share(allocation, nominal)}</output>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <AllocationPager {...destinationPage} onChange={setAllocationPage} disabled={pending} />
                 <p className={`text-sm ${invalidDraft ? "text-luma-coral" : "text-luma-smoke"}`} aria-live="polite">
                   {draftRemaining < 0 ? `Melebihi gaji ${rupiah.format(-draftRemaining)}` :

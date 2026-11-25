@@ -137,31 +137,33 @@ export function AddAccountModal({ isOpen, onClose, onSuccess }: AddAccountModalP
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Label singkat
-          </label>
-          <input
-            type="text"
-            placeholder="Misal: Saku Tambahan, Tabungan Pribadi, Rekening Bisnis"
-            value={tag}
-            onChange={(e) => setTag(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
-          />
-        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+              Label singkat
+            </label>
+            <input
+              type="text"
+              placeholder="Misal: Saku Tambahan, Tabungan Pribadi, Rekening Bisnis"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition"
+            />
+          </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Saldo awal (opsional)
-          </label>
-          <CurrencyInput
-            value={initialBalance}
-            onChange={setInitialBalance}
-            placeholder="0"
-          />
-          <p className="text-xs text-luma-smoke mt-1">
-            Jika diisi lebih dari Rp 0, sistem otomatis mencatat transaksi pemasukan &ldquo;Saldo awal&rdquo; di riwayat Transaksi.
-          </p>
+          <div>
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+              Saldo awal (opsional)
+            </label>
+            <CurrencyInput
+              value={initialBalance}
+              onChange={setInitialBalance}
+              placeholder="0"
+            />
+            <p className="text-xs text-luma-smoke mt-1">
+              Jika diisi lebih dari Rp 0, sistem otomatis mencatat transaksi pemasukan &ldquo;Saldo awal&rdquo; di riwayat Transaksi.
+            </p>
+          </div>
         </div>
 
         <div className="pt-3 flex justify-end gap-3 border-t border-luma-smokeline mt-5">

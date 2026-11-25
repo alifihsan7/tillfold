@@ -134,44 +134,46 @@ export function TransferModal({ isOpen, onClose, onSuccess, accountOptions, init
           </div>
         </div>
 
-        {/* Nominal with CurrencyInput */}
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Nominal
-          </label>
-          <CurrencyInput
-            value={amount}
-            onChange={setAmount}
-            placeholder="0"
-            required
-            accent="cyan"
-            quickAmounts={[50000, 100000, 200000, 500000]}
-          />
-        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Nominal with CurrencyInput */}
+          <div>
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+              Nominal
+            </label>
+            <CurrencyInput
+              value={amount}
+              onChange={setAmount}
+              placeholder="0"
+              required
+              accent="cyan"
+              quickAmounts={[50000, 100000, 200000, 500000]}
+            />
+          </div>
 
-        {/* Catatan / Keterangan */}
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Catatan (opsional)
-          </label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Contoh: Top up tabungan dingin"
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-luma-smoke focus:outline-none focus:border-cyanHub transition"
-          />
-        </div>
+          {/* Catatan / Keterangan */}
+          <div>
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+              Catatan (opsional)
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Contoh: Top up tabungan dingin"
+              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-luma-smoke focus:outline-none focus:border-cyanHub transition"
+            />
+          </div>
 
-        {/* Tanggal */}
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Tanggal transaksi
-          </label>
-          <DateField label="Tanggal transaksi"
-            value={date}
-            onChange={(dateValue) => setDate(dateValue)}
-          />
+          {/* Tanggal */}
+          <div>
+            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+              Tanggal transaksi
+            </label>
+            <DateField label="Tanggal transaksi"
+              value={date}
+              onChange={(dateValue) => setDate(dateValue)}
+            />
+          </div>
         </div>
 
         {/* Actions Footer */}

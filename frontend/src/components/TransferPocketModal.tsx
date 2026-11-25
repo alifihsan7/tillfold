@@ -190,7 +190,7 @@ export function TransferPocketModal({
         )}
 
         {/* Source & Destination Selector with tactile swap */}
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-luma-secondary">
@@ -217,7 +217,7 @@ export function TransferPocketModal({
             />
           </div>
 
-          <div className="flex justify-center -my-1">
+          <div className="flex justify-center md:pb-0.5">
             <button
               type="button"
               onClick={handleSwap}
@@ -225,7 +225,7 @@ export function TransferPocketModal({
               title="Tukar kantong asal dan tujuan"
               className="p-2 rounded-full bg-white/[0.04] border border-luma-smokeline hover:bg-white/[0.08] hover:border-white/[0.2] text-luma-smoke hover:text-luma-ivory transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
-              <ArrowDown className="w-3.5 h-3.5" aria-hidden="true" />
+              <ArrowDown className="w-3.5 h-3.5 md:-rotate-90" aria-hidden="true" />
               <span className="sr-only">Tukar posisi kantong</span>
             </button>
           </div>
@@ -263,62 +263,64 @@ export function TransferPocketModal({
           </div>
         </div>
 
-        {/* Nominal with CurrencyInput */}
-        <div className="space-y-1.5 pt-1">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-luma-secondary">
-              Nominal
-            </label>
-            {sourceBalance > 0 && (
-              <button
-                type="button"
-                onClick={handleSetMax}
-                disabled={loading}
-                className="luma-text-action !min-h-0 !py-0"
-              >
-                Pindah semua ({formatRupiah(sourceBalance)})
-              </button>
-            )}
-          </div>
-          <CurrencyInput
-            value={amount}
-            onChange={(val) => {
-              setAmount(val);
-              setError(null);
-            }}
-            placeholder="0"
-            required
-            accent="amber"
-            quickAmounts={[50000, 100000, 200000, 500000]}
-          />
-        </div>
-
-        {/* Real-time Balance Preview */}
-        {numericAmount > 0 && sourcePocket && targetPocket && fromPocketId !== toPocketId && (
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-2">
-            <span className="text-xs text-luma-smoke font-medium block">
-              Saldo setelah dipindah
-            </span>
-            <div className="grid grid-cols-2 gap-3 text-xs tabular-nums">
-              <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
-                <span className="text-luma-smoke block truncate">{sourcePocket.name}</span>
-                <span
-                  className={`font-semibold block mt-0.5 ${
-                    sourceBalance - numericAmount < 0 ? "text-luma-coral" : "text-luma-ivory"
-                  }`}
+        <div className="grid gap-4 md:grid-cols-2 md:items-start">
+          {/* Nominal with CurrencyInput */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-luma-secondary">
+                Nominal
+              </label>
+              {sourceBalance > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSetMax}
+                  disabled={loading}
+                  className="luma-text-action !min-h-0 !py-0"
                 >
-                  {formatRupiah(sourceBalance - numericAmount)}
-                </span>
-              </div>
-              <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
-                <span className="text-luma-smoke block truncate">{targetPocket.name}</span>
-                <span className="font-semibold text-luma-sage block mt-0.5">
-                  {formatRupiah(targetBalance + numericAmount)}
-                </span>
+                  Pindah semua ({formatRupiah(sourceBalance)})
+                </button>
+              )}
+            </div>
+            <CurrencyInput
+              value={amount}
+              onChange={(val) => {
+                setAmount(val);
+                setError(null);
+              }}
+              placeholder="0"
+              required
+              accent="amber"
+              quickAmounts={[50000, 100000, 200000, 500000]}
+            />
+          </div>
+
+          {/* Real-time Balance Preview */}
+          {numericAmount > 0 && sourcePocket && targetPocket && fromPocketId !== toPocketId && (
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-luma-smokeline space-y-2">
+              <span className="text-xs text-luma-smoke font-medium block">
+                Saldo setelah dipindah
+              </span>
+              <div className="grid grid-cols-2 gap-3 text-xs tabular-nums">
+                <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
+                  <span className="text-luma-smoke block truncate">{sourcePocket.name}</span>
+                  <span
+                    className={`font-semibold block mt-0.5 ${
+                      sourceBalance - numericAmount < 0 ? "text-luma-coral" : "text-luma-ivory"
+                    }`}
+                  >
+                    {formatRupiah(sourceBalance - numericAmount)}
+                  </span>
+                </div>
+                <div className="bg-obsidian-panel/60 p-2.5 rounded-xl border border-white/[0.04]">
+                  <span className="text-luma-smoke block truncate">{targetPocket.name}</span>
+                  <span className="font-semibold text-luma-sage block mt-0.5">
+                    {formatRupiah(targetBalance + numericAmount)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Keterangan / Note (Optional) */}
         <div className="space-y-1.5">

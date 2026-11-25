@@ -156,166 +156,171 @@ export function AddGoalModal({ isOpen, onClose, onSuccess, availableAccounts }: 
           </div>
         )}
 
-        {/* Nama Target */}
-        <div>
-          <label htmlFor={`${formId}-name`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Nama target <span className="text-coralFall">*</span>
-          </label>
-          <input
-            id={`${formId}-name`}
-            type="text"
-            required
-            placeholder="Contoh: Dana Dingin BRI 2, Laptop M3 Pro..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-luma-smoke"
-          />
-        </div>
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] md:items-start">
+          <div className="grid gap-4 md:grid-cols-2 md:gap-3">
+            {/* Nama Target */}
+            <div>
+              <label htmlFor={`${formId}-name`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                Nama target <span className="text-coralFall">*</span>
+              </label>
+              <input
+                id={`${formId}-name`}
+                type="text"
+                required
+                placeholder="Contoh: Dana Dingin BRI 2, Laptop M3 Pro..."
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-luma-smoke"
+              />
+            </div>
 
-        {/* Nominal Target */}
-        <div>
-          <label htmlFor={`${formId}-target`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Nominal target (Rp) <span className="text-coralFall">*</span>
-          </label>
-          <CurrencyInput
-            id={`${formId}-target`}
-            value={targetAmount}
-            onChange={(raw) => setTargetAmount(raw)}
-            placeholder="5.000.000"
-            required
-            accent={color === "emerald" ? "mint" : color === "cyan" ? "cyan" : color === "rose" ? "coral" : "amber"}
-            quickAmounts={[1000000, 3000000, 5000000, 10000000]}
-          />
-        </div>
+            {/* Nominal Target */}
+            <div>
+              <label htmlFor={`${formId}-target`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                Nominal target (Rp) <span className="text-coralFall">*</span>
+              </label>
+              <CurrencyInput
+                id={`${formId}-target`}
+                value={targetAmount}
+                onChange={(raw) => setTargetAmount(raw)}
+                placeholder="5.000.000"
+                required
+                accent={color === "emerald" ? "mint" : color === "cyan" ? "cyan" : color === "rose" ? "coral" : "amber"}
+                quickAmounts={[1000000, 3000000, 5000000, 10000000]}
+              />
+            </div>
 
-        {/* 2 Kolom: Rekening & Kategori */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-              Sinkronisasi rekening
-            </label>
-            <CustomSelect
-              label="Sinkronisasi rekening"
-              options={accountOptions}
-              value={linkedAccount}
-              onChange={(val) => setLinkedAccount(val)}
-              placeholder="Pilih rekening terhubung"
-            />
+            {/* 2 Kolom: Rekening & Kategori */}
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                  Sinkronisasi rekening
+                </label>
+                <CustomSelect
+                  label="Sinkronisasi rekening"
+                  options={accountOptions}
+                  value={linkedAccount}
+                  onChange={(val) => setLinkedAccount(val)}
+                  placeholder="Pilih rekening terhubung"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                  Kategori
+                </label>
+                <CustomSelect
+                  label="Kategori target"
+                  options={CATEGORY_OPTIONS}
+                  value={category}
+                  onChange={(val) => setCategory(val)}
+                />
+              </div>
+            </div>
+
+            {!linkedAccount && (
+              <div className="md:col-span-2">
+                <label htmlFor={`${formId}-current`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                  Saldo terkumpul saat ini (Rp)
+                </label>
+                <CurrencyInput
+                  id={`${formId}-current`}
+                  value={manualCurrentAmount}
+                  onChange={(raw) => setManualCurrentAmount(raw)}
+                  placeholder="0"
+                  accent="amber"
+                />
+              </div>
+            )}
+
+            {/* 2 Kolom: Tanggal & Catatan */}
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                  Target tanggal (opsional)
+                </label>
+                <DateField label="Target tanggal"
+                  value={targetDate}
+                  onChange={(dateValue) => setTargetDate(dateValue)}
+                />
+              </div>
+
+              <div>
+                <label htmlFor={`${formId}-notes`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                  Catatan / rencana (opsional)
+                </label>
+                <input
+                  id={`${formId}-notes`}
+                  type="text"
+                  placeholder="Strategi alokasi atau tujuan..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-luma-smoke"
+                />
+              </div>
+            </div>
           </div>
+          <div className="grid gap-4 md:gap-3">
+            {/* Tema Warna - Grid 5 Kolom Proporsional */}
+            <div>
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                Tema warna aksen
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-2 gap-2 pt-0.5">
+                {COLOR_OPTIONS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setColor(c.value)}
+                    aria-pressed={color === c.value}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-2xl border text-xs font-medium transition cursor-pointer ${
+                      color === c.value
+                        ? "ui-selected"
+                        : "bg-obsidian-panel border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.16]"
+                    }`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${c.dot} shrink-0`} />
+                    <span className="truncate">{c.label}</span>
+                    {color === c.value && <Check className="w-3.5 h-3.5 text-luma-ivory shrink-0" aria-hidden="true" />}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-              Kategori
-            </label>
-            <CustomSelect
-              label="Kategori target"
-              options={CATEGORY_OPTIONS}
-              value={category}
-              onChange={(val) => setCategory(val)}
-            />
-          </div>
-        </div>
-
-        {!linkedAccount && (
-          <div>
-            <label htmlFor={`${formId}-current`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
-              Saldo terkumpul saat ini (Rp)
-            </label>
-            <CurrencyInput
-              id={`${formId}-current`}
-              value={manualCurrentAmount}
-              onChange={(raw) => setManualCurrentAmount(raw)}
-              placeholder="0"
-              accent="amber"
-            />
-          </div>
-        )}
-
-        {/* Tema Warna - Grid 5 Kolom Proporsional */}
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Tema warna aksen
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-0.5">
-            {COLOR_OPTIONS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setColor(c.value)}
-                aria-pressed={color === c.value}
-                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-2xl border text-xs font-medium transition cursor-pointer ${
-                  color === c.value
-                    ? "ui-selected"
-                    : "bg-obsidian-panel border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.16]"
-                }`}
-              >
-                <span className={`w-2.5 h-2.5 rounded-full ${c.dot} shrink-0`} />
-                <span className="truncate">{c.label}</span>
-                {color === c.value && <Check className="w-3.5 h-3.5 text-luma-ivory shrink-0" aria-hidden="true" />}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Pilih Ikon */}
-        <div>
-          <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-            Pilih ikon
-          </label>
-          <div className="grid grid-cols-6 gap-2 pt-0.5">
-            {ICON_OPTIONS.map((item) => {
-              const IconComp = item.icon;
-              const isSelected = icon === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setIcon(item.id)}
-                  aria-label={item.label}
-                  aria-pressed={isSelected}
-                  title={item.label}
-                  className={`h-11 rounded-2xl flex items-center justify-center transition cursor-pointer ${
-                    isSelected
-                      ? "ui-selected"
-                      : "bg-obsidian-panel border border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.16]"
-                  }`}
-                >
-                  <IconComp className="w-5 h-5" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 2 Kolom: Tanggal & Catatan */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-              Target tanggal (opsional)
-            </label>
-            <DateField label="Target tanggal"
-              value={targetDate}
-              onChange={(dateValue) => setTargetDate(dateValue)}
-            />
-          </div>
-
-          <div>
-            <label htmlFor={`${formId}-notes`} className="block text-xs font-semibold text-luma-smoke mb-1.5">
-              Catatan / rencana (opsional)
-            </label>
-            <input
-              id={`${formId}-notes`}
-              type="text"
-              placeholder="Strategi alokasi atau tujuan..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-luma-ember transition placeholder:text-luma-smoke"
-            />
+            {/* Pilih Ikon */}
+            <div>
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                Pilih ikon
+              </label>
+              <div className="grid grid-cols-6 gap-2 md:grid-cols-4 pt-0.5">
+                {ICON_OPTIONS.map((item) => {
+                  const IconComp = item.icon;
+                  const isSelected = icon === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setIcon(item.id)}
+                      aria-label={item.label}
+                      aria-pressed={isSelected}
+                      title={item.label}
+                      className={`h-11 rounded-2xl flex items-center justify-center transition cursor-pointer ${
+                        isSelected
+                          ? "ui-selected"
+                          : "bg-obsidian-panel border border-luma-smokeline text-luma-smoke hover:text-white hover:border-white/[0.16]"
+                      }`}
+                    >
+                      <IconComp className="w-5 h-5" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-3 pt-3 border-t border-luma-smokeline mt-5">
+        <div className="flex justify-end gap-3 pt-3 border-t border-luma-smokeline md:mt-0">
           <button
             type="button"
             onClick={onClose}

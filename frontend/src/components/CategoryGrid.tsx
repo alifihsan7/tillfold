@@ -530,7 +530,7 @@ export function CategoryGrid({
         accent="amber"
         maxWidth="form"
       >
-        <form onSubmit={handleAddCategory} className="space-y-4">
+        <form onSubmit={handleAddCategory} className="grid gap-4 md:grid-cols-2">
           {/* Tipe Selector: Expense vs Income */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-luma-secondary">Tipe kategori</label>
@@ -555,7 +555,7 @@ export function CategoryGrid({
           </div>
 
           {/* Pilihan Warna */}
-          <div className="space-y-1.5">
+          <div className="md:col-span-2 space-y-1.5">
             <label className="text-xs font-semibold text-luma-secondary">Warna aksen</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((col) => {
@@ -581,13 +581,13 @@ export function CategoryGrid({
           </div>
 
           {addError && (
-            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
+            <div className="md:col-span-2 flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{addError}</span>
             </div>
           )}
 
-          <div className="ui-dialog-actions">
+          <div className="md:col-span-2 ui-dialog-actions">
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
@@ -623,7 +623,7 @@ export function CategoryGrid({
         accent="amber"
         maxWidth="form"
       >
-        <form onSubmit={handleUpdateCategory} className="space-y-4">
+        <form onSubmit={handleUpdateCategory} className="grid gap-4 md:grid-cols-2">
           {/* Tipe Selector */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-luma-secondary">Tipe kategori</label>
@@ -647,7 +647,7 @@ export function CategoryGrid({
           </div>
 
           {/* Pilihan Warna */}
-          <div className="space-y-1.5">
+          <div className="md:col-span-2 space-y-1.5">
             <label className="text-xs font-semibold text-luma-secondary">Warna aksen</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {CATEGORY_COLORS.map((col) => {
@@ -673,13 +673,13 @@ export function CategoryGrid({
           </div>
 
           {editError && (
-            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
+            <div className="md:col-span-2 flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{editError}</span>
             </div>
           )}
 
-          <div className="ui-dialog-actions">
+          <div className="md:col-span-2 ui-dialog-actions">
             <button
               type="button"
               onClick={() => setEditingCat(null)}

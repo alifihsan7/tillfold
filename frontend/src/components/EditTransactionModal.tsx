@@ -107,9 +107,9 @@ export function EditTransactionModal({
       accent={type === "income" ? "mint" : "coral"}
       maxWidth="form"
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 text-left">
         {error && (
-          <div className="p-3 bg-coralFall/10 border border-coralFall/30 rounded-2xl text-coralFall text-xs">
+          <div className="md:col-span-2 p-3 bg-coralFall/10 border border-coralFall/30 rounded-2xl text-coralFall text-xs">
             {error}
           </div>
         )}
@@ -185,7 +185,7 @@ export function EditTransactionModal({
           />
         </div>
 
-        <div className="ui-dialog-actions">
+        <div className="md:col-span-2 ui-dialog-actions">
           <button type="button" onClick={onClose} className="luma-action-secondary">
             Batal
           </button>

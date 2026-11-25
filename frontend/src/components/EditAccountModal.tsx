@@ -100,9 +100,9 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
       icon={<Wallet className="w-5 h-5 text-luma-smoke" />}
       accent="amber"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
         {error && (
-          <div className="bg-coralFall/10 border border-coralFall/30 rounded-xl p-3 text-xs sm:text-sm text-coralFall flex items-center gap-2">
+          <div className="md:col-span-2 bg-coralFall/10 border border-coralFall/30 rounded-xl p-3 text-xs sm:text-sm text-coralFall flex items-center gap-2">
             <AlertTriangle className="size-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -127,7 +127,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
+        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <div>
             <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
               Tipe rekening
@@ -163,7 +163,7 @@ export function EditAccountModal({ account, isOpen, onClose, onSuccess }: EditAc
           />
         </div>
 
-        <div className="pt-3 flex justify-end gap-3 border-t border-luma-smokeline mt-5">
+        <div className="md:col-span-2 pt-3 flex justify-end gap-3 border-t border-luma-smokeline mt-5">
           <button
             type="button"
             onClick={onClose}

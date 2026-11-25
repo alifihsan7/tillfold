@@ -2673,67 +2673,69 @@ export default function FinanceDashboard() {
         maxWidth="form"
       >
         <form onSubmit={handleCreateSubscription} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
-              Nama tagihan / layanan
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Contoh: Internet rumah atau sewa"
-              value={subName}
-              onChange={(e) => setSubName(e.target.value)}
-              className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
-            />
-          </div>
+          <div className="grid gap-4 md:grid-cols-2 md:items-start">
+            <div>
+              <label className="block text-xs font-semibold text-luma-smoke mb-1.5">
+                Nama tagihan / layanan
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Contoh: Internet rumah atau sewa"
+                value={subName}
+                onChange={(e) => setSubName(e.target.value)}
+                className="w-full bg-obsidian-panel border border-luma-smokeline rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amberGold transition"
+              />
+            </div>
 
-          {/* Switch Mode Siklus */}
-          <div>
-            <label className="block text-xs font-semibold text-luma-smoke mb-2">
-              Metode perhitungan jatuh tempo
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
-              <button
-                type="button"
-                aria-pressed={subBillingType === "fixed_day"}
-                onClick={() => setSubBillingType("fixed_day")}
-                className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  subBillingType === "fixed_day"
-                    ? "ui-selected"
-                    : "text-luma-smoke hover:text-white"
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span>Tanggal rutin</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={subBillingType === "exact_date"}
-                onClick={() => {
-                  setSubBillingType("exact_date");
-                  if (!subExactDueDate) {
-                    const d = new Date(`${todayWib()}T12:00:00Z`);
-                    d.setUTCDate(d.getUTCDate() + 30);
-                    setSubExactDueDate(d.toISOString().split("T")[0]);
-                  }
-                }}
-                className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  subBillingType === "exact_date"
-                    ? "ui-selected"
-                    : "text-luma-smoke hover:text-white"
-                }`}
-              >
-                <Calendar className="w-3.5 h-3.5 shrink-0" />
-                <span>Tanggal tertentu</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={subBillingType === "yearly"}
-                onClick={() => setSubBillingType("yearly")}
-                className={`col-span-2 rounded-xl px-2 py-2 text-xs font-semibold ${subBillingType === "yearly" ? "ui-selected" : "text-luma-smoke hover:text-luma-ivory"}`}
-              >
-                Tahunan
-              </button>
+            {/* Switch Mode Siklus */}
+            <div>
+              <label className="block text-xs font-semibold text-luma-smoke mb-2">
+                Metode perhitungan jatuh tempo
+              </label>
+              <div className="grid grid-cols-2 gap-2 p-1 md:grid-cols-3 bg-obsidian-panel rounded-2xl border border-luma-smokeline">
+                <button
+                  type="button"
+                  aria-pressed={subBillingType === "fixed_day"}
+                  onClick={() => setSubBillingType("fixed_day")}
+                  className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    subBillingType === "fixed_day"
+                      ? "ui-selected"
+                      : "text-luma-smoke hover:text-white"
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span>Tanggal rutin</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={subBillingType === "exact_date"}
+                  onClick={() => {
+                    setSubBillingType("exact_date");
+                    if (!subExactDueDate) {
+                      const d = new Date(`${todayWib()}T12:00:00Z`);
+                      d.setUTCDate(d.getUTCDate() + 30);
+                      setSubExactDueDate(d.toISOString().split("T")[0]);
+                    }
+                  }}
+                  className={`py-2 px-2 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    subBillingType === "exact_date"
+                      ? "ui-selected"
+                      : "text-luma-smoke hover:text-white"
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                  <span>Tanggal tertentu</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={subBillingType === "yearly"}
+                  onClick={() => setSubBillingType("yearly")}
+                  className={`col-span-2 rounded-xl md:col-span-1 px-2 py-2 text-xs font-semibold ${subBillingType === "yearly" ? "ui-selected" : "text-luma-smoke hover:text-luma-ivory"}`}
+                >
+                  Tahunan
+                </button>
+              </div>
             </div>
           </div>
 

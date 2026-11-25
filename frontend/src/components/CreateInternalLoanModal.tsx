@@ -260,163 +260,167 @@ export function CreateInternalLoanModal({
           </div>
         )}
 
-        {/* Source Account & Pocket Card */}
-        <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-luma-ivory">
-              Dari rekening (pemberi pinjaman)
-            </span>
-            <span className="text-xs text-luma-smoke tabular-nums">
-              Tersedia: {formatRupiah(sourceAvailableBalance)}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Rekening sumber
-              </label>
-              <CustomSelect
-                value={sourceAccountId}
-                onChange={(val) => {
-                  setSourceAccountId(val);
-                  setSourcePocketId("");
-                  setError(null);
-                }}
-                options={accountOptions}
-                placeholder="Pilih rekening sumber..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Kantong sumber (opsional)
-              </label>
-              <CustomSelect
-                value={sourcePocketId}
-                onChange={(val) => {
-                  setSourcePocketId(val);
-                  setError(null);
-                }}
-                options={sourcePocketOptions}
-                placeholder="Pilih sub-kantong..."
-                disabled={sourcePockets.length === 0}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Swap Control Divider */}
-        <div className="relative flex items-center justify-center py-1">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-luma-smokeline" />
-          </div>
-          <button
-            type="button"
-            onClick={handleSwap}
-            title="Tukar arah sumber dan peminjam"
-            aria-label="Tukar arah sumber dan peminjam"
-            className="luma-touch relative z-10 w-9 h-9 rounded-full bg-luma-coal border border-luma-smokeline hover:border-luma-ember/60 text-luma-smoke hover:text-luma-ivory flex items-center justify-center transition shadow-sm active:scale-95 cursor-pointer"
-          >
-            <ArrowLeftRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Target Account & Pocket Card */}
-        <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-luma-ivory">
-              Ke rekening (peminjam)
-            </span>
-            {selectedTargetAccount && (
-              <span className="text-xs text-luma-smoke tabular-nums">
-                Saldo saat ini: {formatRupiah(
-                  selectedTargetPocket
-                    ? (selectedTargetPocket.balance ?? selectedTargetPocket.remaining_amount ?? 0)
-                    : (selectedTargetAccount.current_balance ?? selectedTargetAccount.initial_balance ?? 0)
-                )}
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
+          {/* Source Account & Pocket Card */}
+          <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-luma-ivory">
+                Dari rekening (pemberi pinjaman)
               </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Rekening tujuan
-              </label>
-              <CustomSelect
-                value={targetAccountId}
-                onChange={(val) => {
-                  setTargetAccountId(val);
-                  setTargetPocketId("");
-                  setError(null);
-                }}
-                options={accountOptions}
-                placeholder="Pilih rekening tujuan..."
-              />
+              <span className="text-xs text-luma-smoke tabular-nums">
+                Tersedia: {formatRupiah(sourceAvailableBalance)}
+              </span>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-luma-smoke mb-1.5">
-                Kantong tujuan (opsional)
-              </label>
-              <CustomSelect
-                value={targetPocketId}
-                onChange={(val) => {
-                  setTargetPocketId(val);
-                  setError(null);
-                }}
-                options={targetPocketOptions}
-                placeholder="Pilih sub-kantong..."
-                disabled={targetPockets.length === 0}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-luma-smoke mb-1.5">
+                  Rekening sumber
+                </label>
+                <CustomSelect
+                  value={sourceAccountId}
+                  onChange={(val) => {
+                    setSourceAccountId(val);
+                    setSourcePocketId("");
+                    setError(null);
+                  }}
+                  options={accountOptions}
+                  placeholder="Pilih rekening sumber..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-luma-smoke mb-1.5">
+                  Kantong sumber (opsional)
+                </label>
+                <CustomSelect
+                  value={sourcePocketId}
+                  onChange={(val) => {
+                    setSourcePocketId(val);
+                    setError(null);
+                  }}
+                  options={sourcePocketOptions}
+                  placeholder="Pilih sub-kantong..."
+                  disabled={sourcePockets.length === 0}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Swap Control Divider */}
+          <div className="relative flex items-center justify-center py-1">
+            <div className="absolute inset-0 flex items-center md:hidden" aria-hidden="true">
+              <div className="w-full border-t border-luma-smokeline" />
+            </div>
+            <button
+              type="button"
+              onClick={handleSwap}
+              title="Tukar arah sumber dan peminjam"
+              aria-label="Tukar arah sumber dan peminjam"
+              className="luma-touch relative z-10 w-9 h-9 rounded-full bg-luma-coal border border-luma-smokeline hover:border-luma-ember/60 text-luma-smoke hover:text-luma-ivory flex items-center justify-center transition shadow-sm active:scale-95 cursor-pointer"
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Target Account & Pocket Card */}
+          <div className="rounded-2xl bg-white/[0.03] border border-luma-smokeline p-4 space-y-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-luma-ivory">
+                Ke rekening (peminjam)
+              </span>
+              {selectedTargetAccount && (
+                <span className="text-xs text-luma-smoke tabular-nums">
+                  Saldo saat ini: {formatRupiah(
+                    selectedTargetPocket
+                      ? (selectedTargetPocket.balance ?? selectedTargetPocket.remaining_amount ?? 0)
+                      : (selectedTargetAccount.current_balance ?? selectedTargetAccount.initial_balance ?? 0)
+                  )}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-luma-smoke mb-1.5">
+                  Rekening tujuan
+                </label>
+                <CustomSelect
+                  value={targetAccountId}
+                  onChange={(val) => {
+                    setTargetAccountId(val);
+                    setTargetPocketId("");
+                    setError(null);
+                  }}
+                  options={accountOptions}
+                  placeholder="Pilih rekening tujuan..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-luma-smoke mb-1.5">
+                  Kantong tujuan (opsional)
+                </label>
+                <CustomSelect
+                  value={targetPocketId}
+                  onChange={(val) => {
+                    setTargetPocketId(val);
+                    setError(null);
+                  }}
+                  options={targetPocketOptions}
+                  placeholder="Pilih sub-kantong..."
+                  disabled={targetPockets.length === 0}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Amount Input */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <label htmlFor="loan-amount-input" className="block text-xs font-medium text-luma-smoke">
-              Nominal pinjaman
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Amount Input */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <label htmlFor="loan-amount-input" className="block text-xs font-medium text-luma-smoke">
+                Nominal pinjaman
+              </label>
+              {sourceAvailableBalance > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSetMax}
+                  className="luma-text-action !min-h-0 !py-0"
+                >
+                  Pakai maksimal
+                </button>
+              )}
+            </div>
+            <CurrencyInput
+              id="loan-amount-input"
+              value={amount}
+              onChange={(val) => {
+                setAmount(val);
+                setError(null);
+              }}
+              placeholder="0"
+              quickAmounts={[50000, 100000, 250000, 500000, 1000000]}
+              autoFocus
+            />
+          </div>
+
+          {/* Note / Keperluan Input */}
+          <div className="space-y-1.5">
+            <label htmlFor="loan-note-input" className="block text-xs font-medium text-luma-smoke">
+              Keperluan (opsional)
             </label>
-            {sourceAvailableBalance > 0 && (
-              <button
-                type="button"
-                onClick={handleSetMax}
-                className="luma-text-action !min-h-0 !py-0"
-              >
-                Pakai maksimal
-              </button>
-            )}
+            <input
+              id="loan-note-input"
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Contoh: Talangi makan siang tim, Beli bensin, Tiket konser..."
+              maxLength={255}
+              className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-ember rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-luma-smoke outline-none transition"
+            />
           </div>
-          <CurrencyInput
-            id="loan-amount-input"
-            value={amount}
-            onChange={(val) => {
-              setAmount(val);
-              setError(null);
-            }}
-            placeholder="0"
-            quickAmounts={[50000, 100000, 250000, 500000, 1000000]}
-            autoFocus
-          />
-        </div>
-
-        {/* Note / Keperluan Input */}
-        <div className="space-y-1.5">
-          <label htmlFor="loan-note-input" className="block text-xs font-medium text-luma-smoke">
-            Keperluan (opsional)
-          </label>
-          <input
-            id="loan-note-input"
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Contoh: Talangi makan siang tim, Beli bensin, Tiket konser..."
-            maxLength={255}
-            className="w-full bg-obsidian-panel border border-luma-smokeline focus:border-luma-ember rounded-xl px-3.5 py-2.5 text-sm text-slateText-primary placeholder:text-luma-smoke outline-none transition"
-          />
         </div>
 
         {/* Informational invariant disclaimer */}

@@ -98,3 +98,17 @@ const emptyAccounts = renderToStaticMarkup(React.createElement(AccountGrid, {
 assert.doesNotMatch(emptyAccounts, /ai7-account-card|Rekening Utama|Dana Darurat/);
 assert.match(text(emptyAccounts), /Belum ada rekening/);
 console.log("PASS: an empty session cannot fabricate account cards after sign-out.");
+
+const { summarizePocketCash } = loadComponent(path.resolve(__dirname, "../src/lib/pocketCashSummary.ts"));
+for (const slug of ["utama", "utama-17"]) {
+  const cash = summarizePocketCash([{ id: 1, slug, uses_unallocated_cash: true, allocation_amount: 1000000, balance: 1000000 }, { id: 2, slug: "bills", allocation_amount: 300000, balance: 300000 }]);
+  assert.equal(cash.freeBalance, 1000000);
+  assert.equal(cash.allocatedBalance, 300000);
+  assert.equal(cash.allocatedPockets.length, 1);
+}
+const reserved = summarizePocketCash([{ id: 1, slug: "utama-protected", uses_unallocated_cash: false, allocation_amount: 200000, balance: 150000 }, { id: 2, slug: "utama-explicit", uses_unallocated_cash: false, allocation_amount: 100000, balance: -25000 }]);
+assert.equal(reserved.freeBalance, 0);
+assert.equal(reserved.allocatedBalance, 125000);
+console.log("PASS: account-specific free cash is not double-counted as allocated pockets; explicit allocations and debt keep their values.");
+
+assert.equal(summarizePocketCash([{ id: 1, slug: "utama-17", role: "operasional", balance: 500000 }]).freeBalance, 500000);

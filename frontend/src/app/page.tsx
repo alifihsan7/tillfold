@@ -1635,7 +1635,7 @@ export default function FinanceDashboard() {
       </nav>
 
       {/* MAIN VIEWPORT */}
-      <main id="main-content" ref={mainContentRef} className="luma-main flex-1 overflow-y-auto w-full">
+      <main id="main-content" data-view={activeNav} ref={mainContentRef} className="luma-main flex-1 overflow-y-auto w-full">
         {/* Persistent Sticky Topbar Header — slim Luma: period + utilities menu */}
         <header className="luma-topbar sticky top-0 z-20 bg-luma-charcoal/90 backdrop-blur-md border-b border-luma-smokeline/60 py-2.5 px-4 sm:px-6 lg:px-8">
           <div className="luma-topbar-inner max-w-7xl 2xl:max-w-[1600px] mx-auto w-full flex flex-row items-center justify-between gap-3 sm:gap-4">
@@ -1785,7 +1785,7 @@ export default function FinanceDashboard() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
-                className="luma-action-primary shrink-0 whitespace-nowrap"
+                className={`${activeNav === "Transaksi" ? "luma-action-primary" : "luma-action-secondary"} shrink-0 whitespace-nowrap`}
               >
                 <Plus className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span>Catat transaksi</span>
@@ -1985,7 +1985,7 @@ export default function FinanceDashboard() {
         {/* ============================================================== */}
         {activeNav === "Anggaran" && (
           <div className="space-y-8 animate-fadeIn">
-            <section aria-labelledby="budget-daily-title" className="luma-matte space-y-3 p-4 sm:p-6" aria-busy={loading}>
+            <section aria-labelledby="budget-daily-title" className="tf-budget-priority luma-matte space-y-3 p-4 sm:p-6" aria-busy={loading}>
               <h2 id="budget-daily-title" className="ai7-type-section">Batas belanja harian</h2>
               {loading ? (
                 <Skeleton className="h-8 w-40" />
@@ -2453,12 +2453,12 @@ export default function FinanceDashboard() {
               <div className="space-y-6 animate-fadeIn">
                 <div className="luma-glass !rounded-3xl p-6 sm:p-7 space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-luma-smokeline">
-                    <div className="flex items-center gap-4">
+                    <div className="min-w-0 flex-1 flex items-center gap-4">
                       <div className="w-14 h-14 rounded-full bg-luma-sage/15 border border-luma-sage/30 text-luma-sage font-semibold text-xl flex items-center justify-center shrink-0">
                         {currentUser ? currentUser.full_name.charAt(0).toUpperCase() : "U"}
                       </div>
-                      <div>
-                        <h2 className="ai7-type-section text-luma-ivory tracking-tight">
+                      <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                        <h2 className="tf-profile-identity ai7-type-section text-luma-ivory tracking-tight">
                           {currentUser?.full_name || "Pengguna tamu"}
                         </h2>
                         <p className="text-xs text-luma-smoke font-sans mt-0.5">
@@ -2468,7 +2468,7 @@ export default function FinanceDashboard() {
                           {currentUser ? (
                             <span className="inline-flex items-center gap-1.5 text-xs text-luma-sage font-medium px-2.5 py-0.5 rounded-full bg-luma-sage/10 border border-luma-sage/25">
                               <span className="w-1.5 h-1.5 rounded-full bg-luma-sage"></span>
-                              Akun terverifikasi
+                              Akun aktif
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-xs text-luma-smoke font-medium px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-luma-smokeline">
@@ -2497,7 +2497,7 @@ export default function FinanceDashboard() {
                             setProfileModalTab("profile");
                             setIsProfileModalOpen(true);
                           }}
-                          className="luma-action-secondary text-xs"
+                          className="luma-action-primary text-xs"
                         >
                           Ubah Profil &amp; Telegram
                         </button>

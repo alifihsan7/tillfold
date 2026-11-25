@@ -1,3 +1,4 @@
+import { FinancialSummary } from "./ui/FinancialSummary";
 import { CashFlowRange } from "@/lib/dailyCashFlow";
 import { TransactionCalendar } from "./TransactionCalendar";
 import { formatSignedRupiah } from "@/lib/format";
@@ -9,9 +10,6 @@ import {
   Search,
   X,
   RotateCcw,
-  ArrowDownLeft,
-  ArrowUpRight,
-  ArrowLeftRight,
   Calendar,
   Filter,
   ChevronLeft,
@@ -19,7 +17,6 @@ import {
   Receipt,
 } from "@/components/icons";
 import { CustomSelect, SelectOption } from "./ui/CustomSelect";
-import { Skeleton } from "./ui/Skeleton";
 import { Chip, ChipRow, SegmentedControl } from "./ui/controls";
 import { TransactionTable, Transaction } from "./TransactionTable";
 import { CategoryItem } from "./ManageCategoriesModal";
@@ -225,104 +222,10 @@ export function TransactionLedgerView({
       {historyError && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-luma-coral">
         <span>{historyError}</span><button type="button" className="luma-action-secondary" onClick={() => setRetry((value) => value + 1)}>Coba lagi</button>
       </div>}
-      {/* 1. QUICK-STATS KPI BAR (REAL-TIME AGGREGATES) */}
-      <div className="fold-metric-grid ai7-metric-grid grid gap-4">
-        {/* Total Transaksi */}
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-luma-smoke">
-            <span className="text-xs font-medium truncate">Total transaksi</span>
-            <Receipt className="w-4 h-4 text-luma-smoke shrink-0" />
-          </div>
-          <div className="mt-2.5">
-            {loading ? (
-              <Skeleton className="h-7 w-20 rounded-full" />
-            ) : (
-              <div className="ai7-type-metric text-white tracking-tight">
-                {stats.count}{" "}
-                <span className="text-xs font-normal text-luma-smoke">item</span>
-              </div>
-            )}
-            <p className="text-xs text-luma-smoke mt-0.5 truncate">
-              {activeFiltersCount > 0 ? "Berdasarkan filter aktif" : "Seluruh catatan kas"}
-            </p>
-          </div>
-        </div>
-
-        {/* Total Pemasukan */}
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-luma-smoke">
-            <span className="text-xs font-medium truncate">Total pemasukan</span>
-            <div className="w-6 h-6 rounded-full bg-mintRise/15 border border-mintRise/30 flex items-center justify-center text-mintRise shrink-0">
-              <ArrowDownLeft className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="mt-2.5">
-            {loading ? (
-              <Skeleton className="h-7 w-28 rounded-full" />
-            ) : (
-              <div className="ai7-type-metric text-mintRise tracking-tight truncate">
-                +{formatRupiah(stats.income)}
-              </div>
-            )}
-            <p className="text-xs text-luma-smoke mt-0.5 truncate">
-              {stats.opening > 0 ? `Tanpa saldo awal ${formatRupiah(stats.opening)}` : "Pemasukan sesuai filter"}
-            </p>
-          </div>
-        </div>
-
-        {/* Total Pengeluaran */}
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-luma-smoke">
-            <span className="text-xs font-medium truncate">Total pengeluaran</span>
-            <div className="w-6 h-6 rounded-full bg-coralFall/15 border border-coralFall/30 flex items-center justify-center text-coralFall shrink-0">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="mt-2.5">
-            {loading ? (
-              <Skeleton className="h-7 w-28 rounded-full" />
-            ) : (
-              <div className="ai7-type-metric text-coralFall tracking-tight truncate">
-                -{formatRupiah(stats.expense)}
-              </div>
-            )}
-            <p className="text-xs text-luma-smoke mt-0.5 truncate">
-              Pengeluaran sesuai filter
-            </p>
-          </div>
-        </div>
-
-        {/* Arus Kas Bersih (Net Flow) */}
-        <div className="bg-obsidian-card border border-luma-smokeline rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between gap-2 text-luma-smoke">
-            <span className="text-xs font-medium truncate">Arus kas bersih</span>
-            <div className="w-6 h-6 rounded-full bg-cyanHub/15 border border-cyanHub/30 flex items-center justify-center text-cyanHub shrink-0">
-              <ArrowLeftRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="mt-2.5">
-            {loading ? (
-              <Skeleton className="h-7 w-28 rounded-full" />
-            ) : (
-              <div
-                className={`ai7-type-metric tracking-tight truncate ${
-                  stats.net >= 0 ? "text-mintRise" : "text-coralFall"
-                }`}
-              >
-                {formatSignedRupiah(stats.net, stats.net >= 0, formatRupiah)}
-              </div>
-            )}
-            <p className="text-xs text-luma-smoke mt-0.5 truncate">
-              {stats.net >= 0 ? "Surplus kas terfilter" : "Defisit kas terfilter"}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* 2. FILTER & CONTROL PANEL */}
       <div className="fold-ledger-filters fold-card p-4 sm:p-5 space-y-4">
         {/* Top Control Bar: Search & Account Pills */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+        <div className="tf-history-controls flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
           {/* Account Tabs */}
           <ChipRow label="Filter rekening" className="w-full lg:w-auto lg:max-w-[60%]">
             {accounts.map((tab) => (
@@ -334,7 +237,7 @@ export function TransactionLedgerView({
           </ChipRow>
 
           {/* Search Bar & Quick Add */}
-          <div className="flex items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
+          <div className="tf-history-search flex items-center gap-2 w-full lg:w-auto shrink-0 justify-end">
             <div className="relative flex-1 lg:w-64">
               <Search className="w-4 h-4 text-luma-smoke absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -483,6 +386,14 @@ export function TransactionLedgerView({
 
       {/* 3. TRANSACTION TABLE */}
       <div className="space-y-3">
+        <header className="tf-history-results"><h2 className="ai7-type-section">Riwayat transaksi</h2><p role="status" aria-live="polite">{loading ? "Memuat riwayat…" : `${stats.count} transaksi ditemukan`}</p></header>
+        <details className="tf-history-summary"><summary>Lihat ringkasan nominal</summary>
+          <FinancialSummary heading="Ringkasan hasil filter" loading={loading} compact
+            primary={{ label: "Selisih", value: formatSignedRupiah(stats.net, stats.net >= 0, formatRupiah), description: "Sesuai pencarian dan filter aktif", tone: stats.net < 0 ? "expense" : "neutral" }}
+            supporting={[{ label: "Pemasukan", value: `+${formatRupiah(stats.income)}`, tone: "income" }, { label: "Pengeluaran", value: `−${formatRupiah(stats.expense)}`, tone: "expense" }]}>
+            {stats.opening > 0 && <p>Saldo awal {formatRupiah(stats.opening)} dicatat terpisah dari pemasukan.</p>}
+          </FinancialSummary>
+        </details>
         <TransactionTable
           transactions={paginatedTransactions}
           newTransactionIds={newTransactionIds}

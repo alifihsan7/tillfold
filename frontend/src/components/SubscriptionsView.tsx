@@ -1,3 +1,4 @@
+import { FinancialSummary } from "./ui/FinancialSummary";
 import React, { useState } from "react";
 import { BillPaymentModal } from "./BillPaymentModal";
 import { Trash2, Calendar, Edit2, Clock, Pause, Play } from "@/components/icons";
@@ -56,16 +57,9 @@ export function SubscriptionsView({
   const today = todayWib();
   return (
     <div className="ai7-subscriptions space-y-8">
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-y border-luma-smokeline py-5 sm:grid-cols-3" aria-label="Ringkasan tagihan" aria-busy={loading}>
-        {[
-          { label: "Komitmen bulanan", value: formatRupiah(subsData.total_monthly_commitment), color: "text-luma-ivory", className: "col-span-2 sm:col-span-1" },
-          { label: "Tagihan aktif", value: String(subsData.active_count), color: "text-luma-ivory", className: "" },
-          { label: "Jatuh tempo pekan ini", value: String(subsData.upcoming_this_week), color: subsData.upcoming_this_week > 0 ? "text-luma-gold" : "text-luma-ivory", className: "" },
-        ].map((item) => <div key={item.label} className={`min-w-0 space-y-2 ${item.className}`}>
-          <dt className="text-xs text-luma-smoke">{item.label}</dt>
-          <dd className={`ai7-type-metric ${item.color}`}>{loading ? <Skeleton className="h-8 w-24" /> : item.value}</dd>
-        </div>)}
-      </dl>
+      <FinancialSummary heading="Ringkasan tagihan" loading={loading}
+        primary={{ label: "Komitmen bulanan", value: formatRupiah(subsData.total_monthly_commitment), description: "Total tagihan aktif, disetarakan per bulan" }}
+        supporting={[{ label: "Tagihan aktif", value: subsData.active_count }, { label: "Jatuh tempo pekan ini", value: subsData.upcoming_this_week }]} />
 
       {/* Subscriptions Grid Cards */}
       <div className="space-y-4">
@@ -192,7 +186,7 @@ export function SubscriptionsView({
                 <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-luma-smokeline">
                   {sub.is_active && sub.payment_period && !sub.is_paid && onPaymentChanged &&
                     <button type="button" onClick={() => setPayId(sub.id)} aria-label={"Catat pembayaran " + sub.name}
-                      className="luma-action-primary">Catat pembayaran</button>}
+                      className={isToday || paymentOverdue ? "luma-action-primary" : "luma-action-secondary"}>Catat pembayaran</button>}
                   {onEdit && (
                     <button
                       type="button"

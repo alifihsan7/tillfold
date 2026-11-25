@@ -587,6 +587,7 @@ def compute_pockets_summary(
             role=p.role,
             balance=pocket_bal,
             current_balance=pocket_bal,
+            uses_unallocated_cash=p.uses_unallocated_cash,
             allocation_amount=allocation,
             target_amount=target,
             spent_amount=spent,

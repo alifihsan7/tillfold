@@ -131,7 +131,8 @@ export interface PocketItem {
   slug: string;
   balance?: number;
   current_balance?: number;
-  allocation_amount?: number;
+  uses_unallocated_cash?: boolean;
+  allocation_amount?: number | null;
   target_amount: number;
   spent_amount: number;
   remaining_amount: number;

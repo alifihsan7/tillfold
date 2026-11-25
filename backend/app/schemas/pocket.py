@@ -126,6 +126,7 @@ class PocketItemResponse(BaseModel):
     role: str = "operasional"
     balance: int = 0
     current_balance: int = 0
+    uses_unallocated_cash: bool = False
     allocation_amount: int = 0
     target_amount: int = 0
     spent_amount: int = 0

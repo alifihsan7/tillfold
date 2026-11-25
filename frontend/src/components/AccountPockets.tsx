@@ -1,3 +1,4 @@
+import { summarizePocketCash } from "@/lib/pocketCashSummary";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftRight,
@@ -175,26 +176,7 @@ export function Pockets({
   const totalAccountBalance =
     data?.total_balance ?? data?.total_pocket_balance ?? data?.total_jago_balance ?? 0;
 
-  const utamaPocket = useMemo(
-    () => pockets.find((p) => p.slug === "utama" || p.slug.startsWith("utama-")),
-    [pockets]
-  );
-  const utamaBalance =
-    utamaPocket?.balance ?? utamaPocket?.remaining_amount ?? 0;
-
-  const subPockets = useMemo(
-    () => pockets.filter((p) => p.slug !== "utama"),
-    [pockets]
-  );
-
-  const subPocketsBalance = useMemo(
-    () =>
-      subPockets.reduce(
-        (sum, p) => sum + (p.balance ?? p.remaining_amount ?? 0),
-        0
-      ),
-    [subPockets]
-  );
+  const { freePocket: utamaPocket, freeBalance: utamaBalance, allocatedPockets: subPockets, allocatedBalance: subPocketsBalance } = useMemo(() => summarizePocketCash(pockets), [pockets]);
 
   const openTransferModal = (fromId?: number, toId?: number) => {
     setTransferSourceId(fromId);
@@ -262,7 +244,7 @@ export function Pockets({
 
           {/* Real Cash Metric Grid */}
           <dl className="mt-3.5 grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
-            <div className="min-w-0">
+            <div className="tf-pocket-cash-primary min-w-0">
               <dt className="text-xs text-luma-smoke">Total saldo</dt>
               <dd className="text-sm font-semibold text-luma-ivory tabular-nums [overflow-wrap:anywhere]">
                 {formatRupiah(totalAccountBalance)}
@@ -291,7 +273,7 @@ export function Pockets({
         {/* Action Controls */}
         {showActions && (
           <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
-            <Button variant="primary" onClick={() => openTransferModal()} disabled={!!error || pockets.length < 2}
+            <Button variant={pockets.length < 2 ? "secondary" : "primary"} onClick={() => openTransferModal()} disabled={!!error || pockets.length < 2}
               aria-describedby={pockets.length < 2 ? "pocket-transfer-hint" : undefined} icon={<ArrowLeftRight />}>
               Pindah saldo
             </Button>
@@ -317,7 +299,7 @@ export function Pockets({
                 type="button"
                 onClick={() => setIsAddOpen(true)}
                 disabled={!!error}
-                className="luma-action-secondary cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
+                className={`${pockets.length < 2 ? "luma-action-primary" : "luma-action-secondary"} cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5`}
               >
                 <Plus className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span>Tambah</span>

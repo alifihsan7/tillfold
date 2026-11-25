@@ -138,7 +138,7 @@ export function TransactionTable({
                     </td>
                     <td className="py-4 px-4 sm:px-6 whitespace-nowrap">
                       <span
-                        className={`inline-block px-3 py-1 rounded-badge text-xs font-sans font-medium border whitespace-nowrap ${
+                        className={`tf-category-label inline-block px-3 py-1 rounded-badge text-xs font-sans font-medium border whitespace-nowrap ${
                           isAdjustment ? "bg-white/[0.04] border-luma-smokeline text-luma-smoke" : isTransfer
                             ? "bg-luma-transfer/10 border-luma-transfer/30 text-luma-transfer"
                             : getCategoryBadgeClasses(tx.category)

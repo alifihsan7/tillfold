@@ -1,0 +1,125 @@
+/* NN/g visual hierarchy: one dominant result, supporting context, grouped controls.
+   Keep semantic status colors and keyboard focus independent of visual emphasis. */
+:root {
+  --tf-value-primary: clamp(32px, 3.2vw, 44px);
+  --tf-value-support: 20px;
+  --tf-section-space: 28px;
+  --tf-copy-muted: var(--fold-overview-muted);
+}
+
+.tf-summary { min-width: 0; padding: 26px 28px; border-radius: var(--ai7-radius-panel); background: var(--fold-surface); }
+.tf-summary-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+.tf-summary-heading h2 { font-weight: 600; }
+.tf-summary-heading > p { font-size: 12px; line-height: 1.6; color: var(--tf-copy-muted); }
+.tf-summary-content { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr); align-items: center; gap: 28px 40px; margin-top: 26px; }
+.tf-summary-primary, .tf-summary-support { min-width: 0; }
+.tf-summary dt { color: var(--fold-overview-secondary); font-size: 13px; font-weight: 400; line-height: 1.5; }
+.tf-summary-primary > dd:not(.tf-summary-description) { margin-top: 8px; font-size: var(--tf-value-primary); font-weight: 600; line-height: 1.15; letter-spacing: -.045em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tf-summary-support { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); gap: 24px; }
+.tf-summary-support > div { min-width: 0; }
+.tf-summary-support dd:not(.tf-summary-description) { margin-top: 6px; font-size: var(--tf-value-support); font-weight: 500; line-height: 1.35; letter-spacing: -.025em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tf-summary [data-tone="income"] { color: var(--fold-overview-positive); }
+.tf-summary [data-tone="expense"] { color: var(--fold-overview-negative); }
+.tf-summary .tf-summary-description, .tf-summary-note { font-size: 12px; font-weight: 400; line-height: 1.7; letter-spacing: normal; color: var(--tf-copy-muted); }
+.tf-summary .tf-summary-description { margin-top: 8px; }
+.tf-summary-note { margin-top: 20px; }
+.tf-summary-note:empty { display: none; }
+.tf-summary--compact .tf-summary-primary > dd:not(.tf-summary-description) { font-size: 32px; }
+
+/* Reading order remains the same at smaller widths; amounts never truncate. */
+@media (max-width: 900px) {
+  .tf-summary-content { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+@media (max-width: 639px) {
+  .tf-summary { padding: 22px 20px; }
+  .tf-summary-content { margin-top: 22px; }
+  .tf-summary-support { display: flex; flex-direction: column; gap: 14px; }
+  .tf-summary-support > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 2px 14px; align-items: baseline; }
+  .tf-summary-support dd:not(.tf-summary-description) { margin-top: 0; text-align: right; }
+  .tf-summary-support .tf-summary-description { grid-column: 1 / -1; }
+}
+
+/* Overview already has a strong balance card: keep its supporting flow quieter. */
+.fold-page .fold-flow dd { font-size: 22px; font-weight: 600; }
+.fold-page .fold-flow dt { font-weight: 400; }
+.fold-page .fold-hero .fold-balance { font-weight: 650; }
+.fold-page h2 { font-weight: 600; }
+.fold-page .fold-budget-stats dd { font-weight: 500; }
+.fold-page .fold-budget-status { line-height: 1.6; }
+.fold-page .fold-hero .fold-balance-caption { font-size: 13px; }
+
+/* Reports: result first, chart next, then categories and pacing context. */
+.fold-reports { gap: var(--tf-section-space); }
+.fold-report-heading p, .fold-report-caption { font-size: 13px; }
+.fold-report-day-detail { margin-top: 24px; }
+.fold-report-day-detail dd { font-size: 16px; font-weight: 500; }
+.fold-report-day-detail dt, .fold-report-selected-date > span, .fold-report-selected-date small { font-size: 12px; }
+.fold-report-selected-date strong { font-size: 14px; }
+.fold-report-chart-hint, .fold-report-flow-notes { font-size: 12px; }
+.fold-report-legend { gap: 8px; }
+.fold-report-legend > button { min-height: 36px; font-size: 12px; background: var(--fold-panel); padding-inline: 8px; }
+.fold-report-legend > button[aria-pressed="false"] { opacity: .65; background: transparent; }
+.fold-report-legend > button:hover { background: var(--fold-panel); }
+.fold-report-chart-toolbar { justify-content: flex-start; gap: 12px 20px; }
+.fold-report-category-body strong { font-size: 14px; font-weight: 500; }
+.fold-report-category-body > div:first-child { font-size: 14px; }
+.fold-report-rank { font-size: 12px; }
+
+/* Budget: today's usable amount outranks the supporting allocation cards. */
+.luma-main[data-view="Anggaran"] .tf-budget-priority { border: 0; padding: 26px 28px; }
+.fold-content .tf-budget-priority .ai7-type-metric { font-size: var(--tf-value-primary); font-weight: 600; line-height: 1.15; margin-block: 12px; }
+.luma-main[data-view="Anggaran"] .ai7-type-metric { font-size: 22px; font-weight: 500; }
+.luma-main[data-view="Anggaran"] .tf-budget-priority .ai7-type-metric { font-size: var(--tf-value-primary); }
+.luma-main[data-view="Anggaran"] :is(.luma-inset, .bg-obsidian-card) { box-shadow: none; }
+.luma-main[data-view="Anggaran"] .luma-inset .luma-inset { background: transparent; }
+
+/* Detail cards have equal standing within their group, below the page result. */
+.fold-content :is(.ai7-goal-card, .ai7-account-card) .ai7-type-metric { font-size: 22px; font-weight: 500; }
+.luma-main[data-view="Rencana"] .ai7-goal-card { border: 0; }
+.luma-main[data-view="Pengaturan"] .ai7-section { border-color: transparent; }
+.luma-main[data-view="Pengaturan"] .ai7-category-card { box-shadow: none; }
+.fold-content .ai7-type-section { font-weight: 600; letter-spacing: -.015em; }
+.fold-content .ai7-type-card { font-weight: 500; }
+.fold-content .fold-subnav { margin-bottom: 24px; }
+.luma-main .luma-action-secondary { box-shadow: none; }
+
+@media (max-width: 639px) {
+  :root { --tf-section-space: 20px; }
+  .fold-page .fold-flow dd { font-size: 18px; }
+  .fold-report-day-detail dl { gap: 10px; }
+  .fold-report-day-detail dd { font-size: 14px; }
+  .luma-main[data-view="Anggaran"] .tf-budget-priority { padding: 22px 20px; }
+}
+
+/* Categorical allocation colors identify peers; warnings retain their own accents. */
+.luma-main .allocation-panel {
+  --allocation-1: #6e8795; --allocation-2: #85978b; --allocation-3: #9a8e9c;
+  --allocation-4: #a39a87; --allocation-5: #839a9b; --allocation-6: #9a9290;
+  --allocation-7: #8f9b81; --allocation-8: #8896ac; --allocation-label: #12171d;
+}
+.light .luma-main .allocation-panel {
+  --allocation-1: #526c7e; --allocation-2: #5d7667; --allocation-3: #77677b;
+  --allocation-4: #786d53; --allocation-5: #526f70; --allocation-6: #786c67;
+  --allocation-7: #65704e; --allocation-8: #5b6d8c; --allocation-label: #ffffff;
+}
+.luma-main .allocation-legend-item { border-color: transparent; background: transparent; padding: 8px 10px; }
+.luma-main .fold-allocation-bar { min-height: 28px; padding: 0; border: 0; border-radius: 8px; }
+.fold-content .ai7-subscriptions .ai7-type-metric { font-size: 22px; font-weight: 500; }
+.luma-main .tf-category-label { border-color: transparent; }
+.fold-content .tf-profile-identity { font-size: 26px; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Find and read transactions first; inspect aggregate amounts on demand. */
+.tf-history-search { order: -1; width: 100%; }
+.tf-history-results { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+.tf-history-results p { color: var(--fold-overview-muted); font-size: 13px; }
+.tf-history-summary > summary { width: fit-content; padding-block: 8px; color: var(--fold-overview-secondary); font-size: 13px; cursor: pointer; }
+.tf-history-summary[open] > summary { margin-bottom: 8px; }
+@media (min-width: 1024px) { .tf-history-search { width: auto; flex: 1 1 280px; min-width: 240px; } }
+
+.luma-main .tf-pocket-cash-primary dd { margin-top: 3px; font-size: 22px; font-weight: 500; letter-spacing: -.025em; }
+@media (max-width: 639px) { .tf-history-summary > summary { min-height: 44px; padding-block: 12px; } }
+
+/* The period is context, not the page's primary call to action. */
+.tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button { color: var(--fold-overview-text); background: var(--fold-panel); }
+.tillfold-fold .luma-topbar-inner .luma-period-selector > button svg { color: var(--fold-overview-muted); }
+.tillfold-fold .luma-topbar .luma-topbar-inner .luma-period-selector > button:is(:hover, :active, [aria-expanded="true"]) { background: var(--fold-selected); }

@@ -1,3 +1,4 @@
+import { FinancialSummary } from "./ui/FinancialSummary";
 import React from "react";
 import { getCategoryColorDef } from "@/lib/categoryColors";
 import {
@@ -120,73 +121,11 @@ export function GoalsView({
 
   return (
     <div className="space-y-8 sm:space-y-10">
-      {/* Top Metrics Cards — Luma smoked glass */}
-      <div className="ai7-metric-grid grid gap-4">
-        <div className="luma-glass !rounded-3xl p-5 sm:p-6 space-y-2.5">
-          <div className="text-xs font-semibold text-luma-smoke truncate">
-            Total target tabungan
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-36 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-luma-ivory tracking-tight truncate tabular-nums">
-              {formatRupiah(totals.target)}
-            </div>
-          )}
-          <div className="text-xs text-luma-smoke font-sans">
-            Jumlah semua target
-          </div>
-        </div>
-
-        <div className="luma-glass !rounded-3xl p-5 sm:p-6 space-y-2.5">
-          <div className="text-xs font-semibold text-luma-smoke truncate">
-            Total terkumpul
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-36 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-luma-sage tracking-tight truncate tabular-nums">
-              {formatRupiah(totals.collected)}
-            </div>
-          )}
-          <div className="text-xs text-luma-smoke font-sans truncate tabular-nums">
-            {totals.surplus > 0 ? `Lebih ${formatRupiah(totals.surplus)} di atas target` : "Dihitung sampai batas tiap target"}
-          </div>
-        </div>
-
-        <div className="luma-glass !rounded-3xl p-5 sm:p-6 space-y-2.5">
-          <div className="text-xs font-semibold text-luma-smoke truncate">
-            Rata-rata capaian
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-24 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-luma-gold tracking-tight truncate tabular-nums">
-              {totals.averagePercentage}%
-            </div>
-          )}
-          <div className="text-xs text-luma-smoke font-sans truncate tabular-nums">
-            Sisa {formatRupiah(totals.remaining)}
-          </div>
-        </div>
-
-        <div className="luma-glass !rounded-3xl p-5 sm:p-6 space-y-2.5">
-          <div className="text-xs font-semibold text-luma-smoke truncate">
-            Status sasaran
-          </div>
-          {loading ? (
-            <Skeleton className="h-8 w-28 rounded-full" />
-          ) : (
-            <div className="ai7-type-metric text-luma-ivory tracking-tight truncate tabular-nums">
-              {goals.filter((g) => g.remaining_amount === 0).length} / {goals.length}{" "}
-              <span className="text-xs font-normal text-luma-smoke font-sans">Tercapai</span>
-            </div>
-          )}
-          <div className="text-xs text-luma-smoke font-sans">
-            {goals.filter((g) => g.remaining_amount > 0).length} target masih berjalan
-          </div>
-        </div>
-      </div>
+      <FinancialSummary heading="Progres target" loading={loading}
+        primary={{ label: "Total terkumpul", value: formatRupiah(totals.collected), description: `${goals.filter((g) => g.remaining_amount === 0).length} / ${goals.length} target tercapai · ${goals.filter((g) => g.remaining_amount > 0).length} masih berjalan` }}
+        supporting={[{ label: "Total target tabungan", value: formatRupiah(totals.target) }, { label: "Sisa menuju target", value: formatRupiah(totals.remaining) }, { label: "Rata-rata capaian", value: `${totals.averagePercentage}%` }]}>
+        {totals.surplus > 0 && <p>Lebih {formatRupiah(totals.surplus)} di atas target, dicatat terpisah dari total terkumpul.</p>}
+      </FinancialSummary>
 
       <h2 className="ai7-type-section text-luma-ivory tracking-tight">
         Progres tabungan &amp; investasi

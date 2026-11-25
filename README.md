@@ -146,6 +146,19 @@ Jika email Google cocok dengan akun Tillfold yang belum tertaut, pengguna harus 
 
 ---
 
+## Hierarki visual
+
+Acuan desain: [Visual Hierarchy in UX — Nielsen Norman Group](https://www.nngroup.com/articles/visual-hierarchy-ux-definition/).
+
+- Tentukan satu hasil utama per halaman. Laporan menonjolkan selisih periode, Rencana total terkumpul, dan Anggaran batas belanja harian.
+- Gunakan `FinancialSummary` untuk membedakan angka utama, angka pendukung, dan keterangan. Hindari kartu statistik dengan bobot yang sama untuk semua informasi.
+- Pencarian dan daftar menjadi fokus halaman Transaksi. Ringkasan nominal tetap tersedia lewat disclosure yang dapat dibuka dengan keyboard.
+- Dahulukan jarak dan pengelompokan; tambahkan latar atau garis hanya bila membantu. Fokus keyboard dan warna peringatan tetap terlihat.
+- Penekanan tombol mengikuti tindakan di bagian tersebut. Tindakan global tidak perlu selalu menjadi tombol paling menonjol.
+- Periksa desktop/HP, light/dark mode, nominal panjang, saldo minus, data kosong, serta squint test dengan isi yang realistis.
+
+---
+
 ## 💬 Format Penulisan Chat Bot Telegram
 
 Bot membaca teks bahasa Indonesia secara natural tanpa perlu format kaku:

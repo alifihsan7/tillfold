@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import "./fold2.css";
+import "./hierarchy.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = localFont({

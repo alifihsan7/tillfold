@@ -1,4 +1,5 @@
 import React from "react";
+import { FinancialSummary } from "./ui/FinancialSummary";
 import { CashFlowRange } from "@/lib/dailyCashFlow";
 import { formatDateRange } from "@/lib/format";
 import { DailyCashFlowChart } from "./DailyCashFlowChart";
@@ -78,31 +79,15 @@ export function AnalyticsView({ summary, formatRupiah, loading, onOpenTransactio
   const safe = summary.safe_to_spend;
   const daily = summary.daily_trend;
   const categories = [...summary.categories].sort((a, b) => b.total - a.total);
-  const metrics = [
-    { label: "Pemasukan", amount: summary.income, color: "text-mintRise" },
-    { label: "Pengeluaran", amount: summary.expense, color: "text-coralFall" },
-    { label: "Selisih", amount: summary.net, color: summary.net < 0 ? "text-coralFall" : "text-luma-ivory" },
-  ];
   const money = (amount: number) => amount < 0 ? `-${formatRupiah(Math.abs(amount))}` : formatRupiah(amount);
 
   return (
     <div className="fold-reports" aria-busy={loading}>
-      <section aria-labelledby="report-totals" className="fold-report-panel fold-report-summary">
-        <header className="fold-report-heading">
-          <div><h2 id="report-totals" className="ai7-type-section">Ringkasan periode</h2><p>{formatDateRange(summary.start_date, summary.end_date) || "—"}</p></div>
-          {!loading && summary.income > 0 && <span className="fold-report-ratio">{summary.savings_rate.toFixed(1)}%<span>selisih dari pemasukan</span></span>}
-        </header>
-        <dl className="fold-report-metrics">
-          {metrics.map(({ label, amount, color }) => (
-            <div key={label}>
-              <dt><span className={`fold-report-metric-dot ${color}`} aria-hidden="true" />{label}</dt>
-              <dd className={color}>{loading ? <Skeleton className="h-9 w-36 max-w-full" /> : money(amount)}</dd>
-              <dd className="fold-report-metric-caption">{label === "Pemasukan" ? "Uang yang diterima" : label === "Pengeluaran" ? "Uang yang dibelanjakan" : "Pemasukan dikurangi pengeluaran"}</dd>
-            </div>
-          ))}
-        </dl>
-        {!loading && (summary.opening_balance ?? 0) > 0 && <p className="fold-report-opening">Saldo awal {formatRupiah(summary.opening_balance ?? 0)} dicatat terpisah dari pemasukan.</p>}
-      </section>
+      <FinancialSummary heading="Hasil periode" context={formatDateRange(summary.start_date, summary.end_date) || "—"} loading={loading}
+        primary={{ label: "Selisih periode", value: money(summary.net), tone: summary.net < 0 ? "expense" : "neutral", description: summary.income > 0 ? `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(summary.savings_rate)}% dari pemasukan · pemasukan dikurangi pengeluaran` : "Pemasukan dikurangi pengeluaran" }}
+        supporting={[{ label: "Pemasukan", value: money(summary.income), tone: "income" }, { label: "Pengeluaran", value: money(summary.expense), tone: "expense" }]}>
+        {!loading && (summary.opening_balance ?? 0) > 0 && <p>Saldo awal {formatRupiah(summary.opening_balance ?? 0)} dicatat terpisah dari pemasukan.</p>}
+      </FinancialSummary>
 
       {loading ? <section className="fold-report-panel" aria-label="Memuat arus kas harian"><Skeleton className="h-6 w-40" /><Skeleton className="mt-6 h-64 w-full" /></section> : <DailyCashFlowChart key={`${summary.start_date}-${summary.end_date}`} days={daily} start={summary.start_date} end={summary.end_date} formatRupiah={formatRupiah} onOpenTransactions={onOpenTransactions} />}
 

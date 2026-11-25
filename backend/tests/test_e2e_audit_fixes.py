@@ -231,3 +231,19 @@ def test_password_validation_rejects_short_and_oversized_utf8_without_server_err
         assert c.put("/auth/me", json={"password": password}).status_code == 422
     assert db.query(User).count() == 1
     assert c.post("/auth/login", json={"username_or_email": "owner", "password": PASSWORD}).status_code == 200
+
+
+def test_pocket_summary_exposes_free_cash_without_confusing_computed_funding(isolated):
+    c, db, user = isolated
+    bank = Account(user_id=user.id, name="Bank"); db.add(bank); db.flush()
+    free = Pocket(user_id=user.id, account_id=bank.id, name="Kas bebas", slug="utama-17", role="operasional", allocation_amount=None, target_amount=0)
+    reserved = Pocket(user_id=user.id, account_id=bank.id, name="Tagihan", slug="utama-reserved", role="tagihan", allocation_amount=200000, target_amount=300000)
+    db.add_all([free, reserved, Transaction(user_id=user.id, type="income", amount=2000000, account="Bank", category="Salary", description="Audit", date=date(2026,11,25))]); db.commit()
+    response = c.get(f"/accounts/{bank.id}/pockets", params={"cycle_start":"2026-11-25", "cycle_end":"2026-12-08"})
+    assert response.status_code == 200
+    items = {item["id"]: item for item in response.json()["pockets"]}
+    assert items[free.id]["uses_unallocated_cash"] is True
+    assert items[free.id]["allocation_amount"] == 1800000  # Computed period funding is not a classification flag.
+    assert items[reserved.id]["uses_unallocated_cash"] is False
+    assert sum(item["balance"] for item in items.values()) == 2000000
+    db.refresh(free); assert free.allocation_amount is None

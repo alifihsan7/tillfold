@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, date
+from datetime import date, datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -818,3 +818,88 @@ def test_receipt_radar_callback_rcpt_xfer_atomic_and_idempotent(db_session, monk
     assert len(edit_calls_2) == 2
     assert "SUDAH TERCATAT SEBELUMNYA" in edit_calls_2[-1]["json"]["text"]
 
+
+
+@pytest.mark.parametrize("continue_recording", [False, True])
+def test_receipt_possible_duplicate_can_be_dropped_or_recorded(db_session, monkeypatch, tmp_path, continue_recording):
+    from app.bot import bot
+    from app.core import receipt_store
+
+    user = db_session.get(User, 1)
+    user.telegram_chat_id = 12345
+    occurred = datetime(2026, 11, 27, 12, 30, tzinfo=bot.WIB)
+    account = "Mandiri"
+    category = Category(user_id=1, name="Ngopi", type="expense")
+    db_session.add(category)
+    db_session.add(Transaction(
+        user_id=1, type="expense", amount=25000, account=account, category="Ngopi",
+        description="Kopi yang dicatat lewat chat", date=occurred.date(), created_at=occurred.astimezone(timezone.utc),
+    ))
+    db_session.commit()
+
+    monkeypatch.setattr(receipt_store, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(receipt_store, "PENDING_FILE", tmp_path / "receipt.json")
+    monkeypatch.setattr(bot, "SessionLocal", lambda: db_session)
+    monkeypatch.setattr(bot, "get_safe_to_spend_snippet", lambda db, user_id: "")
+    messages = []
+    monkeypatch.setattr(bot.requests, "post", lambda url, **kwargs: messages.append(kwargs["json"]) if url.endswith("editMessageText") else None)
+
+    ref = "REF-POSSIBLE-DUPLICATE"
+    receipt = {
+        "user_id": 1, "nominal": 25000, "merchant": "GoPay Customer",
+        "category": "Ngopi", "date": occurred.isoformat(),
+    }
+    assert save_pending_receipt(ref, receipt)
+
+    def press(data, private=True):
+        bot.handle_callback_query({
+            "id": "duplicate-check", "data": data, "from": {"id": 12345},
+            "message": {"chat": {"id": 12345 if private else -100, "type": "private" if private else "supergroup"}, "message_id": 21},
+        })
+
+    def buttons():
+        return {button["text"]: button["callback_data"]
+                for row in messages[-1]["reply_markup"]["inline_keyboard"] for button in row}
+
+    press(f"rcpt_rec:{ref}:{account}", private=False)
+    assert "Struk mungkin sudah dicatat" in messages[-1]["text"]
+    assert "Kopi yang dicatat lewat chat" not in messages[-1]["text"]
+    press(f"rcpt_rec:{ref}:{account}")
+    assert "Kopi yang dicatat lewat chat" in messages[-1]["text"]
+    assert db_session.query(Transaction).count() == 1
+
+    if continue_recording:
+        press(buttons()["Tetap catat"])
+        assert db_session.query(Transaction).count() == 1
+        press(buttons()["Pakai saran · Ngopi"])
+        assert db_session.query(Transaction).count() == 2
+        assert save_pending_receipt(ref, receipt)
+        press(f"rcpt_rec:{ref}:{account}")
+        assert messages[-1]["text"] == "Struk ini sudah tercatat."
+        assert db_session.query(Transaction).count() == 2
+    else:
+        press(buttons()["Abaikan struk"])
+        assert db_session.query(Transaction).count() == 1
+    assert get_pending_receipt(ref) is None
+
+
+def test_receipt_duplicate_candidates_match_account_date_amount_and_ownership(db_session):
+    from app.bot import bot
+
+    occurred = datetime(2026, 11, 27, 1, 0, tzinfo=bot.WIB)
+    utc = occurred.astimezone(timezone.utc)
+    db_session.add(User(id=2, username="another", hashed_password="pw", is_active=True, full_name="Other"))
+    values = {"user_id": 1, "type": "expense", "amount": 50000, "account": "Mandiri", "category": "Makan",
+              "description": "Kedai Uji", "date": occurred.date(), "created_at": utc - timedelta(hours=3)}
+    matches = Transaction(**values)
+    different_merchant = Transaction(**{**values, "description": "Kedai lain"})
+    db_session.add_all([matches, different_merchant])
+    for overrides in ({"user_id": 2}, {"type": "income"}, {"amount": 55000},
+                      {"account": "BRI 1"}, {"date": occurred.date() - timedelta(days=1)}):
+        db_session.add(Transaction(**{**values, **overrides, "created_at": utc}))
+    db_session.commit()
+
+    find = bot.find_similar_receipt_expenses
+    assert find(db_session, 1, "Mandiri", 50000, "Kedai Uji", "2026-11-27") == [matches]
+    assert find(db_session, 1, "Mandiri", 50000, "GoPay Customer", occurred.isoformat()) == []
+    assert find(db_session, 1, "Mandiri", 50000, "Kedai Uji", None) == []

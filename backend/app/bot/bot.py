@@ -2138,6 +2138,40 @@ def receipt_callback_key(ref_number: str, user_id: int, chat_id: int, message_id
     return blake2s(context, digest_size=12).hexdigest()
 
 
+GENERIC_RECEIPT_MERCHANTS = {"transaksi", "transaksi mandiri", "transaksi brimo", "gopay customer"}
+RECEIPT_MATCH_WINDOW = timedelta(minutes=30)
+
+
+def find_similar_receipt_expenses(
+    db: Session, user_id: int, account: str, amount: int, merchant: str, receipt_date: str | None,
+) -> list[Transaction]:
+    if not receipt_date:
+        return []
+    try:
+        occurred_at = datetime.fromisoformat(receipt_date)
+    except (TypeError, ValueError):
+        return []
+    occurred_at = occurred_at.replace(tzinfo=WIB) if occurred_at.tzinfo is None else occurred_at.astimezone(WIB)
+    query = db.query(Transaction).filter(
+        Transaction.user_id == user_id, Transaction.type == "expense", Transaction.account == account,
+        Transaction.amount == amount, Transaction.date == occurred_at.date(),
+    )
+    merchant_key = merchant.strip().lower()
+    matches = []
+    if merchant_key and merchant_key not in GENERIC_RECEIPT_MERCHANTS:
+        description = func.lower(Transaction.description)
+        matches.append(or_(
+            description == merchant_key,
+            description.startswith(f"{merchant_key} (struk ", autoescape=True),
+        ))
+    if len(receipt_date.strip()) > 10:
+        center = occurred_at.astimezone(timezone.utc)
+        matches.append(Transaction.created_at.between(center - RECEIPT_MATCH_WINDOW, center + RECEIPT_MATCH_WINDOW))
+    if not matches:
+        return []
+    return query.filter(or_(*matches)).order_by(Transaction.created_at.desc(), Transaction.id.desc()).limit(3).all()
+
+
 # The bank parser uses older labels while new accounts start with shorter names.
 RECEIPT_CATEGORY_ALIASES = {
     "makanan & minuman": "makan",
@@ -2159,8 +2193,7 @@ def suggest_receipt_category(db: Session, user_id: int, merchant: str, hint: str
         return None
 
     merchant_key = merchant.strip().lower()
-    generic_merchants = {"transaksi", "transaksi mandiri", "transaksi brimo", "gopay customer"}
-    if merchant_key and merchant_key not in generic_merchants:
+    if merchant_key and merchant_key not in GENERIC_RECEIPT_MERCHANTS:
         description = func.lower(Transaction.description)
         history = db.query(Transaction.category).filter(
             Transaction.user_id == user_id,
@@ -2322,12 +2355,42 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 send_message(chat_id, "Nominal struk tidak valid.", reply_to_message_id=msg_id, bot_token=token)
                 return
 
+            key = receipt_callback_key(ref_num, user.id, chat_id, msg_id)
+            same_reference = db.query(Transaction.id).filter(
+                Transaction.user_id == user.id,
+                Transaction.raw_text.contains(f"[receipt_radar:ref_{ref_num}]", autoescape=True),
+            )
+            if action == "rcpt_rec" and not p.get("is_transfer"):
+                if same_reference.first():
+                    delete_pending_receipt(ref_num)
+                    edit_transaction_message(chat_id, msg_id, "Struk ini sudah tercatat.",
+                                             {"inline_keyboard": []}, token)
+                    return
+                matches = find_similar_receipt_expenses(db, user.id, chosen_acc, nominal, merchant, tx_date_str)
+                if matches:
+                    is_private = msg.get("chat", {}).get("type") == "private" and chat_id == sender_id
+                    if is_private:
+                        details = "\n".join(
+                            f"• {tx.description} · {tx.date:%d/%m/%Y} · {tx.category}" for tx in matches
+                        )
+                    else:
+                        details = "Ada pengeluaran dengan nominal dan rekening yang sama pada tanggal ini."
+                    markup = {"inline_keyboard": [[
+                        {"text": "Abaikan struk", "callback_data": f"rcpt_drop:{key}:{account.id}:0"},
+                        {"text": "Tetap catat", "callback_data": f"rcpt_cat:{key}:{account.id}:0"},
+                    ]]}
+                    edit_transaction_message(
+                        chat_id, msg_id,
+                        f"Struk mungkin sudah dicatat\n\n{merchant[:255]} · {format_rp(nominal)} · {chosen_acc}\n\n{details}",
+                        markup, token,
+                    )
+                    return
+
             # Reopen old suggestion buttons that did not carry a specific category ID.
             if action in ("rcpt_rec", "rcpt_cat") or not choice:
-                if action == "rcpt_rec":
+                if action in ("rcpt_rec", "rcpt_cat") and not choice:
                     from app.api.v1.endpoints.categories import ensure_default_categories
                     ensure_default_categories(db, user.id)
-                key = receipt_callback_key(ref_num, user.id, chat_id, msg_id)
                 suggested = suggest_receipt_category(db, user.id, merchant, str(p.get("category") or ""))
                 rows = receipt_category_keyboard(db, user.id, key, account.id, suggested, choice)
                 suggestion = f"Kategori saran: {suggested.name}" if suggested else "Belum ada saran yang cocok."
@@ -2353,13 +2416,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 tx_date = datetime.now(WIB).date()
 
             db.query(User.id).filter(User.id == user.id).with_for_update().one()
-            existing = db.query(Transaction).filter(
-                Transaction.user_id == user.id,
-                Transaction.raw_text.contains(f"[receipt_radar:ref_{ref_num}]", autoescape=True),
-            ).first()
-
             markup = {"inline_keyboard": []}
-            if existing:
+            if same_reference.first():
                 edit_text = f"Struk {ref_num} sudah tercatat di Tillfold."
             else:
                 tx = Transaction(

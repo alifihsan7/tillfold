@@ -16,7 +16,7 @@ logger = logging.getLogger("ai7-finance-bot")
 from typing import Optional, List, Dict
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, case, event
+from sqlalchemy import desc, func, case, event, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
@@ -2002,12 +2002,57 @@ def receipt_callback_key(ref_number: str, user_id: int, chat_id: int, message_id
     return blake2s(context, digest_size=12).hexdigest()
 
 
-def receipt_category_keyboard(db: Session, user_id: int, key: str, account_id: int, suggested: str, page: int) -> list:
-    page_size = 8
+# The bank parser uses older labels while new accounts start with shorter names.
+RECEIPT_CATEGORY_ALIASES = {
+    "makanan & minuman": "makan",
+    "transportasi": "transport",
+    "kebutuhan harian": "belanja",
+    "langganan & servis": "tagihan",
+    "investasi & tabungan": "tabungan",
+}
+
+
+def suggest_receipt_category(db: Session, user_id: int, merchant: str, hint: str) -> Category | None:
+    from app.core.receipt_parser import infer_category
+
     categories = db.query(Category).filter(
-        Category.user_id == user_id, Category.type == "expense", Category.name != suggested,
-    ).order_by(func.lower(Category.name), Category.id).offset(page * page_size).limit(page_size + 1).all()
-    rows = [[{"text": f"Pakai saran · {suggested[:45]}", "callback_data": f"rcpt_save:{key}:{account_id}:0"}]]
+        Category.user_id == user_id, Category.type == "expense",
+    ).order_by(Category.id).all()
+    names = {category.name: category for category in categories if category.name.casefold() != "lainnya"}
+    if not names:
+        return None
+
+    merchant_key = merchant.strip().lower()
+    generic_merchants = {"transaksi", "transaksi mandiri", "transaksi brimo", "gopay customer"}
+    if merchant_key and merchant_key not in generic_merchants:
+        description = func.lower(Transaction.description)
+        history = db.query(Transaction.category).filter(
+            Transaction.user_id == user_id,
+            Transaction.type == "expense",
+            Transaction.category.in_(names),
+            or_(description == merchant_key, description.startswith(f"{merchant_key} (struk ", autoescape=True)),
+        ).distinct().limit(2).all()
+        if len(history) == 1:
+            return names[history[0][0]]
+        if history:
+            return None
+
+    by_label = {name.casefold(): category for name, category in names.items()}
+    for label in (infer_category(merchant), hint):
+        key = label.strip().casefold()
+        if category := by_label.get(key) or by_label.get(RECEIPT_CATEGORY_ALIASES.get(key, "")):
+            return category
+    return None
+
+
+def receipt_category_keyboard(db: Session, user_id: int, key: str, account_id: int, suggested: Category | None, page: int) -> list:
+    page_size = 8
+    query = db.query(Category).filter(Category.user_id == user_id, Category.type == "expense")
+    rows = []
+    if suggested is not None:
+        query = query.filter(Category.id != suggested.id)
+        rows.append([{"text": f"Pakai saran · {suggested.name[:45]}", "callback_data": f"rcpt_save:{key}:{account_id}:{suggested.id}"}])
+    categories = query.order_by(func.lower(Category.name), Category.id).offset(page * page_size).limit(page_size + 1).all()
     rows.extend([
         {"text": category.name, "callback_data": f"rcpt_save:{key}:{account_id}:{category.id}"}
     ] for category in categories[:page_size])
@@ -2122,7 +2167,6 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
             p = entry.get("parsed", entry)
             nominal = int(p.get("nominal") or 0)
             merchant = str(p.get("merchant") or "Transaksi")
-            suggested = str(p.get("category") or "Lainnya")[:100]
             bank = str(p.get("bank") or "Bank").upper()
             tx_date_str = p.get("date")
             chosen_acc = account.name
@@ -2130,29 +2174,30 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 send_message(chat_id, "Nominal struk tidak valid.", reply_to_message_id=msg_id, bot_token=token)
                 return
 
-            if action in ("rcpt_rec", "rcpt_cat"):
+            # Reopen old suggestion buttons that did not carry a specific category ID.
+            if action in ("rcpt_rec", "rcpt_cat") or not choice:
                 if action == "rcpt_rec":
                     from app.api.v1.endpoints.categories import ensure_default_categories
                     ensure_default_categories(db, user.id)
                 key = receipt_callback_key(ref_num, user.id, chat_id, msg_id)
+                suggested = suggest_receipt_category(db, user.id, merchant, str(p.get("category") or ""))
                 rows = receipt_category_keyboard(db, user.id, key, account.id, suggested, choice)
+                suggestion = f"Kategori saran: {suggested.name}" if suggested else "Belum ada saran yang cocok."
                 requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
                     "chat_id": chat_id,
                     "message_id": msg_id,
-                    "text": f"Pilih kategori untuk mencatat transaksi.\n\n{merchant[:255]} · {format_rp(nominal)}\nRekening: {chosen_acc}\nKategori saran: {suggested}",
+                    "text": f"Pilih kategori untuk mencatat transaksi.\n\n{merchant[:255]} · {format_rp(nominal)}\nRekening: {chosen_acc}\n{suggestion}",
                     "reply_markup": {"inline_keyboard": rows},
                 }, timeout=8)
                 return
 
-            cat_name = suggested
-            if choice:
-                category = db.query(Category).filter(
-                    Category.id == choice, Category.user_id == user.id, Category.type == "expense",
-                ).first()
-                if not category:
-                    send_message(chat_id, "Kategori ini sudah tidak tersedia. Pilih kategori lain.", reply_to_message_id=msg_id, bot_token=token)
-                    return
-                cat_name = category.name
+            category = db.query(Category).filter(
+                Category.id == choice, Category.user_id == user.id, Category.type == "expense",
+            ).first()
+            if not category:
+                send_message(chat_id, "Kategori ini sudah tidak tersedia. Pilih kategori lain.", reply_to_message_id=msg_id, bot_token=token)
+                return
+            cat_name = category.name
 
             try:
                 tx_date = datetime.fromisoformat(tx_date_str).date()

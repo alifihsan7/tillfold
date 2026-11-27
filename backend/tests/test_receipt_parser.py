@@ -633,7 +633,11 @@ def test_receipt_radar_category_picker_records_selected_category(db_session, mon
     press(f"rcpt_rec:{ref}:Mandiri")
     assert db_session.query(Transaction).count() == 0
     first = buttons()
-    assert "Pakai saran · Makan" in first
+    assert all(not label.startswith("Pakai saran") for label in first)
+    assert "Belum ada saran yang cocok." in messages[-1][1]["text"]
+    old_callback = next(data for label, data in first.items() if label == "Pilihan 00")
+    press(old_callback.rsplit(":", 1)[0] + ":0")
+    assert db_session.query(Transaction).count() == 0
     assert "Kategori akun lain" not in first
     assert "Pemasukan milik sendiri" not in first
     assert all(len(label.encode()) <= 64 for label in first.values())
@@ -648,6 +652,50 @@ def test_receipt_radar_category_picker_records_selected_category(db_session, mon
     assert get_pending_receipt(ref) is None
     press(second["Pilihan 08"])
     assert db_session.query(Transaction).count() == 1
+
+    next_ref = "next-receipt"
+    assert save_pending_receipt(next_ref, {
+        "user_id": 1, "nominal": 25_000, "merchant": "Kedai Uji", "category": "Makan",
+    })
+    press(f"rcpt_rec:{next_ref}:Mandiri")
+    suggested = buttons()["Pakai saran · Pilihan 08"]
+    assert suggested.endswith(":108")
+    press(suggested)
+    saved = db_session.query(Transaction).filter(Transaction.amount == 25_000).one()
+    assert saved.category == "Pilihan 08"
+
+
+def test_receipt_suggestion_uses_own_category_and_consistent_merchant_history(db_session):
+    from app.bot.bot import suggest_receipt_category
+
+    db_session.add(User(id=2, username="other", hashed_password="pw", is_active=True, full_name="Other"))
+    db_session.add_all([
+        Category(id=301, user_id=1, type="expense", name="Makan"),
+        Category(id=302, user_id=1, type="expense", name="Makan Kampus"),
+        Category(id=303, user_id=1, type="income", name="Transportasi"),
+        Category(id=304, user_id=2, type="expense", name="Transportasi"),
+    ])
+    db_session.flush()
+    assert suggest_receipt_category(db_session, 1, "Warmindo Fajar", "Lainnya").id == 301
+    assert suggest_receipt_category(db_session, 1, "Vendor Uji", "Transportasi") is None
+
+    def prior(merchant, category, user_id=1):
+        return Transaction(user_id=user_id, type="expense", description=merchant,
+                           category=category, account="Mandiri", amount=15000, date=date(2026, 11, 8))
+
+    db_session.add_all([
+        prior("Warmindo Fajar (Struk MANDIRI)", "Makan Kampus"),
+        prior("Warmindo Fajar", "Kategori yang sudah dihapus"),
+        prior("Warmindo Fajar", "Makan", user_id=2),
+        prior("GoPay Customer (Struk MANDIRI)", "Makan Kampus"),
+    ])
+    db_session.flush()
+    assert suggest_receipt_category(db_session, 1, "WARmindo Fajar", "Makanan & Minuman").id == 302
+    assert suggest_receipt_category(db_session, 1, "GoPay Customer", "Lainnya") is None
+
+    db_session.add(prior("Warmindo Fajar", "Makan"))
+    db_session.flush()
+    assert suggest_receipt_category(db_session, 1, "Warmindo Fajar", "Makanan & Minuman") is None
 
 
 def test_receipt_radar_callback_rcpt_xfer_atomic_and_idempotent(db_session, monkeypatch, tmp_path):

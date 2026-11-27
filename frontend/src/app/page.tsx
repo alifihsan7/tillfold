@@ -4,10 +4,5 @@ import { LandingEntry } from "./landing/LandingEntry";
 export const metadata = landingMetadata;
 
 export default function Home() {
-  return (
-    <>
-      <LandingEntry />
-      <LandingPage />
-    </>
-  );
+  return <LandingEntry><LandingPage /></LandingEntry>;
 }

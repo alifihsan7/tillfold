@@ -1,9 +1,10 @@
-.sessionCheck { display: none; }
-:global(html[data-tillfold-session-check]) .sessionCheck {
+.sessionStatus {
   display: grid;
   min-height: 100svh;
   place-items: center;
 }
+.sessionCheck { display: none; }
+:global(html[data-tillfold-session-check]) .sessionCheck { display: grid; }
 :global(html[data-tillfold-session-check]) .site { display: none; }
 
 .site {

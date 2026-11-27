@@ -4,7 +4,7 @@ import re
 import time
 import logging
 import requests
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import calendar
 import zoneinfo
 import json
@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, case, event, or_
 from sqlalchemy.exc import IntegrityError
 
+from app.bot.transaction_actions import PREFIX as TRANSACTION_CALLBACK_PREFIX, correction_markup, handle_transaction_action
 from app.core.config import settings
 from app.core.parser import parse_transaction, parse_multi_transactions, parse_amount
 from app.core.transfer import find_paired_transfer
@@ -268,6 +269,15 @@ def send_message(chat_id: int, text: str, parse_mode: Optional[str] = "Markdown"
     except Exception as e:
         print(f"Error sending message: {e}")
         return None
+
+def edit_transaction_message(chat_id: int, message_id: int, text: str, markup: dict, token: str):
+    try:
+        requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
+            "chat_id": chat_id, "message_id": message_id, "text": text, "reply_markup": markup,
+        }, timeout=8)
+    except requests.RequestException:
+        logger.warning("Gagal memperbarui pesan koreksi Telegram")
+
 
 def handle_menu(chat_id: int, bot_token: Optional[str] = None):
     msg = "📱 **Menu Tillfold**\n\nGunakan tombol di bawah atau ketik pengeluaran lo, misalnya `makan siang 25k`."
@@ -1761,7 +1771,8 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
             category=parsed["category"],
             description=parsed["description"],
             raw_text=parsed.get("raw_text", ""),
-            date=now_wib.date()
+            date=now_wib.date(),
+            created_at=datetime.now(timezone.utc),
         )
         db.add(tx)
         db.commit()
@@ -1798,7 +1809,8 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
         if tx.type == "expense":
             reply += f"\n\n{get_safe_to_spend_snippet(db, user_id=user_id)}"
 
-        send_message(chat_id, reply, reply_to_message_id=message_id, bot_token=bot_token)
+        send_message(chat_id, reply, reply_to_message_id=message_id, bot_token=bot_token,
+                     reply_markup=correction_markup([tx], chat_id))
         return
 
     # If multiple transactions in one message
@@ -1815,7 +1827,8 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
             category=parsed["category"],
             description=parsed["description"],
             raw_text=parsed.get("raw_text", ""),
-            date=now_wib.date()
+            date=now_wib.date(),
+            created_at=datetime.now(timezone.utc),
         )
         db.add(tx)
         created_txs.append(tx)
@@ -1859,7 +1872,8 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
 
     lines.append(f"\n{get_safe_to_spend_snippet(db, user_id=user_id)}")
 
-    send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token)
+    send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token,
+                 reply_markup=correction_markup(created_txs, chat_id))
 
 def handle_media_message(chat_id: int, message: dict, message_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None):
     if not user:
@@ -1981,19 +1995,24 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
     from app.api.v1.endpoints.transactions import add_transfer_pair
     today = datetime.now(WIB).date()
     lines = [f"Tercatat: {len(items)} transaksi."]
+    created_txs = []
     for item in items:
         if item["type"] == "transfer":
             add_transfer_pair(db, user_id, item["from_account"], item["to_account"], item["amount"], today, item["description"])
             lines.append(f"Transfer {format_rp(item['amount'])}: {item['from_account']} → {item['to_account']}")
         else:
-            db.add(Transaction(user_id=user_id, type=item["type"], amount=item["amount"], account=item["account"],
-                               category=item["category"], description=item["description"],
-                               raw_text=f"ai media: {item['description']}", date=today))
+            tx = Transaction(user_id=user_id, type=item["type"], amount=item["amount"], account=item["account"],
+                             category=item["category"], description=item["description"],
+                             raw_text=f"ai media: {item['description']}", date=today,
+                             created_at=datetime.now(timezone.utc))
+            db.add(tx)
+            created_txs.append(tx)
             label = "Masuk" if item["type"] == "income" else "Keluar"
             lines.append(f"{label} {format_rp(item['amount'])} • {item['account']} • {item['description']}")
     db.commit()
     lines.append(get_safe_to_spend_snippet(db, user_id=user_id))
-    send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token)
+    send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token,
+                 reply_markup=correction_markup(created_txs, chat_id) if created_txs else None)
 
 
 def receipt_callback_key(ref_number: str, user_id: int, chat_id: int, message_id: int) -> str:
@@ -2103,6 +2122,15 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 pass
             return
 
+        if data.startswith(TRANSACTION_CALLBACK_PREFIX):
+            if (token == settings.TELEGRAM_BOT_TOKEN and user.telegram_mode == "shared"
+                    and chat_id == sender_id and msg.get("chat", {}).get("type") == "private" and msg_id):
+                handle_transaction_action(
+                    db, user, chat_id, msg_id, data, token, send_message=send_message,
+                    edit_message=edit_transaction_message, format_rp=format_rp,
+                )
+            return
+
         if not data.startswith("rcpt_") or not chat_id or not msg_id:
             return
 
@@ -2210,6 +2238,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 Transaction.raw_text.contains(f"[receipt_radar:ref_{ref_num}]", autoescape=True),
             ).first()
 
+            markup = {"inline_keyboard": []}
             if existing:
                 edit_text = f"Struk {ref_num} sudah tercatat di Tillfold."
             else:
@@ -2222,6 +2251,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     description=f"{merchant} (Struk {bank})"[:255],
                     raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded via Telegram approval from {bank}",
                     date=tx_date,
+                    created_at=datetime.now(timezone.utc),
                 )
                 db.add(tx)
 
@@ -2241,6 +2271,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
 
                 db.commit()
                 db.refresh(tx)
+                if chat_id == sender_id and msg.get("chat", {}).get("type") == "private" and not p.get("is_transfer"):
+                    markup = correction_markup([tx], chat_id)
 
                 delete_pending_receipt(ref_num)
                 s2s_snippet = get_safe_to_spend_snippet(db, user_id=user.id).replace("*", "")
@@ -2258,7 +2290,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 "chat_id": chat_id,
                 "message_id": msg_id,
                 "text": edit_text,
-                "reply_markup": {"inline_keyboard": []},
+                "reply_markup": markup,
             }, timeout=8)
 
         elif action == "rcpt_xfer":

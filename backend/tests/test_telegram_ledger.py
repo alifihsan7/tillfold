@@ -169,6 +169,9 @@ def test_mixed_media_transfers_are_paired_and_retries_skip_extraction(telegram):
     assert bot.get_acc_balance("Cash", db, 2) == 200
     assert extract.call_count == 1
     assert extract.call_args.kwargs["accounts"] == ["Bank Uji", "Cash"]
+    actions = [button for row in send.call_args.kwargs["reply_markup"]["inline_keyboard"] for button in row]
+    assert {button["text"] for button in actions} == {"Ubah kategori", "Ubah rekening", "Batalkan"}
+    assert all(button["callback_data"].startswith(f"txn:{saved[2].id}:") for button in actions)
 
 
 @pytest.mark.parametrize("item", [
@@ -372,3 +375,69 @@ def test_telegram_expense_appears_in_web_history_outside_dashboard_period(telegr
     assert history["expense"] == 20000
     assert history["items"][0]["account"] == "Cash"
     assert next(row for row in client.get("/accounts").json() if row["name"] == "Cash")["current_balance"] == -20000
+
+
+def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(telegram, monkeypatch):
+    from app.models.category import Category
+
+    db, _, client, send, _ = telegram
+    db.add_all([
+        Category(user_id=2, name="Makanan uji", type="expense"),
+        Category(user_id=2, name="Pendapatan uji", type="income"),
+        Category(user_id=3, name="Kategori akun lain", type="expense"),
+    ])
+    db.commit()
+    edits = []
+
+    def telegram_post(url, *, json, timeout):
+        if url.endswith("/editMessageText"):
+            edits.append(json)
+
+    def buttons(markup):
+        return {button["text"]: button["callback_data"]
+                for row in markup["inline_keyboard"] for button in row}
+
+    def press(data, chat=222, chat_type="private"):
+        bot.process_update({"callback_query": {
+            "id": "test-correction", "from": {"id": chat}, "data": data,
+            "message": {"chat": {"id": chat, "type": chat_type}, "message_id": 100},
+        }})
+
+    monkeypatch.setattr(bot.requests, "post", telegram_post)
+    bot.process_update(update(1, "makan 20k Bank Uji"))
+    first_id = rows(db)[0].id
+    actions = buttons(send.call_args.kwargs["reply_markup"])
+    assert all(len(data.encode()) <= 64 for data in actions.values())
+
+    bot.process_update(update(2, "kopi 15k Bank Uji"))
+    second_id = rows(db)[-1].id
+    press(actions["Ubah kategori"], chat_type="group")
+    assert not edits
+    press(actions["Ubah kategori"])
+    categories = buttons(edits[-1]["reply_markup"])
+    assert "Pendapatan uji" not in categories
+    assert "Kategori akun lain" not in categories
+    press(categories["Makanan uji"])
+    assert db.get(Transaction, first_id).category == "Makanan uji"
+    assert db.get(Transaction, second_id).category != "Makanan uji"
+
+    press(actions["Ubah rekening"])
+    accounts = buttons(edits[-1]["reply_markup"])
+    assert "Peer Bank" not in accounts
+    press(accounts["Cash"])
+    assert db.get(Transaction, first_id).account == "Cash"
+    assert db.get(Transaction, second_id).account == "Bank Uji"
+    balances = client.get("/accounts").json()
+    assert {item["name"]: item["current_balance"] for item in balances} == {"Bank Uji": -15000, "Cash": -20000}
+
+    press(actions["Batalkan"])
+    assert len(rows(db)) == 2
+    confirm = buttons(edits[-1]["reply_markup"])["Ya, batalkan"]
+    press(confirm, chat=333)
+    assert len(rows(db)) == 2
+    press(confirm)
+    assert [tx.id for tx in rows(db)] == [second_id]
+    press(confirm)
+    assert [tx.id for tx in rows(db)] == [second_id]
+    bot.process_update(update(1, "makan 20k Bank Uji"))
+    assert [tx.id for tx in rows(db)] == [second_id]

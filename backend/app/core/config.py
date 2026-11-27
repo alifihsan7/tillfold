@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     # Google OAuth Sign-In (Web)
     GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID", None)
 
+    @property
+    def dashboard_url(self) -> str:
+        return f"{self.APP_BASE_URL.rstrip('/')}/dashboard"
+
     class Config:
         case_sensitive = True
 

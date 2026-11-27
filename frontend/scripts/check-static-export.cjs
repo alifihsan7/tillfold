@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const exportDir = process.argv[2] || path.join(__dirname, "..", "out");
-const pages = ["index.html", "404.html"];
+const pages = ["index.html", "404.html", "landing.html", "dashboard.html"];
 const requiredUtilities = [".flex", ".grid", ".hidden", ".sr-only"];
 
 for (const page of pages) {

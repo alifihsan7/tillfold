@@ -130,6 +130,17 @@ if os.path.exists(INDEX_PATH):
     def root():
         return FileResponse(INDEX_PATH)
 
+@app.get("/landing", include_in_schema=False)
+@app.get("/landing/", include_in_schema=False)
+@app.get("/dashboard", include_in_schema=False)
+@app.get("/dashboard/", include_in_schema=False)
+def frontend_page(request: Request):
+    page = request.url.path.strip("/")
+    page_path = os.path.join(STATIC_DIR, f"{page}.html")
+    if os.path.isfile(page_path):
+        return FileResponse(page_path)
+    return JSONResponse({"detail": "Not Found"}, status_code=404)
+
 if os.path.exists(STATIC_DIR):
     real_static_dir = os.path.realpath(STATIC_DIR)
 

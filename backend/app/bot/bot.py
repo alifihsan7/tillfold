@@ -184,7 +184,7 @@ def get_safe_to_spend_snippet(db: Session, user_id: int) -> str:
     return f"🛡️ *Safe-to-Spend:* {format_rp(metrics.safe_daily)} / hari ({pace_icon} {pace_label} • Sisa {metrics.days_remaining} hari)"
 
 def get_main_keyboard() -> dict:
-    url = settings.APP_BASE_URL
+    url = settings.dashboard_url
     dashboard_btn = (
         {"text": "🚀 Buka Dashboard", "web_app": {"url": url}}
         if url.startswith("https://")
@@ -225,7 +225,7 @@ def setup_bot_commands():
     except Exception as e:
         print(f"Error registering bot commands: {e}")
 
-    url = settings.APP_BASE_URL
+    url = settings.dashboard_url
     if url.startswith("https://"):
         try:
             requests.post(
@@ -274,7 +274,7 @@ def handle_menu(chat_id: int, bot_token: Optional[str] = None):
     send_message(chat_id, msg, reply_markup=get_main_keyboard(), bot_token=bot_token)
 
 def send_dashboard_link(chat_id: int, bot_token: Optional[str] = None):
-    url = settings.APP_BASE_URL
+    url = settings.dashboard_url
     if url.startswith("https://"):
         inline_kb = {
             "inline_keyboard": [
@@ -1584,7 +1584,7 @@ Contoh: `/gajian 5.000.000` atau `/gajian 5jt`
 {distrib_str}
 {debt_section}
 ℹ️ _Pemasukan gaji dicatat utuh di rekening `{source_account}`. Alokasi transfer ke rekening/pos lain dapat dieksekusi terpisah via `/transfer` atau Checklist Dashboard._
-🌐 [Buka dashboard Tillfold]({settings.APP_BASE_URL})"""
+🌐 [Buka dashboard Tillfold]({settings.dashboard_url})"""
 
     send_message(chat_id, msg, bot_token=bot_token)
 
@@ -2364,7 +2364,7 @@ def process_update(update: dict, bot_token: Optional[str] = None, user_override:
         if not user:
             unlinked_msg = f"""Selamat datang di Tillfold.
 
-Buka {settings.APP_BASE_URL}, masuk ke akun kamu, lalu pilih Profil → Integrasi Telegram → Hubungkan Telegram.
+Buka {settings.dashboard_url}, masuk ke akun kamu, lalu pilih Profil → Integrasi Telegram → Hubungkan Telegram.
 
 Tekan Start di bot dari tautan tersebut untuk menyelesaikan koneksi."""
             send_message(chat_id, unlinked_msg, bot_token=bot_token)

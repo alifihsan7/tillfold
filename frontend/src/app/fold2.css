@@ -812,6 +812,8 @@ html:not(.light) .fold-hero {
 .fold-page .fold-wallet-reconcile:hover { background: var(--fold-control-hover); }
 .fold-page .fold-wallet-reconcile:active { background: var(--fold-control-pressed); }
 .fold-message { display: grid; gap: 10px; align-content: start; justify-items: start; padding: 20px; }
+.fold-guest-view { max-width: 42rem; padding: clamp(1.25rem, 4vw, 2rem); }
+.fold-guest-view .luma-action-primary { margin-top: .375rem; }
 .fold-budget .fold-message { padding: 4px 0; }
 .fold-card.fold-loading { display: grid; place-items: center; padding: 20px; }
 .fold-hero.fold-loading { gap: 20px; }

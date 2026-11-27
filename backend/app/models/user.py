@@ -1,5 +1,5 @@
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, BigInteger, ForeignKey
+from sqlalchemy import BigInteger, Boolean, Column, Date, DateTime, ForeignKey, Integer, JSON, String
 from sqlalchemy.sql import func
 from app.db.session import Base
 
@@ -46,3 +46,14 @@ class TelegramProcessedMessage(Base):
     message_id = Column(BigInteger, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     processed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class TelegramAmountDraft(Base):
+    __tablename__ = "telegram_amount_drafts"
+
+    id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    chat_id = Column(BigInteger, nullable=False)
+    transaction_date = Column(Date, nullable=False)
+    expires_at = Column(BigInteger, nullable=False, index=True)
+    options = Column(JSON, nullable=False)

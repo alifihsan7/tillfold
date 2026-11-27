@@ -81,12 +81,9 @@ CATEGORY_DEFAULT_ACCOUNT = {
     "Investasi & Tabungan": "Bibit",
 }
 
-def parse_amount_with_span(text: str) -> tuple[int | None, str | None, tuple[int, int] | None]:
+def amount_candidates(text: str) -> list[tuple[int, int, int, str, tuple[int, int]]]:
     pattern = r'(?i)(?<!\w)((?:rp|idr)\.?\s*)?(\d+(?:[.,]\d+)*|[.,]\d+)\s*(k|rb|ribu|jt|juta|m|mio)?\b'
     matches = list(re.finditer(pattern, text))
-    if not matches:
-        return None, None, None
-
     candidates = []
     for idx, match in enumerate(matches):
         prefix = match.group(1)
@@ -128,6 +125,11 @@ def parse_amount_with_span(text: str) -> tuple[int | None, str | None, tuple[int
                     prio = 2
                 candidates.append((prio, idx, amount, match.group(0), match.span()))
 
+    return candidates
+
+
+def parse_amount_with_span(text: str) -> tuple[int | None, str | None, tuple[int, int] | None]:
+    candidates = amount_candidates(text)
     if not candidates:
         return None, None, None
 
@@ -139,6 +141,36 @@ def parse_amount_with_span(text: str) -> tuple[int | None, str | None, tuple[int
 def parse_amount(text: str) -> tuple[int | None, str | None]:
     amt, matched, _ = parse_amount_with_span(text)
     return amt, matched
+
+def amount_alternatives(text: str) -> list[tuple[int, str]]:
+    """Replace one explicit group of alternative rupiah amounts with each choice."""
+    candidates = amount_candidates(text)
+    groups: list[list[int]] = []
+    for index, (left, right) in enumerate(zip(candidates, candidates[1:])):
+        separator = text[left[4][1]:right[4][0]].strip().lower()
+        if separator in ("atau", "apa"):
+            matches = all(item[0] == 3 or item[2] >= 1_000 for item in (left, right))
+        else:
+            matches = separator == "/" and left[0] == right[0] == 3
+        if not matches:
+            continue
+        if groups and groups[-1][-1] == index:
+            groups[-1].append(index + 1)
+        else:
+            groups.append([index, index + 1])
+    if not groups:
+        return []
+    if len(groups) != 1 or len(groups[0]) > 4:
+        raise ValueError("Kirim transaksi yang nominalnya belum pasti satu per satu.")
+
+    first, last = groups[0][0], groups[0][-1]
+    start, end = candidates[first][4][0], candidates[last][4][1]
+    replacements = {}
+    for index in groups[0]:
+        _, _, amount, _, _ = candidates[index]
+        replacements[amount] = f"{text[:start]}Rp {amount} {text[end:]}"
+    return list(replacements.items())
+
 
 def split_raw_into_items(text: str) -> list[str]:
     clean = text.strip()

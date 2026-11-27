@@ -441,3 +441,76 @@ def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(teleg
     assert [tx.id for tx in rows(db)] == [second_id]
     bot.process_update(update(1, "makan 20k Bank Uji"))
     assert [tx.id for tx in rows(db)] == [second_id]
+
+
+def test_ambiguous_amount_waits_for_confirmation_and_records_once(telegram, monkeypatch):
+    from app.models.user import TelegramAmountDraft
+
+    db, _, _, send, _ = telegram
+    edits = []
+    monkeypatch.setattr(bot.requests, "post", lambda url, **kwargs: edits.append(kwargs["json"]))
+    message = update(1, "kopi 15 ribu atau 50 ribu Cash; makan 25k Bank Uji")
+    bot.process_update(message)
+    bot.process_update(message)
+    assert rows(db) == []
+    assert db.query(TelegramAmountDraft).count() == 1
+    assert send.call_count == 1
+    assert "Rp 25.000" in send.call_args.args[1]
+    keyboard = send.call_args.kwargs["reply_markup"]["inline_keyboard"]
+    actions = {button["text"]: button["callback_data"] for row in keyboard for button in row}
+    assert set(actions) == {"Rp 15.000", "Rp 50.000", "Buang draf"}
+
+    def press(chat, text):
+        bot.process_update({"callback_query": {
+            "id": "amount-choice", "from": {"id": chat}, "data": actions[text],
+            "message": {"chat": {"id": chat, "type": "private"}, "message_id": 100},
+        }})
+
+    press(333, "Rp 50.000")
+    assert rows(db) == []
+    press(222, "Rp 50.000")
+    press(222, "Rp 15.000")
+    assert [(tx.amount, tx.account) for tx in rows(db)] == [(50000, "Cash"), (25000, "Bank Uji")]
+    assert db.query(TelegramAmountDraft).count() == 0
+    assert any(edit.get("text") == "Draf sudah dikonfirmasi." for edit in edits)
+
+
+def test_amount_draft_cancel_expiry_and_clear_chat(telegram, monkeypatch):
+    from app.models.user import TelegramAmountDraft
+
+    db, _, _, send, _ = telegram
+    monkeypatch.setattr(bot.requests, "post", Mock())
+
+    def press(label):
+        result = next(button["callback_data"] for row in send.call_args.kwargs["reply_markup"]["inline_keyboard"]
+                      for button in row if button["text"] == label)
+        bot.process_update({"callback_query": {
+            "id": "amount-choice", "from": {"id": 222}, "data": result,
+            "message": {"chat": {"id": 222, "type": "private"}, "message_id": 100},
+        }})
+
+    bot.process_update(update(1, "kopi 15k/50k Cash"))
+    press("Buang draf")
+    assert db.query(TelegramAmountDraft).count() == 0
+    bot.process_update(update(2, "kopi 15000 atau 50000 Cash"))
+    db.query(TelegramAmountDraft).one().expires_at = 0
+    db.commit()
+    press("Rp 50.000")
+    assert rows(db) == []
+    bot.process_update(update(3, "kopi 15k Cash"))
+    bot.process_update(update(4, "/transfer 15k atau 50k dari Cash ke Bank Uji"))
+    assert [tx.amount for tx in rows(db)] == [15000]
+
+
+def test_voice_alternative_drafts_instead_of_accepting_extractor_guess(telegram, monkeypatch):
+    import httpx
+
+    db, _, _, send, extract = telegram
+    monkeypatch.setattr(httpx, "post", Mock(return_value=Mock(status_code=503)))
+    extract.return_value = {
+        **extracted([{"type": "expense", "amount": 15000, "account": "Cash"}]),
+        "transcription": "kopi 15 ribu apa 50 ribu Cash",
+    }
+    bot.process_update(update(1, voice={"file_id": "sample"}))
+    assert rows(db) == []
+    assert "Draf belum dicatat" in send.call_args.args[1]

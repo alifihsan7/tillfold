@@ -77,7 +77,7 @@ Pemasukan: kategori 'Gajian' atau 'Pemasukan Lain'.
 Aturan Ekstraksi:
 1. Analisis konten dengan teliti. Jika ini struk/QRIS, cari TOTAL AKHIR/TOTAL BAYAR (bukan subtotal atau kembalian).
 2. Jika ada nama merchant/toko (misal 'Indomaret', 'Kopi Kenangan', 'Warteg Sedap'), jadikan keterangan.
-3. Jika audio/voice note, dengarkan ucapan user dengan akurat (bahasa Indonesia/campuran), tangkap nominal, barang/aktivitas, dan rekening jika disebut.
+3. Jika audio/voice note, dengarkan ucapan user dengan akurat (bahasa Indonesia/campuran), tangkap nominal, barang/aktivitas, dan rekening jika disebut. Jika ucapan menyebut beberapa pilihan untuk nominal yang sama, tulis pilihannya sebagai angka dengan kata 'atau' di transcription (contoh: kopi 15000 atau 50000), dan kembalikan transactions kosong agar pengguna memilih.
 4. Jika user menyebut transfer (misal "transfer dari mandiri ke bibit 500rb"), set type: 'transfer' dengan from_account dan to_account.
 5. Format pengembalian WAJIB JSON murni sesuai schema berikut:
 {{

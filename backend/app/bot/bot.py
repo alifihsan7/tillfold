@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.bot.transaction_actions import PREFIX as TRANSACTION_CALLBACK_PREFIX, correction_markup, handle_transaction_action
 from app.core.config import settings
-from app.core.parser import parse_transaction, parse_multi_transactions, parse_amount
+from app.core.parser import amount_alternatives, parse_transaction, parse_multi_transactions, parse_amount, split_raw_into_items
 from app.core.transfer import find_paired_transfer
 from app.db.session import SessionLocal, Base, engine
 from app.models.transaction import Transaction
@@ -41,7 +41,7 @@ from app.services.internal_loans import (
 from app.models.paycheck import PaycheckConfig, PaycheckBucket, PaycheckReceipt, PaycheckCycle
 from app.models.subscription import Subscription
 from app.models.goal import Goal
-from app.models.user import User, TelegramProcessedMessage
+from app.models.user import User, TelegramAmountDraft, TelegramProcessedMessage
 
 from app.services.analytics import compute_safe_to_spend_metrics, resolve_pocket_account
 from app.services.paycheck_cycles import recorded_cycle_ends, receipt_allocations
@@ -1725,14 +1725,114 @@ def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
     return normalized
 
 
+AMOUNT_DRAFT_PREFIX = "amt:"
+AMOUNT_DRAFT_TTL = 30 * 60
+
+
+def prepare_amount_draft(db: Session, user_id: int, chat_id: int, alternatives: list[tuple[int, str]]) -> TelegramAmountDraft:
+    options = []
+    now = int(time.time())
+    db.query(TelegramAmountDraft).filter(TelegramAmountDraft.expires_at <= now).delete(synchronize_session=False)
+    for amount, text in alternatives:
+        items = parse_multi_transactions(text)
+        if len(items) != len(split_raw_into_items(text)):
+            raise ValueError("Lengkapi nominal setiap transaksi lalu kirim ulang.")
+        if len(items) > 8:
+            raise ValueError("Kirim transaksi yang nominalnya belum pasti secara terpisah.")
+        options.append({"amount": amount, "items": prepare_bot_items(items, db, user_id, text_items=True)})
+    shapes = [
+        [(item["type"], item["description"], item["account"], item["category"]) for item in option["items"]]
+        for option in options
+    ]
+    if any(shape != shapes[0] for shape in shapes[1:]):
+        raise ValueError("Kirim transaksi yang nominalnya belum pasti secara terpisah.")
+    draft = TelegramAmountDraft(
+        id=uuid.uuid4().hex, user_id=user_id, chat_id=chat_id, transaction_date=datetime.now(WIB).date(),
+        expires_at=now + AMOUNT_DRAFT_TTL, options=options,
+    )
+    db.add(draft)
+    db.commit()
+    return draft
+
+
+def send_amount_draft(chat_id: int, message_id: int, draft: TelegramAmountDraft, bot_token: str | None):
+    rows = [[{"text": format_rp(option["amount"]), "callback_data": f"{AMOUNT_DRAFT_PREFIX}{draft.id}:{index}"}]
+            for index, option in enumerate(draft.options)]
+    rows.append([{"text": "Buang draf", "callback_data": f"{AMOUNT_DRAFT_PREFIX}{draft.id}:cancel"}])
+    lines = []
+    for variants in zip(*(option["items"] for option in draft.options), strict=True):
+        item = variants[0]
+        amount = format_rp(item["amount"]) if all(item["amount"] == variant["amount"] for variant in variants) else "pilih nominal"
+        lines.append(f"• {item['description']} · {item['account']} · {amount}")
+    summary = "\n".join(lines)
+    send_message(
+        chat_id, f"Ada beberapa kemungkinan nominal. Pilih nominal yang benar.\n\n{summary}\n\nDraf belum dicatat.",
+        parse_mode=None, reply_to_message_id=message_id, bot_token=bot_token,
+        reply_markup={"inline_keyboard": rows},
+    )
+
+
+def handle_amount_draft_callback(db: Session, user: User, chat_id: int, message_id: int, data: str, token: str):
+    parts = data.split(":")
+    if len(parts) != 3 or not re.fullmatch(r"[a-f0-9]{32}", parts[1]):
+        return
+    draft_id, choice = parts[1:]
+    now = int(time.time())
+    query = db.query(TelegramAmountDraft).filter(
+        TelegramAmountDraft.id == draft_id, TelegramAmountDraft.user_id == user.id,
+        TelegramAmountDraft.chat_id == chat_id, TelegramAmountDraft.expires_at > now,
+    )
+    draft = query.with_for_update().first()
+    if not draft:
+        send_message(chat_id, "Draf sudah diproses atau kedaluwarsa.", parse_mode=None, bot_token=token)
+        return
+    items = None
+    transaction_date = draft.transaction_date
+    if choice != "cancel":
+        if not re.fullmatch(r"[0-3]", choice) or int(choice) >= len(draft.options):
+            return
+        try:
+            items = prepare_bot_items(draft.options[int(choice)]["items"], db, user.id)
+        except (ValueError, OverflowError) as exc:
+            db.rollback()
+            send_message(chat_id, str(exc), parse_mode=None, bot_token=token)
+            return
+    if query.delete(synchronize_session=False) != 1:
+        db.rollback()
+        return
+    if items is None:
+        db.commit()
+        result = "Draf dibuang."
+    else:
+        # record_text_items commits the ledger and consumes the draft in one transaction.
+        record_text_items(chat_id, message_id, db, user.id, items, token, transaction_date=transaction_date)
+        result = "Draf sudah dikonfirmasi."
+    edit_transaction_message(chat_id, message_id, result, {"inline_keyboard": []}, token)
+
+
+AMOUNT_COMMANDS = {"transfer", "tf", "gajian", "pinjam", "talangan", "lunasi", "bayar_pinjam", "bayar-pinjam"}
+
+
 def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, user: Optional[User] = None, bot_token: Optional[str] = None, voice_prefix: str = ""):
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", reply_to_message_id=message_id, bot_token=bot_token)
         return
     user_id = user.id
     try:
+        alternatives = amount_alternatives(text)
+        if len(alternatives) > 1:
+            if text.split()[0].lower().lstrip("/").split("@")[0] in AMOUNT_COMMANDS:
+                raise ValueError("Kirim ulang perintah dengan satu nominal yang pasti.")
+            draft = prepare_amount_draft(db, user_id, chat_id, alternatives)
+            send_amount_draft(chat_id, message_id, draft, bot_token)
+            return
+        if alternatives:
+            text = alternatives[0][1]
         items = parse_multi_transactions(text)
-    except (ValueError, OverflowError):
+    except ValueError as exc:
+        send_message(chat_id, str(exc), parse_mode=None, reply_to_message_id=message_id, bot_token=bot_token)
+        return
+    except OverflowError:
         send_message(chat_id, "Nominal transaksi tidak valid.", reply_to_message_id=message_id, bot_token=bot_token)
         return
     if not items:
@@ -1748,6 +1848,13 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
         send_message(chat_id, "Rincian transaksi tidak valid. " + str(exc), reply_to_message_id=message_id, bot_token=bot_token)
         return
 
+    record_text_items(chat_id, message_id, db, user_id, items, bot_token, voice_prefix)
+
+
+def record_text_items(
+    chat_id: int, message_id: int, db: Session, user_id: int, items: list[dict],
+    bot_token: str | None, voice_prefix: str = "", *, transaction_date: date | None = None,
+):
     now_wib = datetime.now(WIB)
     time_str = now_wib.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -1771,7 +1878,7 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
             category=parsed["category"],
             description=parsed["description"],
             raw_text=parsed.get("raw_text", ""),
-            date=now_wib.date(),
+            date=transaction_date or now_wib.date(),
             created_at=datetime.now(timezone.utc),
         )
         db.add(tx)
@@ -1827,7 +1934,7 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
             category=parsed["category"],
             description=parsed["description"],
             raw_text=parsed.get("raw_text", ""),
-            date=now_wib.date(),
+            date=transaction_date or now_wib.date(),
             created_at=datetime.now(timezone.utc),
         )
         db.add(tx)
@@ -1976,6 +2083,16 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
         send_message(chat_id, f"❌ {err}", reply_to_message_id=message_id, bot_token=bot_token)
         return
 
+    if media_type == "audio" and isinstance(transcription := extraction.get("transcription"), str):
+        full_text = f"{transcription} ({caption})" if caption else transcription
+        try:
+            ambiguous_amount = bool(amount_alternatives(full_text))
+        except (ValueError, OverflowError):
+            ambiguous_amount = True
+        if ambiguous_amount:
+            handle_text_message(chat_id, full_text, message_id, db, user=user, bot_token=bot_token)
+            return
+
     if not extraction.get("detected") or not extraction.get("transactions"):
         reason = extraction.get("transcription") or "Tidak ditemukan rincian nominal pembayaran, struk, atau pengeluaran."
         kind_name = "gambar/struk" if media_type == "image" else "voice note"
@@ -2122,13 +2239,16 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 pass
             return
 
-        if data.startswith(TRANSACTION_CALLBACK_PREFIX):
+        if data.startswith((TRANSACTION_CALLBACK_PREFIX, AMOUNT_DRAFT_PREFIX)):
             if (token == settings.TELEGRAM_BOT_TOKEN and user.telegram_mode == "shared"
                     and chat_id == sender_id and msg.get("chat", {}).get("type") == "private" and msg_id):
-                handle_transaction_action(
-                    db, user, chat_id, msg_id, data, token, send_message=send_message,
-                    edit_message=edit_transaction_message, format_rp=format_rp,
-                )
+                if data.startswith(AMOUNT_DRAFT_PREFIX):
+                    handle_amount_draft_callback(db, user, chat_id, msg_id, data, token)
+                else:
+                    handle_transaction_action(
+                        db, user, chat_id, msg_id, data, token, send_message=send_message,
+                        edit_message=edit_transaction_message, format_rp=format_rp,
+                    )
             return
 
         if not data.startswith("rcpt_") or not chat_id or not msg_id:
@@ -2455,7 +2575,7 @@ Tekan Start di bot dari tautan tersebut untuk menyelesaikan koneksi."""
         marker = TelegramProcessedMessage(chat_id=chat_id, message_id=message_id, user_id=user.id)
 
         def mark_financial_message(session, flush_context, instances):
-            if any(isinstance(obj, Transaction) for obj in [*session.new, *session.dirty, *session.deleted]):
+            if any(isinstance(obj, (Transaction, TelegramAmountDraft)) for obj in [*session.new, *session.dirty, *session.deleted]):
                 session.add(marker)
 
         event.listen(db, "before_flush", mark_financial_message)
@@ -2484,6 +2604,18 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 
     lower_text = text.lower()
     cmd = text.split()[0].lower().split("@")[0] if text.split() else ""
+    if cmd.lstrip("/") in AMOUNT_COMMANDS or lower_text.startswith("bayar pinjam"):
+        try:
+            alternatives = amount_alternatives(text)
+        except (ValueError, OverflowError):
+            alternatives = None
+        if alternatives is None or len(alternatives) > 1:
+            send_message(chat_id, "Kirim ulang perintah dengan satu nominal yang pasti.",
+                         parse_mode=None, reply_to_message_id=message_id, bot_token=bot_token)
+            return
+        if alternatives:
+            text = alternatives[0][1]
+            lower_text = text.lower()
     if (
         lower_text in ["📊 rekap", "rekap"]
         or cmd in ["/rekap", "/bulan", "/siklus"]

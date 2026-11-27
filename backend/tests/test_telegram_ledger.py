@@ -20,6 +20,9 @@ from app.models.transaction import Transaction
 from app.models.user import TelegramProcessedMessage, User
 
 
+real_send_message = bot.send_message
+
+
 @pytest.fixture
 def telegram(monkeypatch):
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -52,7 +55,6 @@ def telegram(monkeypatch):
         send = Mock()
         monkeypatch.setattr(bot, "send_message", send)
         monkeypatch.setattr(bot, "get_safe_to_spend_snippet", lambda *args, **kwargs: "Status belanja")
-        monkeypatch.setattr(bot, "send_chat_action", Mock())
         monkeypatch.setattr(bot, "download_telegram_file", Mock(return_value=(b"test", "test.png")))
         from app.services import ai_extractor
         extract = Mock()
@@ -291,7 +293,7 @@ def test_voice_reply_failure_does_not_fall_back_to_second_extraction(telegram, m
     response = Mock(status_code=200)
     response.json.return_value = {"text": "makan 20k Cash"}
     monkeypatch.setattr(httpx, "post", Mock(return_value=response))
-    send.side_effect = RuntimeError("reply unavailable")
+    send.side_effect = [None, RuntimeError("reply unavailable")]
     payload = update(1, voice={"file_id": "test"})
     with pytest.raises(RuntimeError):
         bot.process_update(payload)
@@ -514,3 +516,55 @@ def test_voice_alternative_drafts_instead_of_accepting_extractor_guess(telegram,
     bot.process_update(update(1, voice={"file_id": "sample"}))
     assert rows(db) == []
     assert "Draf belum dicatat" in send.call_args.args[1]
+
+
+@pytest.mark.parametrize("mode", ["success", "download_failed", "edit_failed", "voice_draft"])
+def test_media_progress_updates_result_and_keeps_buttons(telegram, monkeypatch, caplog, mode):
+    import httpx
+
+    db, _, _, send, extract = telegram
+    send.side_effect = real_send_message
+    requests_seen = []
+
+    def post(url, *, json, timeout):
+        method = url.rsplit("/", 1)[-1]
+        requests_seen.append((method, json))
+        if method == "editMessageText" and mode == "edit_failed":
+            return Mock(json=lambda: {"ok": False, "description": "message to edit not found"})
+        return Mock(json=lambda: {"ok": True, "result": {"message_id": 4321}})
+
+    monkeypatch.setattr(bot.requests, "post", post)
+    extract.return_value = extracted([{"type": "expense", "amount": 15000, "account": "Cash"}])
+    if mode == "download_failed":
+        monkeypatch.setattr(bot, "download_telegram_file", Mock(return_value=(None, None)))
+    if mode == "voice_draft":
+        monkeypatch.setattr(httpx, "post", Mock(return_value=Mock(status_code=200, json=lambda: {"text": "kopi 15k atau 50k Cash"})))
+        message = update(1, voice={"file_id": "test"})
+    else:
+        message = update(1, photo=[{"file_id": "test"}])
+
+    with caplog.at_level("INFO", logger=bot.media_logger.name):
+        bot.process_update(message)
+    assert bot.media_reply.get() is None
+    assert requests_seen[0][0] == "sendMessage"
+    assert "Lagi" in requests_seen[0][1]["text"]
+    assert requests_seen[1][0] == "editMessageText"
+    assert requests_seen[1][1]["message_id"] == 4321
+    assert "reply_to_message_id" not in requests_seen[1][1]
+    assert "stage=download" in caplog.text and "stage=total" in caplog.text
+    assert "kopi" not in caplog.text.lower()
+    final = requests_seen[-1][1]
+    if mode == "download_failed":
+        assert "Gagal mengunduh" in final["text"]
+        assert not rows(db)
+    elif mode == "voice_draft":
+        assert "Draf belum dicatat" in final["text"]
+        assert final["reply_markup"]["inline_keyboard"]
+        assert "stage=local_transcription" in caplog.text
+        assert not rows(db)
+    else:
+        assert [tx.amount for tx in rows(db)] == [15000]
+        assert "Tercatat" in final["text"]
+        assert final["reply_markup"]["inline_keyboard"]
+        assert "stage=extraction" in caplog.text and "stage=persist" in caplog.text
+    assert len(requests_seen) == (3 if mode == "edit_failed" else 2)

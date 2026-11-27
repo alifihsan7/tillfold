@@ -3,6 +3,12 @@ import sys
 import re
 import time
 import logging
+import signal
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
+from threading import Event
 import requests
 from datetime import datetime, date, timedelta, timezone
 import calendar
@@ -19,6 +25,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, case, event, or_
 from sqlalchemy.exc import IntegrityError
 
+from app.bot.update_queue import UpdateQueue
 from app.bot.transaction_actions import PREFIX as TRANSACTION_CALLBACK_PREFIX, correction_markup, handle_transaction_action
 from app.core.config import settings
 from app.core.parser import amount_alternatives, parse_transaction, parse_multi_transactions, parse_amount, split_raw_into_items
@@ -243,7 +250,47 @@ def setup_bot_commands():
         except Exception as e:
             print(f"Error registering bot menu button: {e}")
 
-def send_message(chat_id: int, text: str, parse_mode: Optional[str] = "Markdown", reply_to_message_id: Optional[int] = None, reply_markup: Optional[dict] = None, bot_token: Optional[str] = None):
+@dataclass
+class MediaReply:
+    kind: str
+    chat_id: int
+    source_id: int
+    progress_id: int | None
+
+
+media_reply: ContextVar[MediaReply | None] = ContextVar("media_reply", default=None)
+media_logger = logging.getLogger("ai7-finance-bot.media")
+
+
+@contextmanager
+def media_stage(stage: str):
+    context = media_reply.get()
+    started = time.monotonic()
+    try:
+        yield
+    finally:
+        if context:
+            media_logger.info("Telegram media kind=%s stage=%s duration_ms=%.0f",
+                              context.kind, stage, (time.monotonic() - started) * 1000)
+
+
+def replace_media_progress(token: str, payload: dict, message_id: int) -> dict | None:
+    edit = {key: value for key, value in payload.items() if key != "reply_to_message_id"}
+    edit["message_id"] = message_id
+    try:
+        url = f"https://api.telegram.org/bot{token}/editMessageText"
+        result = requests.post(url, json=edit, timeout=5).json()
+        if not result.get("ok") and "parse entities" in result.get("description", "").lower() and "parse_mode" in edit:
+            edit.pop("parse_mode")
+            result = requests.post(url, json=edit, timeout=5).json()
+        if result.get("ok") or "message is not modified" in result.get("description", "").lower():
+            return result
+    except (requests.RequestException, ValueError):
+        pass
+    return None
+
+
+def send_message(chat_id: int, text: str, parse_mode: Optional[str] = "Markdown", reply_to_message_id: Optional[int] = None, reply_markup: Optional[dict] = None, bot_token: Optional[str] = None, *, timeout: int = 10):
     token = bot_token or settings.TELEGRAM_BOT_TOKEN
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
@@ -257,17 +304,22 @@ def send_message(chat_id: int, text: str, parse_mode: Optional[str] = "Markdown"
     if reply_markup:
         payload["reply_markup"] = reply_markup
     try:
-        res = requests.post(url, json=payload, timeout=10)
+        context = media_reply.get()
+        if context and context.progress_id is not None and (context.chat_id, context.source_id) == (chat_id, reply_to_message_id):
+            progress_id, context.progress_id = context.progress_id, None
+            if edited := replace_media_progress(token, payload, progress_id):
+                return edited
+        res = requests.post(url, json=payload, timeout=timeout)
         data = res.json()
         if not data.get("ok"):
-            print(f"Telegram API warning sending message to {chat_id}: {data}")
+            logger.warning("Telegram menolak pengiriman pesan (kode %s).", data.get("error_code"))
             if parse_mode:
                 payload.pop("parse_mode", None)
-                retry_res = requests.post(url, json=payload, timeout=10)
+                retry_res = requests.post(url, json=payload, timeout=timeout)
                 return retry_res.json()
         return data
-    except Exception as e:
-        print(f"Error sending message: {e}")
+    except Exception:
+        logger.warning("Gagal mengirim pesan Telegram.")
         return None
 
 def edit_transaction_message(chat_id: int, message_id: int, text: str, markup: dict, token: str):
@@ -807,13 +859,6 @@ def handle_goals(chat_id: int, db: Session, user: Optional[User] = None, bot_tok
     lines.append("💡 _Saldo terupdate otomatis dari mutasi rekening atau dapat disesuaikan di Web Dashboard._")
     send_message(chat_id, "\n".join(lines), bot_token=bot_token)
 
-def send_chat_action(chat_id: int, action: str = "typing", bot_token: Optional[str] = None):
-    token = bot_token or settings.TELEGRAM_BOT_TOKEN
-    try:
-        requests.post(f"https://api.telegram.org/bot{token}/sendChatAction", json={"chat_id": chat_id, "action": action}, timeout=5)
-    except Exception:
-        pass
-
 def download_telegram_file(file_id: str, bot_token: Optional[str] = None):
     token = bot_token or settings.TELEGRAM_BOT_TOKEN
     try:
@@ -825,8 +870,8 @@ def download_telegram_file(file_id: str, bot_token: Optional[str] = None):
             dl_resp = requests.get(dl_url, timeout=30)
             if dl_resp.status_code == 200:
                 return dl_resp.content, file_path
-    except Exception as e:
-        print(f"Error downloading Telegram file {file_id}: {e}")
+    except (requests.RequestException, KeyError, ValueError):
+        logger.warning("Gagal mengunduh file Telegram.")
     return None, None
 
 def get_acc_balance(acc_name: str, db: Session, user_id: int) -> int:
@@ -1823,7 +1868,8 @@ def handle_text_message(chat_id: int, text: str, message_id: int, db: Session, u
         if len(alternatives) > 1:
             if text.split()[0].lower().lstrip("/").split("@")[0] in AMOUNT_COMMANDS:
                 raise ValueError("Kirim ulang perintah dengan satu nominal yang pasti.")
-            draft = prepare_amount_draft(db, user_id, chat_id, alternatives)
+            with media_stage("persist_draft"):
+                draft = prepare_amount_draft(db, user_id, chat_id, alternatives)
             send_amount_draft(chat_id, message_id, draft, bot_token)
             return
         if alternatives:
@@ -1882,7 +1928,8 @@ def record_text_items(
             created_at=datetime.now(timezone.utc),
         )
         db.add(tx)
-        db.commit()
+        with media_stage("persist"):
+            db.commit()
         db.refresh(tx)
 
         type_label = "Pemasukan" if tx.type == "income" else "Pengeluaran"
@@ -1943,7 +1990,8 @@ def record_text_items(
         if is_matching_pocket_account(tx.account, pocket_account) and tx.type == "expense":
             categories_touched.add(tx.category)
 
-    db.commit()
+    with media_stage("persist"):
+        db.commit()
     for tx in created_txs:
         db.refresh(tx)
 
@@ -1986,7 +2034,6 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
     if not user:
         send_message(chat_id, "⚠️ Pengguna tidak ditemukan atau belum terdaftar.", reply_to_message_id=message_id, bot_token=bot_token)
         return
-    user_id = user.id
     photo = message.get("photo")
     doc = message.get("document")
     voice = message.get("voice")
@@ -1996,13 +2043,11 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
     file_id = None
     media_type = "image"
     mime_type = "image/jpeg"
-    action_type = "upload_photo"
 
     if photo:
         file_id = photo[-1]["file_id"]
         media_type = "image"
         mime_type = "image/jpeg"
-        action_type = "upload_photo"
     elif doc:
         mime = (doc.get("mime_type") or "").lower()
         fn = (doc.get("file_name") or "").lower()
@@ -2011,12 +2056,10 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
             file_id = doc["file_id"]
             media_type = "image"
             mime_type = mime or "image/jpeg"
-            action_type = "upload_photo"
         elif mime.startswith("audio/") or any(fn.endswith(ext) for ext in audio_exts):
             file_id = doc["file_id"]
             media_type = "audio"
             mime_type = mime or "audio/mp3"
-            action_type = "record_voice"
         else:
             send_message(chat_id, "⚠️ Dokumen ini bukan format gambar atau rekaman audio yang didukung.", reply_to_message_id=message_id, bot_token=bot_token)
             return
@@ -2024,17 +2067,42 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
         file_id = voice["file_id"]
         media_type = "audio"
         mime_type = voice.get("mime_type") or "audio/ogg"
-        action_type = "record_voice"
     elif audio:
         file_id = audio["file_id"]
         media_type = "audio"
         mime_type = audio.get("mime_type") or "audio/mp3"
-        action_type = "record_voice"
     else:
         return
 
-    send_chat_action(chat_id, action_type, bot_token=bot_token)
-    file_bytes, file_path = download_telegram_file(file_id, bot_token=bot_token)
+    reply = MediaReply(media_type, chat_id, message_id, None)
+    context = media_reply.set(reply)
+    try:
+        with media_stage("total"):
+            progress_text = "🎙️ Lagi dengerin voice note…" if media_type == "audio" else "🧾 Lagi baca struk…"
+            progress = send_message(chat_id, progress_text, parse_mode=None, reply_to_message_id=message_id,
+                                    bot_token=bot_token, timeout=3)
+            result = progress.get("result") if isinstance(progress, dict) and progress.get("ok") else None
+            if isinstance(result, dict) and type(result.get("message_id")) is int:
+                reply.progress_id = result["message_id"]
+            process_media_file(chat_id, message_id, db, user, bot_token, file_id, media_type, mime_type, caption)
+    except Exception:
+        if reply.progress_id is not None:
+            send_message(
+                chat_id, "Gagal menyelesaikan pemrosesan media. Cek riwayat Tillfold sebelum mengirim ulang.",
+                parse_mode=None, reply_to_message_id=message_id, bot_token=bot_token,
+            )
+        raise
+    finally:
+        media_reply.reset(context)
+
+
+def process_media_file(
+    chat_id: int, message_id: int, db: Session, user: User, bot_token: str | None,
+    file_id: str, media_type: str, mime_type: str, caption: str,
+):
+    user_id = user.id
+    with media_stage("download"):
+        file_bytes, file_path = download_telegram_file(file_id, bot_token=bot_token)
     if not file_bytes:
         send_message(chat_id, "❌ Gagal mengunduh media dari Telegram. Silakan coba kirim ulang.", reply_to_message_id=message_id, bot_token=bot_token)
         return
@@ -2050,12 +2118,13 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
         try:
             import httpx
             fn = os.path.basename(file_path) if file_path else "audio.ogg"
-            response = httpx.post(
-                "http://127.0.0.1:8090/v1/audio/transcriptions",
-                files={"file": (fn, file_bytes)},
-                data={"language": "id", "prompt": "pengeluaran, pemasukan, transfer, nominal, rekening"},
-                timeout=60.0,
-            )
+            with media_stage("local_transcription"):
+                response = httpx.post(
+                    "http://127.0.0.1:8090/v1/audio/transcriptions",
+                    files={"file": (fn, file_bytes)},
+                    data={"language": "id", "prompt": "pengeluaran, pemasukan, transfer, nominal, rekening"},
+                    timeout=60.0,
+                )
             if response.status_code == 200:
                 transcribed_text = (response.json().get("text") or "").strip()
         except Exception as exc:
@@ -2070,13 +2139,14 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
     all_accounts = db_accounts
 
     from app.services.ai_extractor import extract_from_media
-    extraction = extract_from_media(
-        media_bytes=file_bytes,
-        mime_type=mime_type,
-        media_type=media_type,
-        caption=caption,
-        accounts=all_accounts
-    )
+    with media_stage("extraction"):
+        extraction = extract_from_media(
+            media_bytes=file_bytes,
+            mime_type=mime_type,
+            media_type=media_type,
+            caption=caption,
+            accounts=all_accounts,
+        )
 
     if not extraction.get("success"):
         err = extraction.get("error", "Gagal memproses media.")
@@ -2126,7 +2196,8 @@ def handle_media_message(chat_id: int, message: dict, message_id: int, db: Sessi
             created_txs.append(tx)
             label = "Masuk" if item["type"] == "income" else "Keluar"
             lines.append(f"{label} {format_rp(item['amount'])} • {item['account']} • {item['description']}")
-    db.commit()
+    with media_stage("persist"):
+        db.commit()
     lines.append(get_safe_to_spend_snippet(db, user_id=user_id))
     send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token,
                  reply_markup=correction_markup(created_txs, chat_id) if created_txs else None)
@@ -2718,6 +2789,10 @@ def dispatch_message(chat_id, message, message_id, text, db, user, bot_token):
 
 
 def main():
+    logging.basicConfig(level=logging.WARNING)
+    media_logger.setLevel(logging.INFO)
+    stop = Event()
+    signal.signal(signal.SIGTERM, lambda _signum, _frame: stop.set())
     print("Connecting to PostgreSQL and creating tables if not exist...")
     from app.db.pocket_schema import ensure_pocket_schema
     import app.models.sheets_cycle
@@ -2731,27 +2806,44 @@ def main():
     setup_bot_commands()
     print("Tillfold shared bot started listening...")
 
-    offset = 0
-    while True:
-        try:
-            url = f"{API_BASE}/getUpdates?offset={offset}&timeout=30"
-            resp = requests.get(url, timeout=35)
-            if resp.status_code == 200:
-                data = resp.json()
+    poll_updates(stop)
+
+
+def poll_updates(stop: Event):
+    workers = 4
+    batch_size = 32
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="telegram") as executor:
+        queue = UpdateQueue(process_update, executor, workers)
+        while not stop.is_set():
+            for _ in queue.advance():
+                logger.warning("Pemrosesan update Telegram gagal. Akan dicoba ulang.")
+            if len(queue.pending) >= batch_size:
+                stop.wait(.5)
+                continue
+
+            waiting = bool(queue.pending)
+            poll_timeout = 1 if waiting else 30
+            try:
+                response = requests.get(
+                    f"{API_BASE}/getUpdates",
+                    params={"offset": queue.offset, "limit": batch_size, "timeout": poll_timeout},
+                    timeout=poll_timeout + 5,
+                )
+                response.raise_for_status()
+                data = response.json()
                 if data.get("ok"):
-                    for update in data.get("result", []):
-                        process_update(update)
-                        offset = update["update_id"] + 1
-            else:
-                time.sleep(2)
-        except requests.exceptions.Timeout:
-            continue
-        except requests.exceptions.RequestException as e:
-            print(f"Network error: {e}")
-            time.sleep(3)
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            time.sleep(2)
+                    queue.submit_updates(data.get("result", []))
+                else:
+                    logger.warning("Telegram menolak permintaan getUpdates.")
+                    stop.wait(2)
+            except requests.exceptions.Timeout:
+                continue
+            except (requests.RequestException, ValueError):
+                logger.warning("Gagal mengambil update Telegram. Akan dicoba ulang.")
+                stop.wait(3)
+            if waiting:
+                stop.wait(.5)
+
 
 if __name__ == "__main__":
     main()

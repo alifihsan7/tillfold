@@ -903,3 +903,17 @@ def test_receipt_duplicate_candidates_match_account_date_amount_and_ownership(db
     assert find(db_session, 1, "Mandiri", 50000, "Kedai Uji", "2026-11-27") == [matches]
     assert find(db_session, 1, "Mandiri", 50000, "GoPay Customer", occurred.isoformat()) == []
     assert find(db_session, 1, "Mandiri", 50000, "Kedai Uji", None) == []
+
+
+def test_receipt_store_writes_preserve_other_updates(monkeypatch, tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    from app.core import receipt_store
+
+    monkeypatch.setattr(receipt_store, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(receipt_store, "PENDING_FILE", tmp_path / "receipt.json")
+    refs = [f"receipt-{index}" for index in range(30)]
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        assert all(executor.map(lambda ref: save_pending_receipt(ref, {"ref": ref}), refs))
+        assert all(executor.map(delete_pending_receipt, refs[::2]))
+    assert receipt_store.list_pending_receipts() == {ref: {"ref": ref} for ref in refs[1::2]}

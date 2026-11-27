@@ -1,4 +1,8 @@
+import fcntl
 import json
+import os
+import tempfile
+from contextlib import contextmanager
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -26,12 +30,32 @@ def list_pending_receipts() -> Dict[str, Any]:
     return {}
 
 
-def save_pending_receipt(ref_number: str, data: Dict[str, Any]) -> bool:
+@contextmanager
+def _locked_store():
     _ensure_dir()
-    pending = list_pending_receipts()
-    pending[ref_number] = data
+    with PENDING_FILE.with_suffix(".lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def _write_pending(pending: Dict[str, Any]) -> None:
+    path = None
     try:
-        PENDING_FILE.write_text(json.dumps(pending, indent=2, default=str), encoding="utf-8")
+        with tempfile.NamedTemporaryFile(mode="w", dir=PENDING_FILE.parent, encoding="utf-8", delete=False) as temp:
+            path = Path(temp.name)
+            json.dump(pending, temp, indent=2, default=str)
+        os.replace(path, PENDING_FILE)
+    finally:
+        if path:
+            path.unlink(missing_ok=True)
+
+
+def save_pending_receipt(ref_number: str, data: Dict[str, Any]) -> bool:
+    try:
+        with _locked_store():
+            pending = list_pending_receipts()
+            pending[ref_number] = data
+            _write_pending(pending)
         return True
     except Exception as e:
         logger.error("Failed to save pending receipt %s: %s", ref_number, e)
@@ -39,18 +63,18 @@ def save_pending_receipt(ref_number: str, data: Dict[str, Any]) -> bool:
 
 
 def get_pending_receipt(ref_number: str) -> Optional[Dict[str, Any]]:
-    pending = list_pending_receipts()
-    return pending.get(ref_number)
+    return list_pending_receipts().get(ref_number)
 
 
 def delete_pending_receipt(ref_number: str) -> bool:
-    _ensure_dir()
-    pending = list_pending_receipts()
-    if ref_number in pending:
-        del pending[ref_number]
-        try:
-            PENDING_FILE.write_text(json.dumps(pending, indent=2), encoding="utf-8")
-            return True
-        except Exception as e:
-            logger.error("Failed to delete pending receipt %s: %s", ref_number, e)
-    return False
+    try:
+        with _locked_store():
+            pending = list_pending_receipts()
+            if ref_number not in pending:
+                return False
+            del pending[ref_number]
+            _write_pending(pending)
+        return True
+    except Exception as e:
+        logger.error("Failed to delete pending receipt %s: %s", ref_number, e)
+        return False

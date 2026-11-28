@@ -1807,7 +1807,7 @@ def prepare_amount_draft(db: Session, user_id: int, chat_id: int, alternatives: 
 def send_amount_draft(chat_id: int, message_id: int, draft: TelegramAmountDraft, bot_token: str | None):
     rows = [[{"text": format_rp(option["amount"]), "callback_data": f"{AMOUNT_DRAFT_PREFIX}{draft.id}:{index}"}]
             for index, option in enumerate(draft.options)]
-    rows.append([{"text": "Buang draf", "callback_data": f"{AMOUNT_DRAFT_PREFIX}{draft.id}:cancel"}])
+    rows.append([{"text": "❌ Buang draf", "callback_data": f"{AMOUNT_DRAFT_PREFIX}{draft.id}:cancel"}])
     lines = []
     for variants in zip(*(option["items"] for option in draft.options), strict=True):
         item = variants[0]
@@ -2300,7 +2300,7 @@ def receipt_category_keyboard(db: Session, user_id: int, key: str, account_id: i
     rows = []
     if suggested is not None:
         query = query.filter(Category.id != suggested.id)
-        rows.append([{"text": f"Pakai saran · {suggested.name[:45]}", "callback_data": f"rcpt_save:{key}:{account_id}:{suggested.id}"}])
+        rows.append([{"text": f"✅ Pakai saran · {suggested.name[:45]}", "callback_data": f"rcpt_save:{key}:{account_id}:{suggested.id}"}])
     categories = query.order_by(
         func.coalesce(usage.c.transaction_count, 0).desc(), func.lower(Category.name), Category.id,
     ).offset(page * page_size).limit(page_size + 1).all()
@@ -2309,12 +2309,12 @@ def receipt_category_keyboard(db: Session, user_id: int, key: str, account_id: i
     ] for category in categories[:page_size])
     navigation = []
     if page > 0:
-        navigation.append({"text": "Sebelumnya", "callback_data": f"rcpt_cat:{key}:{account_id}:{page - 1}"})
+        navigation.append({"text": "⬅️ Sebelumnya", "callback_data": f"rcpt_cat:{key}:{account_id}:{page - 1}"})
     if len(categories) > page_size:
-        navigation.append({"text": "Berikutnya", "callback_data": f"rcpt_cat:{key}:{account_id}:{page + 1}"})
+        navigation.append({"text": "➡️ Berikutnya", "callback_data": f"rcpt_cat:{key}:{account_id}:{page + 1}"})
     if navigation:
         rows.append(navigation)
-    rows.append([{"text": "Abaikan struk", "callback_data": f"rcpt_drop:{key}:{account_id}:0"}])
+    rows.append([{"text": "❌ Abaikan struk", "callback_data": f"rcpt_drop:{key}:{account_id}:0"}])
     return rows
 
 
@@ -2519,8 +2519,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     else:
                         details = "Ada pengeluaran dengan nominal dan rekening yang sama pada tanggal ini."
                     markup = {"inline_keyboard": [[
-                        {"text": "Abaikan struk", "callback_data": f"rcpt_drop:{key}:{account.id}:0"},
-                        {"text": "Tetap catat", "callback_data": f"rcpt_cat:{key}:{account.id}:0"},
+                        {"text": "❌ Abaikan struk", "callback_data": f"rcpt_drop:{key}:{account.id}:0"},
+                        {"text": "✅ Tetap catat", "callback_data": f"rcpt_cat:{key}:{account.id}:0"},
                     ]]}
                     edit_transaction_message(
                         chat_id, msg_id,

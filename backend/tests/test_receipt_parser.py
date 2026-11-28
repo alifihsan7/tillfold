@@ -633,7 +633,7 @@ def test_receipt_radar_category_picker_records_selected_category(db_session, mon
     press(f"rcpt_rec:{ref}:Mandiri")
     assert db_session.query(Transaction).count() == 0
     first = buttons()
-    assert all(not label.startswith("Pakai saran") for label in first)
+    assert all(not label.startswith("✅ Pakai saran") for label in first)
     assert "Belum ada saran yang cocok." in messages[-1][1]["text"]
     old_callback = next(data for label, data in first.items() if label == "Pilihan 00")
     press(old_callback.rsplit(":", 1)[0] + ":0")
@@ -642,9 +642,9 @@ def test_receipt_radar_category_picker_records_selected_category(db_session, mon
     assert "Pemasukan milik sendiri" not in first
     assert all(len(label.encode()) <= 64 for label in first.values())
 
-    press(first["Berikutnya"])
+    press(first["➡️ Berikutnya"])
     second = buttons()
-    assert "Sebelumnya" in second
+    assert "⬅️ Sebelumnya" in second
     press(second["Pilihan 08"])
     tx = db_session.query(Transaction).one()
     assert (tx.user_id, tx.amount, tx.account, tx.category) == (1, 75_000, "Mandiri", "Pilihan 08")
@@ -658,7 +658,7 @@ def test_receipt_radar_category_picker_records_selected_category(db_session, mon
         "user_id": 1, "nominal": 25_000, "merchant": "Kedai Uji", "category": "Makan",
     })
     press(f"rcpt_rec:{next_ref}:Mandiri")
-    suggested = buttons()["Pakai saran · Pilihan 08"]
+    suggested = buttons()["✅ Pakai saran · Pilihan 08"]
     assert suggested.endswith(":108")
     press(suggested)
     saved = db_session.query(Transaction).filter(Transaction.amount == 25_000).one()
@@ -697,9 +697,9 @@ def test_receipt_category_choices_rank_by_own_expense_count(db_session):
     def labels(suggestion):
         return [row[0]["text"] for row in receipt_category_keyboard(db_session, 1, "test", 1, suggestion, 0)]
 
-    assert labels(None) == ["Makan", "Belanja", "Galon", "Air", "Dana", "Abaikan struk"]
+    assert labels(None) == ["Makan", "Belanja", "Galon", "Air", "Dana", "❌ Abaikan struk"]
     galon = db_session.query(Category).filter_by(user_id=1, name="Galon").one()
-    assert labels(galon) == ["Pakai saran · Galon", "Makan", "Belanja", "Air", "Dana", "Abaikan struk"]
+    assert labels(galon) == ["✅ Pakai saran · Galon", "Makan", "Belanja", "Air", "Dana", "❌ Abaikan struk"]
 
 
 def test_receipt_suggestion_uses_own_category_and_consistent_merchant_history(db_session):
@@ -906,16 +906,16 @@ def test_receipt_possible_duplicate_can_be_dropped_or_recorded(db_session, monke
     assert db_session.query(Transaction).count() == 1
 
     if continue_recording:
-        press(buttons()["Tetap catat"])
+        press(buttons()["✅ Tetap catat"])
         assert db_session.query(Transaction).count() == 1
-        press(buttons()["Pakai saran · Ngopi"])
+        press(buttons()["✅ Pakai saran · Ngopi"])
         assert db_session.query(Transaction).count() == 2
         assert save_pending_receipt(ref, receipt)
         press(f"rcpt_rec:{ref}:{account}")
         assert messages[-1]["text"] == "Struk ini sudah tercatat."
         assert db_session.query(Transaction).count() == 2
     else:
-        press(buttons()["Abaikan struk"])
+        press(buttons()["❌ Abaikan struk"])
         assert db_session.query(Transaction).count() == 1
     assert get_pending_receipt(ref) is None
 
@@ -1058,9 +1058,9 @@ def test_account_forwarding_verification_receipt_and_bot_approval(db_session, mo
     press(accounts["✅ Catat di Mandiri"], 54321)
     categories = {button["text"]: button["callback_data"]
                   for row in telegram[-1][1]["reply_markup"]["inline_keyboard"] for button in row}
-    assert "Pakai saran · Makan" in categories
-    press(categories["Pakai saran · Makan"], 54321)
-    press(categories["Pakai saran · Makan"], 54321)
+    assert "✅ Pakai saran · Makan" in categories
+    press(categories["✅ Pakai saran · Makan"], 54321)
+    press(categories["✅ Pakai saran · Makan"], 54321)
     saved = db_session.query(Transaction).one()
     assert (saved.user_id, saved.account, saved.amount) == (1, "Mandiri", 10_000)
     assert db_session.query(ReceiptRadarDraft).one().status == "recorded"
@@ -1343,7 +1343,7 @@ def test_personal_radar_skips_pending_and_retries_unsent_card(db_session, monkey
     assert not updates
     press(button, 54321)
     category = next(btn["callback_data"] for row in updates[-1]["reply_markup"]["inline_keyboard"] for btn in row
-                    if btn["text"] == "Pakai saran · Tagihan")
+                    if btn["text"] == "✅ Pakai saran · Tagihan")
     press(category, 54321)
     saved = db_session.query(Transaction).one()
     assert saved.user_id == 1 and saved.account == "BRI 1" and saved.amount == 26_900

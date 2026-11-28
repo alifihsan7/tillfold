@@ -141,11 +141,11 @@ def account_keyboard(db: Session, user_id: int, reference: str, page: int, *, pr
             for account_id, name in accounts[:ACCOUNT_PAGE_SIZE]]
     navigation = []
     if page > 0:
-        navigation.append({"text": "Sebelumnya", "callback_data": f"rcpt_accounts:{reference}:{page - 1}"})
+        navigation.append({"text": "⬅️ Sebelumnya", "callback_data": f"rcpt_accounts:{reference}:{page - 1}"})
     if len(accounts) > ACCOUNT_PAGE_SIZE:
-        navigation.append({"text": "Berikutnya", "callback_data": f"rcpt_accounts:{reference}:{page + 1}"})
+        navigation.append({"text": "➡️ Berikutnya", "callback_data": f"rcpt_accounts:{reference}:{page + 1}"})
     if not accounts and not page:
-        navigation.append({"text": "Muat ulang rekening", "callback_data": f"rcpt_accounts:{reference}:0"})
+        navigation.append({"text": "🔄 Muat ulang rekening", "callback_data": f"rcpt_accounts:{reference}:0"})
     if navigation:
         rows.append(navigation)
     rows.append([{"text": "❌ Abaikan", "callback_data": f"rcpt_drop:{reference}:0:0"}])

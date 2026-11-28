@@ -30,11 +30,11 @@ def correction_markup(transactions: list[Transaction], chat_id: int) -> dict:
     if len(transactions) == 1:
         tx = transactions[0]
         rows = [[
-            _button("Ubah kategori", tx, chat_id, "cats"),
-            _button("Ubah rekening", tx, chat_id, "accs"),
-        ], [_button("Batalkan", tx, chat_id, "ask")]]
+            _button("🏷️ Ubah kategori", tx, chat_id, "cats"),
+            _button("🏦 Ubah rekening", tx, chat_id, "accs"),
+        ], [_button("❌ Batalkan", tx, chat_id, "ask")]]
     else:
-        rows = [[_button(f"Koreksi {index} · {tx.description[:36]}", tx, chat_id, "open")]
+        rows = [[_button(f"✏️ Koreksi {index} · {tx.description[:36]}", tx, chat_id, "open")]
                 for index, tx in enumerate(transactions, 1)]
     return {"inline_keyboard": rows}
 
@@ -56,12 +56,12 @@ def _choices(db: Session, tx: Transaction, chat_id: int, action: str, page: int)
             for row_id, name in options[:PAGE_SIZE]]
     navigation = []
     if page:
-        navigation.append(_button("Sebelumnya", tx, chat_id, action, page - 1))
+        navigation.append(_button("⬅️ Sebelumnya", tx, chat_id, action, page - 1))
     if len(options) > PAGE_SIZE:
-        navigation.append(_button("Berikutnya", tx, chat_id, action, page + 1))
+        navigation.append(_button("➡️ Berikutnya", tx, chat_id, action, page + 1))
     if navigation:
         rows.append(navigation)
-    rows.append([_button("Kembali", tx, chat_id, "menu")])
+    rows.append([_button("↩️ Kembali", tx, chat_id, "menu")])
     return (title if options else "Belum ada pilihan. Kelola daftar di dashboard."), {"inline_keyboard": rows}
 
 
@@ -93,8 +93,8 @@ def handle_transaction_action(
     elif action == "ask":
         title = "Batalkan transaksi ini?"
         markup = {"inline_keyboard": [[
-            _button("Ya, batalkan", tx, chat_id, "del"),
-            _button("Kembali", tx, chat_id, "menu"),
+            _button("🗑️ Ya, batalkan", tx, chat_id, "del"),
+            _button("↩️ Kembali", tx, chat_id, "menu"),
         ]]}
     elif action in ("cat", "acc", "del"):
         try:

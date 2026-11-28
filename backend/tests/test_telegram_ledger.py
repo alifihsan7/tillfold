@@ -172,7 +172,7 @@ def test_mixed_media_transfers_are_paired_and_retries_skip_extraction(telegram):
     assert extract.call_count == 1
     assert extract.call_args.kwargs["accounts"] == ["Bank Uji", "Cash"]
     actions = [button for row in send.call_args.kwargs["reply_markup"]["inline_keyboard"] for button in row]
-    assert {button["text"] for button in actions} == {"Ubah kategori", "Ubah rekening", "Batalkan"}
+    assert {button["text"] for button in actions} == {"🏷️ Ubah kategori", "🏦 Ubah rekening", "❌ Batalkan"}
     assert all(button["callback_data"].startswith(f"txn:{saved[2].id}:") for button in actions)
 
 
@@ -413,9 +413,9 @@ def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(teleg
 
     bot.process_update(update(2, "kopi 15k Bank Uji"))
     second_id = rows(db)[-1].id
-    press(actions["Ubah kategori"], chat_type="group")
+    press(actions["🏷️ Ubah kategori"], chat_type="group")
     assert not edits
-    press(actions["Ubah kategori"])
+    press(actions["🏷️ Ubah kategori"])
     categories = buttons(edits[-1]["reply_markup"])
     assert "Pendapatan uji" not in categories
     assert "Kategori akun lain" not in categories
@@ -423,7 +423,7 @@ def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(teleg
     assert db.get(Transaction, first_id).category == "Makanan uji"
     assert db.get(Transaction, second_id).category != "Makanan uji"
 
-    press(actions["Ubah rekening"])
+    press(actions["🏦 Ubah rekening"])
     accounts = buttons(edits[-1]["reply_markup"])
     assert "Peer Bank" not in accounts
     press(accounts["Cash"])
@@ -432,9 +432,9 @@ def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(teleg
     balances = client.get("/accounts").json()
     assert {item["name"]: item["current_balance"] for item in balances} == {"Bank Uji": -15000, "Cash": -20000}
 
-    press(actions["Batalkan"])
+    press(actions["❌ Batalkan"])
     assert len(rows(db)) == 2
-    confirm = buttons(edits[-1]["reply_markup"])["Ya, batalkan"]
+    confirm = buttons(edits[-1]["reply_markup"])["🗑️ Ya, batalkan"]
     press(confirm, chat=333)
     assert len(rows(db)) == 2
     press(confirm)
@@ -460,7 +460,7 @@ def test_ambiguous_amount_waits_for_confirmation_and_records_once(telegram, monk
     assert "Rp 25.000" in send.call_args.args[1]
     keyboard = send.call_args.kwargs["reply_markup"]["inline_keyboard"]
     actions = {button["text"]: button["callback_data"] for row in keyboard for button in row}
-    assert set(actions) == {"Rp 15.000", "Rp 50.000", "Buang draf"}
+    assert set(actions) == {"Rp 15.000", "Rp 50.000", "❌ Buang draf"}
 
     def press(chat, text):
         bot.process_update({"callback_query": {
@@ -492,7 +492,7 @@ def test_amount_draft_cancel_expiry_and_clear_chat(telegram, monkeypatch):
         }})
 
     bot.process_update(update(1, "kopi 15k/50k Cash"))
-    press("Buang draf")
+    press("❌ Buang draf")
     assert db.query(TelegramAmountDraft).count() == 0
     bot.process_update(update(2, "kopi 15000 atau 50000 Cash"))
     db.query(TelegramAmountDraft).one().expires_at = 0

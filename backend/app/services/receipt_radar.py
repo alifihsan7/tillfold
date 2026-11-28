@@ -6,8 +6,9 @@ from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import parseaddr
 from hashlib import sha256
-from html import unescape
+from html import escape, unescape
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 import requests
 from sqlalchemy import func
@@ -24,6 +25,7 @@ RECEIPT_PREFIX = "fw_"
 VERIFICATION_TTL = timedelta(days=1)
 DRAFT_TTL = timedelta(days=14)
 ACCOUNT_PAGE_SIZE = 8
+DRAFT_PARSE_MODE = "HTML"
 
 
 def parse_email(raw: bytes) -> EmailMessage:
@@ -109,11 +111,17 @@ def normalize_receipt(receipt: dict) -> tuple[str, dict] | None:
     else:
         return None
     digest = sha256(f"{bank}:{reference}".encode()).hexdigest()
+    source = str(receipt.get("payment_method") or receipt.get("source_account") or "").strip()
+    digits = re.sub(r"\D", "", source)
+    payment_source = f"Rekening •••• {digits[-4:]}" if len(digits) >= 4 else ""
+    if bank == "google_play" and not digits and source.casefold() != "google play":
+        payment_source = source[:80]
     return digest, {
         "bank": bank, "merchant": merchant, "nominal": nominal,
         "date": occurred.isoformat() if isinstance(occurred, datetime) else None,
         "category": str(receipt.get("inferred_category") or "")[:100],
         "source_ref": source_ref,
+        "payment_source": payment_source,
     }
 
 
@@ -121,7 +129,7 @@ def account_keyboard(db: Session, user_id: int, reference: str, page: int) -> di
     accounts = db.query(Account.id, Account.name).filter(
         Account.user_id == user_id, Account.is_archived.is_(False),
     ).order_by(func.lower(Account.name), Account.id).offset(page * ACCOUNT_PAGE_SIZE).limit(ACCOUNT_PAGE_SIZE + 1).all()
-    rows = [[{"text": name, "callback_data": f"rcpt_pick:{reference}:{account_id}"}]
+    rows = [[{"text": f"✅ Catat di {name}", "callback_data": f"rcpt_pick:{reference}:{account_id}"}]
             for account_id, name in accounts[:ACCOUNT_PAGE_SIZE]]
     navigation = []
     if page > 0:
@@ -132,17 +140,35 @@ def account_keyboard(db: Session, user_id: int, reference: str, page: int) -> di
         navigation.append({"text": "Muat ulang rekening", "callback_data": f"rcpt_accounts:{reference}:0"})
     if navigation:
         rows.append(navigation)
-    rows.append([{"text": "Abaikan struk", "callback_data": f"rcpt_drop:{reference}:0:0"}])
+    rows.append([{"text": "❌ Abaikan", "callback_data": f"rcpt_drop:{reference}:0:0"}])
     return {"inline_keyboard": rows}
 
 
 def draft_text(payload: dict) -> str:
+    bank = escape(payload["bank"].replace("_", " ").upper())
+    merchant = escape(payload["merchant"])
     amount = f"Rp {payload['nominal']:,}".replace(",", ".")
-    return (
-        f"🧾 Struk email · {payload['bank'].upper()}\n\n"
-        f"{payload['merchant']} · {amount}\n\n"
-        "Pilih rekening untuk mulai. Struk belum dicatat."
-    )
+    lines = [
+        f"🧾 <b>RECEIPT RADAR: {bank}</b>",
+        "",
+        f"• <b>Merchant/Penerima</b>: <code>{merchant}</code>",
+        f"• <b>Nominal</b>: <code>{amount}</code>",
+        "• <b>Kategori</b>: pilih setelah menentukan rekening",
+    ]
+    if source := payload.get("payment_source"):
+        lines.append(f"• <b>Sumber Dana</b>: <code>{escape(source)}</code>")
+    if iso_date := payload.get("date"):
+        try:
+            occurred = datetime.fromisoformat(iso_date)
+            if occurred.tzinfo is not None:
+                occurred = occurred.astimezone(ZoneInfo(settings.TIMEZONE))
+            lines.append(f"• <b>Waktu Transaksi</b>: <code>{occurred:%d %b %Y %H:%M} WIB</code>")
+        except (TypeError, ValueError):
+            pass
+    if reference := payload.get("source_ref"):
+        lines.append(f"• <b>No. Referensi</b>: <code>{escape(reference)}</code>")
+    lines.extend(("", "Pilih rekening untuk mencatat ke Tillfold:"))
+    return "\n".join(lines)
 
 
 def resolve_draft(draft: ReceiptRadarDraft, status: str) -> None:
@@ -193,7 +219,7 @@ def deliver_receipt(db: Session, user: User, draft: ReceiptRadarDraft) -> bool:
     try:
         response = requests.post(
             f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage",
-            json={"chat_id": user.telegram_chat_id, "text": draft_text(draft.payload),
+            json={"chat_id": user.telegram_chat_id, "text": draft_text(draft.payload), "parse_mode": DRAFT_PARSE_MODE,
                   "reply_markup": account_keyboard(db, user.id, draft.id, 0)},
             timeout=8,
         )

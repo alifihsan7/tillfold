@@ -1004,6 +1004,9 @@ def test_account_forwarding_verification_receipt_and_bot_approval(db_session, mo
     assert db_session.query(Transaction).count() == 0
     assert db_session.query(ReceiptRadarDraft).count() == 1
     assert len(telegram) == 1 and telegram[0][1]["chat_id"] == 54321
+    assert telegram[0][1]["parse_mode"] == "HTML"
+    assert "RECEIPT RADAR: MANDIRI" in telegram[0][1]["text"]
+    assert "Merchant/Penerima" in telegram[0][1]["text"] and "No. Referensi" in telegram[0][1]["text"]
     accounts = {button["text"]: button["callback_data"]
                 for row in telegram[0][1]["reply_markup"]["inline_keyboard"] for button in row}
 
@@ -1013,9 +1016,9 @@ def test_account_forwarding_verification_receipt_and_bot_approval(db_session, mo
             "message": {"message_id": 77, "chat": {"id": sender, "type": "private"}},
         })
 
-    press(accounts["Mandiri"], 12345)
+    press(accounts["✅ Catat di Mandiri"], 12345)
     assert db_session.query(Transaction).count() == 0
-    press(accounts["Mandiri"], 54321)
+    press(accounts["✅ Catat di Mandiri"], 54321)
     categories = {button["text"]: button["callback_data"]
                   for row in telegram[-1][1]["reply_markup"]["inline_keyboard"] for button in row}
     assert "Pakai saran · Makan" in categories
@@ -1024,6 +1027,20 @@ def test_account_forwarding_verification_receipt_and_bot_approval(db_session, mo
     saved = db_session.query(Transaction).one()
     assert (saved.user_id, saved.account, saved.amount) == (1, "Mandiri", 10_000)
     assert db_session.query(ReceiptRadarDraft).one().status == "recorded"
+
+    reference = "2611081122524341667"
+    assert f"[receipt_radar:ref_{reference}]" in saved.raw_text
+    duplicate = ReceiptRadarDraft(
+        id="fw_duplicate_chat", user_id=1, fingerprint="other-proof", status="pending",
+        payload={"bank": "mandiri", "merchant": "Merchant", "nominal": 10_000, "source_ref": reference},
+    )
+    db_session.add(duplicate)
+    db_session.commit()
+    press("rcpt_pick:fw_duplicate_chat:1", 54321)
+    assert "Struk ini sudah tercatat." in telegram[-1][1]["text"]
+    assert "Rekening: Mandiri" in telegram[-1][1]["text"]
+    assert "Tanggal transaksi:" in telegram[-1][1]["text"]
+    assert db_session.query(Transaction).count() == 1
 
     assert api.delete(path).json()["address"] is None
     assert api.post(path + "/inbound", headers=gateway, content=forwarded.as_bytes()).status_code == 404
@@ -1185,3 +1202,21 @@ def test_forwarded_receipt_requires_original_sender_match():
     original.set_content("Receipt")
     mail.add_attachment(original)
     assert has_receipt_sender(mail, SENDERS)
+
+
+
+def test_receipt_card_uses_legacy_layout_and_masks_source_account():
+    from app.services.receipt_radar import draft_text, normalize_receipt
+
+    _, payload = normalize_receipt({
+        "bank": "mandiri", "merchant": "Toko <Uji> & Co", "nominal": 25_000,
+        "source_account": "Tabungan 1234567890", "ref_number": "REF123",
+        "datetime": datetime(2026, 11, 28, 3, 20, tzinfo=timezone.utc),
+    })
+    text = draft_text(payload)
+    assert "<b>RECEIPT RADAR: MANDIRI</b>" in text
+    assert "<code>Toko &lt;Uji&gt; &amp; Co</code>" in text
+    assert "Rekening •••• 7890" in text
+    assert "1234567890" not in text
+    assert "28 Nov 2026 10:20 WIB" in text
+    assert "REF123" in text

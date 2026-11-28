@@ -53,7 +53,7 @@ from app.models.user import User, TelegramAmountDraft, TelegramProcessedMessage
 
 from app.services.analytics import compute_safe_to_spend_metrics, resolve_pocket_account
 from app.services.paycheck_cycles import recorded_cycle_ends, receipt_allocations
-from app.services.receipt_radar import DRAFT_TTL, RECEIPT_PREFIX, account_keyboard, draft_text, resolve_draft
+from app.services.receipt_radar import DRAFT_PARSE_MODE, DRAFT_TTL, RECEIPT_PREFIX, account_keyboard, draft_text, resolve_draft
 from app.api.v1.endpoints.analytics import get_monthly_date_bounds
 
 API_BASE = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}"
@@ -324,11 +324,12 @@ def send_message(chat_id: int, text: str, parse_mode: Optional[str] = "Markdown"
         logger.warning("Gagal mengirim pesan Telegram.")
         return None
 
-def edit_transaction_message(chat_id: int, message_id: int, text: str, markup: dict, token: str):
+def edit_transaction_message(chat_id: int, message_id: int, text: str, markup: dict, token: str, *, parse_mode: str | None = None):
+    payload = {"chat_id": chat_id, "message_id": message_id, "text": text, "reply_markup": markup}
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     try:
-        requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
-            "chat_id": chat_id, "message_id": message_id, "text": text, "reply_markup": markup,
-        }, timeout=8)
+        requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json=payload, timeout=8)
     except requests.RequestException:
         logger.warning("Gagal memperbarui pesan koreksi Telegram")
 
@@ -2392,7 +2393,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     markup = account_keyboard(db, user.id, ref_num, int(parts[2]))
                     text = draft_text(entry)
                     db.rollback()
-                    edit_transaction_message(chat_id, msg_id, text, markup, token)
+                    edit_transaction_message(chat_id, msg_id, text, markup, token, parse_mode=DRAFT_PARSE_MODE)
                 return
         else:
             if action in {"rcpt_pick", "rcpt_accounts"}:
@@ -2470,19 +2471,20 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
             references = [ref_num]
             if forwarded and p.get("source_ref"):
                 references.append(p["source_ref"])
-            same_reference = db.query(Transaction.id).filter(
+            same_reference = db.query(Transaction.account, Transaction.date).filter(
                 Transaction.user_id == user.id,
                 or_(*(Transaction.raw_text.contains(f"[receipt_radar:ref_{ref}]", autoescape=True) for ref in references)),
             )
             if action in ("rcpt_rec", "rcpt_pick") and not p.get("is_transfer"):
-                if same_reference.first():
+                if existing := same_reference.first():
+                    notice = "Struk ini sudah tercatat."
                     if forwarded:
+                        notice += f"\n\nRekening: {existing.account}\nTanggal transaksi: {existing.date:%d/%m/%Y}"
                         resolve_draft(forwarded, "recorded")
                         db.commit()
                     else:
                         delete_pending_receipt(ref_num)
-                    edit_transaction_message(chat_id, msg_id, "Struk ini sudah tercatat.",
-                                             {"inline_keyboard": []}, token)
+                    edit_transaction_message(chat_id, msg_id, notice, {"inline_keyboard": []}, token)
                     return
                 matches = find_similar_receipt_expenses(db, user.id, chosen_acc, nominal, merchant, tx_date_str)
                 if matches:

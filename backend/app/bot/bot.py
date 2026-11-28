@@ -26,7 +26,10 @@ from sqlalchemy import desc, func, case, event, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.bot.update_queue import UpdateQueue
-from app.bot.transaction_actions import PREFIX as TRANSACTION_CALLBACK_PREFIX, correction_markup, handle_transaction_action
+from app.bot.transaction_actions import (
+    PREFIX as TRANSACTION_CALLBACK_PREFIX,
+    correction_markup, handle_transaction_action, transaction_pocket_label, transaction_pockets,
+)
 from app.core.config import settings
 from app.core.parser import amount_alternatives, parse_transaction, parse_multi_transactions, parse_amount, split_raw_into_items
 from app.core.transfer import find_paired_transfer
@@ -1986,6 +1989,10 @@ def record_text_items(
 📝 **Keterangan:** {tx.description}
 🕒 _{time_str} WIB_"""
 
+        pocket_label = transaction_pocket_label(db, tx, transaction_pockets(db, tx))
+        if pocket_label:
+            reply += f"\n👜 **Kantong:** {pocket_label}"
+
         if tx.type == "expense" and is_matching_pocket_account(tx.account, pocket_account) and tx.category in POCKET_ENVELOPES:
             limit = POCKET_ENVELOPES[tx.category]
             pocket_variants = get_pocket_account_variants(pocket_account)
@@ -2007,7 +2014,7 @@ def record_text_items(
             reply += f"\n\n{get_safe_to_spend_snippet(db, user_id=user_id)}"
 
         send_message(chat_id, reply, reply_to_message_id=message_id, bot_token=bot_token,
-                     reply_markup=correction_markup([tx], chat_id))
+                     reply_markup=correction_markup([tx], chat_id, show_pockets=pocket_label is not None))
         return
 
     # If multiple transactions in one message
@@ -2042,6 +2049,8 @@ def record_text_items(
     for idx, tx in enumerate(created_txs, 1):
         icon = "💰" if tx.type == "income" else "💸"
         lines.append(f"{idx}. {icon} **{format_rp(tx.amount)}** • {tx.description}\n   📂 `{tx.category}` • 💳 `{tx.account}`")
+        if pocket_label := transaction_pocket_label(db, tx, transaction_pockets(db, tx)):
+            lines.append(f"   👜 Kantong: {pocket_label}")
 
     lines.append(f"\n💵 **Total:** {format_rp(total_amount)}")
     lines.append(f"🕒 _{time_str} WIB_")
@@ -2226,6 +2235,7 @@ def process_media_file(
     today = datetime.now(WIB).date()
     lines = [f"Tercatat: {len(items)} transaksi."]
     created_txs = []
+    show_pockets = False
     for item in items:
         if item["type"] == "transfer":
             add_transfer_pair(db, user_id, item["from_account"], item["to_account"], item["amount"], today, item["description"])
@@ -2239,11 +2249,14 @@ def process_media_file(
             created_txs.append(tx)
             label = "Masuk" if item["type"] == "income" else "Keluar"
             lines.append(f"{label} {format_rp(item['amount'])} • {item['account']} • {item['description']}")
+            if pocket_label := transaction_pocket_label(db, tx, transaction_pockets(db, tx)):
+                lines.append(f"👜 Kantong: {pocket_label}")
+                show_pockets = True
     with media_stage("persist"):
         db.commit()
     lines.append(get_safe_to_spend_snippet(db, user_id=user_id))
     send_message(chat_id, "\n".join(lines), reply_to_message_id=message_id, bot_token=bot_token,
-                 reply_markup=correction_markup(created_txs, chat_id) if created_txs else None)
+                 reply_markup=correction_markup(created_txs, chat_id, show_pockets=show_pockets) if created_txs else None)
 
 
 def receipt_callback_key(ref_number: str, user_id: int, chat_id: int, message_id: int) -> str:
@@ -2638,18 +2651,22 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
 
                 db.commit()
                 db.refresh(tx)
+                pocket_label = None
                 if chat_id == sender_id and msg.get("chat", {}).get("type") == "private" and not p.get("is_transfer"):
-                    markup = correction_markup([tx], chat_id)
+                    pocket_label = transaction_pocket_label(db, tx, transaction_pockets(db, tx))
+                    markup = correction_markup([tx], chat_id, show_pockets=pocket_label is not None)
 
                 if not forwarded:
                     delete_pending_receipt(ref_num)
                 s2s_snippet = get_safe_to_spend_snippet(db, user_id=user.id).replace("*", "")
+                pocket_line = f"👜 Kantong: {pocket_label}\n" if pocket_label else ""
 
                 edit_text = (
                     f"Transaksi dicatat di Tillfold.\n\n"
                     f"{merchant[:255]} · {format_rp(nominal)}\n"
                     f"Rekening: {chosen_acc}\n"
                     f"Kategori: {cat_name}\n"
+                    f"{pocket_line}"
                     f"No. referensi: {p.get('source_ref') or ref_num}\n\n"
                     f"{s2s_snippet}"
                 )

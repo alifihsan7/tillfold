@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.account import Account
 from app.models.category import Category
+from app.models.pocket import Pocket
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.transaction import TransactionUpdate
@@ -26,33 +27,66 @@ def _button(label: str, tx: Transaction, chat_id: int, action: str, value: int =
     return {"text": label, "callback_data": f"{callback}:{_signature(tx, chat_id, callback)}"}
 
 
-def correction_markup(transactions: list[Transaction], chat_id: int) -> dict:
+def transaction_pockets(db: Session, tx: Transaction) -> list[Pocket]:
+    if tx.type != "expense":
+        return []
+    pockets = db.query(Pocket).join(Account, Account.id == Pocket.account_id).filter(
+        Pocket.user_id == tx.user_id, Pocket.is_active.is_(True),
+        Account.user_id == tx.user_id, Account.name == tx.account, Account.is_archived.is_(False),
+    ).order_by(Pocket.id).all()
+    return pockets if any(not pocket.slug.startswith("utama") for pocket in pockets) else []
+
+
+def transaction_pocket_label(db: Session, tx: Transaction, pockets: list[Pocket]) -> str | None:
+    if not pockets:
+        return None
+    from app.api.v1.endpoints.pockets import classify_pocket_transaction_for_account
+    from app.services.subscription_payments import payment_pocket_slugs
+
+    explicit = next((pocket.name for pocket in pockets if pocket.id == tx.pocket_id), None)
+    if explicit:
+        return explicit
+    payment_pockets = payment_pocket_slugs(db, tx.user_id, pockets) if tx.id is not None else None
+    slug = classify_pocket_transaction_for_account(tx, pockets, payment_pockets)
+    return next((pocket.name for pocket in pockets if pocket.slug == slug), "Belum dialokasikan")
+
+
+def correction_markup(transactions: list[Transaction], chat_id: int, *, show_pockets: bool = False) -> dict:
     if len(transactions) == 1:
         tx = transactions[0]
         rows = [[
             _button("🏷️ Ubah kategori", tx, chat_id, "cats"),
             _button("🏦 Ubah rekening", tx, chat_id, "accs"),
-        ], [_button("❌ Batalkan", tx, chat_id, "ask")]]
+        ]]
+        if show_pockets:
+            rows.append([_button("👜 Ubah kantong", tx, chat_id, "pks")])
+        rows.append([_button("❌ Batalkan", tx, chat_id, "ask")])
     else:
         rows = [[_button(f"✏️ Koreksi {index} · {tx.description[:36]}", tx, chat_id, "open")]
                 for index, tx in enumerate(transactions, 1)]
     return {"inline_keyboard": rows}
 
 
-def _choices(db: Session, tx: Transaction, chat_id: int, action: str, page: int) -> tuple[str, dict]:
-    if action == "cats":
+def _choices(db: Session, tx: Transaction, chat_id: int, action: str, page: int, pockets: list[Pocket]) -> tuple[str, dict]:
+    offset = page * PAGE_SIZE
+    if action == "pks":
+        choices = [(0, "Otomatis")] + [(pocket.id, pocket.name) for pocket in pockets] if pockets else []
+        options = choices[offset:offset + PAGE_SIZE + 1]
+        title, selected, apply = "Pilih kantong", tx.pocket_id or 0, "pk"
+    elif action == "cats":
         query = db.query(Category.id, Category.name).filter(
             Category.user_id == tx.user_id, Category.type == tx.type,
         ).order_by(func.lower(Category.name), Category.id)
         title, selected, apply = "Pilih kategori", tx.category, "cat"
+        options = query.offset(offset).limit(PAGE_SIZE + 1).all()
     else:
         query = db.query(Account.id, Account.name).filter(
             Account.user_id == tx.user_id, Account.is_archived.is_(False),
         ).order_by(func.lower(Account.name), Account.id)
         title, selected, apply = "Pilih rekening", tx.account, "acc"
+        options = query.offset(offset).limit(PAGE_SIZE + 1).all()
 
-    options = query.offset(page * PAGE_SIZE).limit(PAGE_SIZE + 1).all()
-    rows = [[_button(f"✓ {name}" if name == selected else name, tx, chat_id, apply, row_id)]
+    rows = [[_button(f"✓ {name}" if selected in (row_id, name) else name, tx, chat_id, apply, row_id)]
             for row_id, name in options[:PAGE_SIZE]]
     navigation = []
     if page:
@@ -87,16 +121,17 @@ def handle_transaction_action(
         return
 
     title = "Transaksi tercatat"
-    markup = correction_markup([tx], chat_id)
-    if action in ("cats", "accs"):
-        title, markup = _choices(db, tx, chat_id, action, value)
+    markup = None
+    pockets = transaction_pockets(db, tx)
+    if action in ("cats", "accs", "pks"):
+        title, markup = _choices(db, tx, chat_id, action, value, pockets)
     elif action == "ask":
         title = "Batalkan transaksi ini?"
         markup = {"inline_keyboard": [[
             _button("🗑️ Ya, batalkan", tx, chat_id, "del"),
             _button("↩️ Kembali", tx, chat_id, "menu"),
         ]]}
-    elif action in ("cat", "acc", "del"):
+    elif action in ("cat", "acc", "pk", "del"):
         try:
             if action == "del":
                 summary = f"{tx.description} · {format_rp(tx.amount)}"
@@ -108,16 +143,25 @@ def handle_transaction_action(
                     Category.id == value, Category.user_id == user.id, Category.type == tx.type,
                 ).first()
                 payload = TransactionUpdate(category=option.name) if option else None
+            elif action == "pk":
+                payload = TransactionUpdate(pocket_id=value or None) if (
+                    pockets and (not value or any(pocket.id == value for pocket in pockets))
+                ) else None
             else:
                 option = db.query(Account).filter(
                     Account.id == value, Account.user_id == user.id, Account.is_archived.is_(False),
                 ).first()
-                payload = TransactionUpdate(account=option.name) if option else None
+                payload = None
+                if option:
+                    payload = TransactionUpdate(account=option.name)
+                    if option.name != tx.account and tx.pocket_id is not None:
+                        payload = TransactionUpdate(account=option.name, pocket_id=None)
             if payload is None:
                 db.rollback()
                 send_message(chat_id, "Pilihan ini sudah tidak tersedia. Buka daftar lagi.", parse_mode=None, bot_token=token)
                 return
             tx = update_transaction(tx_id, payload, current_user=user, db=db)
+            pockets = transaction_pockets(db, tx)
             title = "Transaksi diperbarui"
         except HTTPException as exc:
             db.rollback()
@@ -126,7 +170,12 @@ def handle_transaction_action(
     elif action not in ("open", "menu"):
         return
 
+    pocket_label = transaction_pocket_label(db, tx, pockets)
+    if markup is None:
+        markup = correction_markup([tx], chat_id, show_pockets=pocket_label is not None)
     text = f"{title}\n\n{tx.description} · {format_rp(tx.amount)}\nKategori: {tx.category}\nRekening: {tx.account}"
+    if pocket_label:
+        text += f"\n👜 Kantong: {pocket_label}"
     db.rollback()  # Release row locks before sending a Telegram request.
     if action == "open":
         send_message(chat_id, text, parse_mode=None, reply_markup=markup, bot_token=token)

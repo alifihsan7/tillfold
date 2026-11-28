@@ -445,6 +445,60 @@ def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(teleg
     assert [tx.id for tx in rows(db)] == [second_id]
 
 
+def test_telegram_pocket_picker_requires_active_subpockets_on_transaction_account(telegram, monkeypatch):
+    from app.models.pocket import Pocket
+
+    db, _, _, send, _ = telegram
+    db.add_all([
+        Pocket(id=211, user_id=2, account_id=21, name="Kantong Utama", slug="utama-21"),
+        Pocket(id=212, user_id=2, account_id=21, name="Claude", slug="claude", role="tagihan"),
+        Pocket(id=221, user_id=2, account_id=22, name="Kantong Utama", slug="utama-22"),
+        Pocket(id=222, user_id=2, account_id=22, name="Lama", slug="lama", is_active=False),
+        Pocket(id=311, user_id=3, account_id=31, name="Kantong lain", slug="lain"),
+    ])
+    db.commit()
+    edits = []
+    monkeypatch.setattr(bot, "edit_transaction_message", lambda *args: edits.append((args[2], args[3])))
+    monkeypatch.setattr(bot.requests, "post", Mock())
+
+    def buttons(markup):
+        return {button["text"]: button["callback_data"] for row in markup["inline_keyboard"] for button in row}
+
+    def press(data):
+        bot.process_update({"callback_query": {
+            "id": "test-pocket", "from": {"id": 222}, "data": data,
+            "message": {"chat": {"id": 222, "type": "private"}, "message_id": 130},
+        }})
+
+    bot.process_update(update(130, "claude pro 200k Bank Uji"))
+    tx_id = rows(db)[-1].id
+    assert rows(db)[-1].pocket_id is None
+    assert "Kantong:** Claude" in send.call_args.args[1]
+    actions = buttons(send.call_args.kwargs["reply_markup"])
+    press(actions["👜 Ubah kantong"])
+    choices = buttons(edits[-1][1])
+    assert set(choices) == {"✓ Otomatis", "Kantong Utama", "Claude", "↩️ Kembali"}
+    press(choices["Kantong Utama"])
+    assert rows(db)[-1].pocket_id == 211
+    assert "👜 Kantong: Kantong Utama" in edits[-1][0]
+    press(choices["✓ Otomatis"])
+    assert rows(db)[-1].pocket_id is None
+    press(choices["Claude"])
+    assert rows(db)[-1].pocket_id == 212
+    press(actions["🏦 Ubah rekening"])
+    press(buttons(edits[-1][1])["Cash"])
+    assert (rows(db)[-1].account, rows(db)[-1].pocket_id) == ("Cash", None)
+    assert "👜 Ubah kantong" not in buttons(edits[-1][1])
+    press(choices["Claude"])
+    assert db.get(Transaction, tx_id).pocket_id is None
+
+    bot.process_update(update(131, "minum 20k Cash"))
+    assert "👜 Ubah kantong" not in buttons(send.call_args.kwargs["reply_markup"])
+    assert "👜 Kantong" not in send.call_args.args[1]
+    bot.process_update(update(132, "bonus 50k Bank Uji"))
+    assert "👜 Ubah kantong" not in buttons(send.call_args.kwargs["reply_markup"])
+
+
 def test_text_category_uses_account_categories_and_learns_from_correction(telegram, monkeypatch):
     from app.models.category import Category
 

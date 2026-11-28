@@ -42,7 +42,12 @@ IS_PROD = os.getenv("ENVIRONMENT", "production").lower() == "production"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    from app.services.receipt_gmail import GmailAccessLogFilter, gmail_available, poll_gmail_receipts
     from app.services.sheets_sync import sync_closed_cycles
+
+    access_log = logging.getLogger("uvicorn.access")
+    callback_filter = GmailAccessLogFilter()
+    access_log.addFilter(callback_filter)
 
     async def sync_loop():
         while True:
@@ -52,13 +57,26 @@ async def lifespan(_app: FastAPI):
                 logging.getLogger(__name__).exception("Sheets cycle check failed")
             await asyncio.sleep(3600)
 
-    task = asyncio.create_task(sync_loop())
+    async def gmail_loop():
+        while True:
+            try:
+                await asyncio.to_thread(poll_gmail_receipts)
+            except Exception as exc:
+                logging.getLogger(__name__).warning("Receipt Gmail polling failed (%s)", type(exc).__name__)
+            await asyncio.sleep(30)
+
+    tasks = [asyncio.create_task(sync_loop())]
+    if gmail_available():
+        tasks.append(asyncio.create_task(gmail_loop()))
     try:
         yield
     finally:
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        access_log.removeFilter(callback_filter)
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            with suppress(asyncio.CancelledError):
+                await task
 
 
 app = FastAPI(
@@ -95,7 +113,7 @@ app.add_middleware(
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Content-Security-Policy"] = (

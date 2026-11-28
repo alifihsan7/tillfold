@@ -14,6 +14,8 @@ from app.api.v1.endpoints import (
     backup,
     search,
     internal_loans,
+    receipt_radar,
+    receipt_gmail,
 )
 
 api_router = APIRouter()
@@ -33,3 +35,5 @@ api_router.include_router(bot_webhook.router, prefix="/bot", tags=["bot"])
 api_router.include_router(pockets.router, prefix="/pockets", tags=["pockets"])
 # Deprecated alias route for temporary transition
 api_router.include_router(pockets.router, prefix="/jago-pockets", tags=["pockets"], deprecated=True)
+api_router.include_router(receipt_radar.router, prefix="/receipt-radar", tags=["receipt-radar"])
+api_router.include_router(receipt_gmail.router, prefix="/receipt-radar/gmail", tags=["receipt-radar"])

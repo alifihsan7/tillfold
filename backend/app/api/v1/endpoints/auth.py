@@ -15,6 +15,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
 from app.db.session import get_db
+from app.models.receipt_radar import ReceiptGmailConnection, ReceiptGmailConsent, ReceiptRadarAddress, ReceiptRadarDraft
 from app.models.user import User, TelegramAmountDraft, TelegramLink, TelegramProcessedMessage
 from app.core.helpers import extract_spreadsheet_id
 from app.services.telegram_link import create_link
@@ -416,6 +417,10 @@ def delete_my_account(
 
     db.query(TelegramLink).filter(TelegramLink.user_id == user_id).delete()
 
+    db.query(ReceiptGmailConnection).filter(ReceiptGmailConnection.user_id == user_id).delete()
+    db.query(ReceiptGmailConsent).filter(ReceiptGmailConsent.user_id == user_id).delete()
+    db.query(ReceiptRadarDraft).filter(ReceiptRadarDraft.user_id == user_id).delete()
+    db.query(ReceiptRadarAddress).filter(ReceiptRadarAddress.user_id == user_id).delete()
     db.query(TelegramAmountDraft).filter(TelegramAmountDraft.user_id == user_id).delete()
     db.query(TelegramProcessedMessage).filter(TelegramProcessedMessage.user_id == user_id).delete()
 

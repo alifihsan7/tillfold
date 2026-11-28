@@ -31,6 +31,7 @@ from app.core.config import settings
 from app.core.parser import amount_alternatives, parse_transaction, parse_multi_transactions, parse_amount, split_raw_into_items
 from app.core.transfer import find_paired_transfer
 from app.db.session import SessionLocal, Base, engine
+from app.models.receipt_radar import ReceiptRadarDraft
 from app.models.transaction import Transaction
 from app.core.ledger import POSITIVE_TYPES, NEGATIVE_TYPES, is_earned_income, is_opening_balance
 from app.models.account import Account
@@ -52,6 +53,7 @@ from app.models.user import User, TelegramAmountDraft, TelegramProcessedMessage
 
 from app.services.analytics import compute_safe_to_spend_metrics, resolve_pocket_account
 from app.services.paycheck_cycles import recorded_cycle_ends, receipt_allocations
+from app.services.receipt_radar import DRAFT_TTL, RECEIPT_PREFIX, account_keyboard, draft_text, resolve_draft
 from app.api.v1.endpoints.analytics import get_monthly_date_bounds
 
 API_BASE = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}"
@@ -2364,21 +2366,55 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
 
         from app.core.receipt_store import get_pending_receipt, delete_pending_receipt, list_pending_receipts
 
-        picker_actions = {"rcpt_cat", "rcpt_save", "rcpt_drop"}
-        if action in picker_actions:
-            # New buttons are tied to the account holder and the original message.
-            ref_num = next((ref for ref in list_pending_receipts()
-                            if receipt_callback_key(ref, user.id, chat_id, msg_id) == ref_num), "")
-        entry = get_pending_receipt(ref_num)
-        if entry:
-            owner_id = entry.get("user_id")
-            owner_telegram_id = entry.get("telegram_user_id") or (settings.ALLOWED_USER_ID if not owner_id else None)
-            if ((owner_id and str(owner_id) != str(user.id))
-                    or (owner_telegram_id and str(owner_telegram_id) != str(sender_id))):
+        forwarded = None
+        is_forwarded = ref_num.startswith(RECEIPT_PREFIX)
+        if is_forwarded:
+            if (action not in {"rcpt_pick", "rcpt_accounts", "rcpt_cat", "rcpt_save", "rcpt_drop"}
+                    or token != settings.TELEGRAM_BOT_TOKEN or chat_id != sender_id
+                    or msg.get("chat", {}).get("type") != "private"):
                 return
+            owner = db.query(User).filter(User.id == user.id, User.is_active.is_(True),
+                                          User.telegram_chat_id == sender_id, User.telegram_mode == "shared"
+                                          ).populate_existing().with_for_update().one_or_none()
+            if not owner:
+                return
+            forwarded = db.query(ReceiptRadarDraft).filter(
+                ReceiptRadarDraft.user_id == user.id, ReceiptRadarDraft.id == ref_num,
+                ReceiptRadarDraft.status == "pending", ReceiptRadarDraft.created_at > datetime.now(timezone.utc) - DRAFT_TTL,
+            ).first()
+            if not forwarded:
+                edit_transaction_message(chat_id, msg_id, "Draf struk tidak tersedia atau sudah diproses.",
+                                         {"inline_keyboard": []}, token)
+                return
+            entry = forwarded.payload
+            if action == "rcpt_accounts":
+                if len(parts) == 3 and re.fullmatch(r"[0-9]{1,5}", parts[2]):
+                    markup = account_keyboard(db, user.id, ref_num, int(parts[2]))
+                    text = draft_text(entry)
+                    db.rollback()
+                    edit_transaction_message(chat_id, msg_id, text, markup, token)
+                return
+        else:
+            if action in {"rcpt_pick", "rcpt_accounts"}:
+                return
+            if action in {"rcpt_cat", "rcpt_save", "rcpt_drop"}:
+                # Legacy buttons are tied to the account holder and the original message.
+                ref_num = next((ref for ref in list_pending_receipts()
+                                if receipt_callback_key(ref, user.id, chat_id, msg_id) == ref_num), "")
+            entry = get_pending_receipt(ref_num)
+            if entry:
+                owner_id = entry.get("user_id")
+                owner_telegram_id = entry.get("telegram_user_id") or (settings.ALLOWED_USER_ID if not owner_id else None)
+                if ((owner_id and str(owner_id) != str(user.id))
+                        or (owner_telegram_id and str(owner_telegram_id) != str(sender_id))):
+                    return
 
         if action in ("rcpt_ign", "rcpt_drop") and entry:
-            delete_pending_receipt(ref_num)
+            if forwarded:
+                resolve_draft(forwarded, "discarded")
+                db.commit()
+            else:
+                delete_pending_receipt(ref_num)
             edit_text = (
                 f"❌ **RECEIPT DIABAIKAN**\n"
                 f"Struk referensi `{ref_num}` telah diabaikan dan tidak dicatat ke Tillfold."
@@ -2391,7 +2427,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 "reply_markup": {"inline_keyboard": []},
             }, timeout=8)
 
-        elif action in {"rcpt_rec", "rcpt_cat", "rcpt_save"}:
+        elif action in {"rcpt_rec", "rcpt_pick", "rcpt_cat", "rcpt_save"}:
             if not entry:
                 requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={
                     "chat_id": chat_id,
@@ -2407,6 +2443,10 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
             if action == "rcpt_rec":
                 account_name = ":".join(parts[2:]) if len(parts) > 2 else "Mandiri"
                 account = accounts.filter(Account.name == account_name).first()
+            elif action == "rcpt_pick":
+                if len(parts) != 3 or not re.fullmatch(r"[0-9]{1,10}", parts[2]):
+                    return
+                account = accounts.filter(Account.id == int(parts[2])).first()
             else:
                 if len(parts) != 4 or not parts[2].isascii() or not parts[2].isdigit() or not parts[3].isascii() or not parts[3].isdigit():
                     return
@@ -2426,14 +2466,21 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 send_message(chat_id, "Nominal struk tidak valid.", reply_to_message_id=msg_id, bot_token=token)
                 return
 
-            key = receipt_callback_key(ref_num, user.id, chat_id, msg_id)
+            key = ref_num if forwarded else receipt_callback_key(ref_num, user.id, chat_id, msg_id)
+            references = [ref_num]
+            if forwarded and p.get("source_ref"):
+                references.append(p["source_ref"])
             same_reference = db.query(Transaction.id).filter(
                 Transaction.user_id == user.id,
-                Transaction.raw_text.contains(f"[receipt_radar:ref_{ref_num}]", autoescape=True),
+                or_(*(Transaction.raw_text.contains(f"[receipt_radar:ref_{ref}]", autoescape=True) for ref in references)),
             )
-            if action == "rcpt_rec" and not p.get("is_transfer"):
+            if action in ("rcpt_rec", "rcpt_pick") and not p.get("is_transfer"):
                 if same_reference.first():
-                    delete_pending_receipt(ref_num)
+                    if forwarded:
+                        resolve_draft(forwarded, "recorded")
+                        db.commit()
+                    else:
+                        delete_pending_receipt(ref_num)
                     edit_transaction_message(chat_id, msg_id, "Struk ini sudah tercatat.",
                                              {"inline_keyboard": []}, token)
                     return
@@ -2458,8 +2505,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     return
 
             # Reopen old suggestion buttons that did not carry a specific category ID.
-            if action in ("rcpt_rec", "rcpt_cat") or not choice:
-                if action in ("rcpt_rec", "rcpt_cat") and not choice:
+            if action in ("rcpt_rec", "rcpt_pick", "rcpt_cat") or not choice:
+                if action in ("rcpt_rec", "rcpt_pick", "rcpt_cat") and not choice:
                     from app.api.v1.endpoints.categories import ensure_default_categories
                     ensure_default_categories(db, user.id)
                 suggested = suggest_receipt_category(db, user.id, merchant, str(p.get("category") or ""))
@@ -2488,9 +2535,16 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
 
             db.query(User.id).filter(User.id == user.id).with_for_update().one()
             markup = {"inline_keyboard": []}
+            if forwarded:
+                resolve_draft(forwarded, "recorded")
             if same_reference.first():
+                if forwarded:
+                    db.commit()
                 edit_text = f"Struk {ref_num} sudah tercatat di Tillfold."
             else:
+                raw_ref = f"[receipt_radar:ref_{ref_num}]"
+                if forwarded and p.get("source_ref"):
+                    raw_ref += f" [receipt_radar:ref_{p['source_ref']}]"
                 tx = Transaction(
                     user_id=user.id,
                     type="expense",
@@ -2498,7 +2552,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     account=chosen_acc,
                     category=cat_name,
                     description=f"{merchant} (Struk {bank})"[:255],
-                    raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded via Telegram approval from {bank}",
+                    raw_text=f"{raw_ref} Auto-recorded via Telegram approval from {bank}",
                     date=tx_date,
                     created_at=datetime.now(timezone.utc),
                 )
@@ -2523,7 +2577,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 if chat_id == sender_id and msg.get("chat", {}).get("type") == "private" and not p.get("is_transfer"):
                     markup = correction_markup([tx], chat_id)
 
-                delete_pending_receipt(ref_num)
+                if not forwarded:
+                    delete_pending_receipt(ref_num)
                 s2s_snippet = get_safe_to_spend_snippet(db, user_id=user.id).replace("*", "")
 
                 edit_text = (

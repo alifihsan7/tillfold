@@ -41,6 +41,7 @@ import {
 import { BillingScheduleControl } from "@/components/BillingScheduleControl";
 import { StrataAllocationBar } from "@/components/StrataAllocation";
 import { GuestView } from "@/components/GuestView";
+import { ReceiptRadarSettings } from "@/components/ReceiptRadarSettings";
 import { LumaOverview } from "@/components/LumaOverview";
 import { LumaAccountStrip } from "@/components/LumaAccountStrip";
 import { LumaRecentTransactions } from "@/components/LumaRecentTransactions";
@@ -2500,6 +2501,15 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
                       </div>
                     </div>
                   </div>
+
+                  <ReceiptRadarSettings
+                    key={currentUser.id}
+                    telegramLink={currentUser.telegram_chat_id}
+                    onConnectTelegram={() => {
+                      setProfileModalTab("telegram");
+                      setIsProfileModalOpen(true);
+                    }}
+                  />
 
                   {/* Integrasi Google Sheets Universal */}
                   <div className="space-y-3 pt-2">

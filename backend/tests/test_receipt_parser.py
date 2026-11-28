@@ -917,3 +917,231 @@ def test_receipt_store_writes_preserve_other_updates(monkeypatch, tmp_path):
         assert all(executor.map(lambda ref: save_pending_receipt(ref, {"ref": ref}), refs))
         assert all(executor.map(delete_pending_receipt, refs[::2]))
     assert receipt_store.list_pending_receipts() == {ref: {"ref": ref} for ref in refs[1::2]}
+
+
+def test_account_forwarding_verification_receipt_and_bot_approval(db_session, monkeypatch):
+    from email.message import EmailMessage
+    from unittest.mock import Mock
+
+    from app.bot import bot
+    from app.core.config import settings
+    from app.models.receipt_radar import ReceiptRadarDraft
+
+    users = [
+        db_session.get(User, 1),
+        User(id=2, username="recipient", hashed_password="pw", full_name="Recipient", is_active=True),
+    ]
+    users[0].telegram_chat_id = 54321
+    db_session.add(users[1])
+    db_session.commit()
+
+    monkeypatch.setattr(settings, "RECEIPT_RADAR_DOMAIN", "receipts.test.example")
+    monkeypatch.setattr(settings, "RECEIPT_RADAR_INGRESS_TOKEN", "test-only-ingress-secret-not-production")
+    monkeypatch.setattr(settings, "TELEGRAM_BOT_TOKEN", "test-only-bot")
+    monkeypatch.setattr(bot, "SessionLocal", lambda: db_session)
+    monkeypatch.setattr(bot, "get_safe_to_spend_snippet", lambda db, user_id: "")
+    telegram = []
+    fail_next_delivery = False
+
+    def fake_post(url, *, json, timeout):
+        nonlocal fail_next_delivery
+        if fail_next_delivery and url.endswith("/sendMessage"):
+            fail_next_delivery = False
+            raise bot.requests.Timeout()
+        telegram.append((url.rsplit("/", 1)[-1], json))
+        return Mock(ok=True, json=lambda: {"ok": True, "result": {"message_id": 77}})
+
+    monkeypatch.setattr(bot.requests, "post", fake_post)
+    active_username = "alif"
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db_session)
+    monkeypatch.setitem(app.dependency_overrides, get_current_user, lambda: db_session.query(User).filter(User.username == active_username).one())
+    api = TestClient(app)
+    path = "/api/v1/receipt-radar"
+    assert api.get(path).json()["address"] is None
+    first_response = api.post(path)
+    assert first_response.status_code == 200
+    assert first_response.headers["cache-control"] == "no-store"
+    first = first_response.json()["address"]
+    assert first.endswith("@receipts.test.example")
+    assert api.post(path).json()["address"] == first
+    active_username = "recipient"
+    assert api.post(path).status_code == 409
+    users[1].telegram_chat_id = 12345
+    db_session.commit()
+    second = api.post(path).json()["address"]
+    assert first != second
+
+    gateway = {"Authorization": f"Bearer {settings.RECEIPT_RADAR_INGRESS_TOKEN}",
+               "X-Receipt-Recipient": first, "Content-Type": "message/rfc822"}
+    verification = EmailMessage()
+    verification["Subject"] = "Gmail Forwarding Confirmation"
+    verification.set_content("Confirmation code: 123456789. Open https://mail.google.com/mail/vf-test-token")
+    assert api.post(path + "/inbound", headers={"X-Receipt-Recipient": first}, content=verification.as_bytes()).status_code == 401
+    received = api.post(path + "/inbound", headers={**gateway, "X-Receipt-Sender": "forwarding-noreply@google.com"},
+                        content=verification.as_bytes())
+    assert received.json() == {"ok": True, "status": "verification"}
+    assert api.get(path).json()["verification_code"] is None
+    active_username = "alif"
+    assert api.get(path).json()["verification_code"] == "123456789"
+    assert api.get(path).json()["verification_url"] == "https://mail.google.com/mail/vf-test-token"
+
+    original = EmailMessage()
+    original["From"] = "noreply.livin@bankmandiri.co.id"
+    original["Subject"] = "Livin Mandiri"
+    original.set_content(MANDIRI_SAMPLE_HTML, subtype="html")
+    forwarded = EmailMessage()
+    forwarded["Subject"] = "Fwd: Bukti pembayaran"
+    forwarded["To"] = second
+    forwarded.set_content("Terusan.")
+    forwarded.add_attachment(original)
+    assert api.post(path + "/inbound", headers=gateway, content=b"x" * (512 * 1024 + 1)).status_code == 413
+    fail_next_delivery = True
+    assert api.post(path + "/inbound", headers=gateway, content=forwarded.as_bytes()).status_code == 502
+    assert db_session.query(ReceiptRadarDraft).count() == 1
+    response = api.post(path + "/inbound", headers=gateway, content=forwarded.as_bytes())
+    assert response.json() == {"ok": True, "status": "pending"}
+    assert api.post(path + "/inbound", headers=gateway, content=forwarded.as_bytes()).json()["status"] == "duplicate"
+    assert db_session.query(Transaction).count() == 0
+    assert db_session.query(ReceiptRadarDraft).count() == 1
+    assert len(telegram) == 1 and telegram[0][1]["chat_id"] == 54321
+    accounts = {button["text"]: button["callback_data"]
+                for row in telegram[0][1]["reply_markup"]["inline_keyboard"] for button in row}
+
+    def press(button, sender):
+        bot.handle_callback_query({
+            "id": "approval", "data": button, "from": {"id": sender},
+            "message": {"message_id": 77, "chat": {"id": sender, "type": "private"}},
+        })
+
+    press(accounts["Mandiri"], 12345)
+    assert db_session.query(Transaction).count() == 0
+    press(accounts["Mandiri"], 54321)
+    categories = {button["text"]: button["callback_data"]
+                  for row in telegram[-1][1]["reply_markup"]["inline_keyboard"] for button in row}
+    assert "Pakai saran · Makan" in categories
+    press(categories["Pakai saran · Makan"], 54321)
+    press(categories["Pakai saran · Makan"], 54321)
+    saved = db_session.query(Transaction).one()
+    assert (saved.user_id, saved.account, saved.amount) == (1, "Mandiri", 10_000)
+    assert db_session.query(ReceiptRadarDraft).one().status == "recorded"
+
+    assert api.delete(path).json()["address"] is None
+    assert api.post(path + "/inbound", headers=gateway, content=forwarded.as_bytes()).status_code == 404
+    assert api.post(path).json()["address"] != first
+    active_username = "recipient"
+    assert api.get(path).json()["address"] == second
+    assert api.post(path + "/inbound", headers={**gateway, "X-Receipt-Recipient": second},
+                    content=forwarded.as_bytes()).json()["status"] == "pending"
+    assert telegram[-1][1]["chat_id"] == 12345
+    assert db_session.query(Transaction).count() == 1
+
+
+def test_gmail_once_consent_polls_only_new_mail_and_disconnects(db_session, monkeypatch):
+    import base64
+    import json
+    from email.message import EmailMessage
+    from urllib.parse import parse_qs, urlsplit
+    from unittest.mock import Mock
+
+    from cryptography.fernet import Fernet
+
+    from app.api.v1.endpoints import receipt_gmail as endpoint
+    from app.core.config import settings
+    from app.models.receipt_radar import ReceiptGmailConnection, ReceiptRadarDraft
+    from app.services import receipt_gmail
+    from app.services import receipt_radar as radar
+
+    monkeypatch.setattr(settings, "RECEIPT_GMAIL_CLIENT_ID", "local-gmail-client")
+    monkeypatch.setattr(settings, "RECEIPT_GMAIL_CLIENT_SECRET", "local-gmail-secret")
+    key = Fernet.generate_key()
+    monkeypatch.setattr(settings, "RECEIPT_GMAIL_ENCRYPTION_KEY", key.decode())
+    monkeypatch.setattr(settings, "TELEGRAM_BOT_TOKEN", "local-bot-token")
+    monkeypatch.setattr(settings, "APP_BASE_URL", "http://localhost:8080")
+    monkeypatch.setattr(receipt_gmail, "SessionLocal", TestingSessionLocal)
+    user = db_session.get(User, 1)
+    user.telegram_chat_id = 54321
+    db_session.add(User(id=2, username="gmail-peer", full_name="Peer", hashed_password="unused",
+                        is_active=True, telegram_chat_id=54322))
+    db_session.commit()
+
+    owner_id = 1
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db_session)
+    monkeypatch.setitem(app.dependency_overrides, get_current_user, lambda: db_session.get(User, owner_id))
+    exchange = Mock(return_value={"access_token": "token", "refresh_token": "refresh-token"})
+    monkeypatch.setattr(endpoint, "request_token", exchange)
+    monkeypatch.setattr(endpoint, "gmail_get", lambda *_args, **_kwargs: {"emailAddress": "radar@example.test"})
+    client = TestClient(app)
+    path = "/api/v1/receipt-radar/gmail"
+    started = client.post(path + "/connect")
+    params = parse_qs(urlsplit(started.json()["url"]).query)
+    assert params["scope"] == [receipt_gmail.GMAIL_SCOPE]
+    assert params["access_type"] == ["offline"]
+    assert params["code_challenge_method"] == ["S256"]
+    state = params["state"][0]
+    without_cookie = TestClient(app)
+    bad = without_cookie.get(path + "/callback", params={"state": state, "code": "once"}, follow_redirects=False)
+    assert "failed" in bad.headers["location"]
+    exchange.assert_not_called()
+    success = client.get(path + "/callback", params={"state": state, "code": "once"}, follow_redirects=False)
+    assert success.headers["location"] == "/?receipt_gmail=connected#/profile"
+    assert success.headers["referrer-policy"] == "no-referrer"
+    assert exchange.call_args.kwargs["code_verifier"]
+    replay = client.get(path + "/callback", params={"state": state, "code": "once"}, follow_redirects=False)
+    assert "failed" in replay.headers["location"] and exchange.call_count == 1
+    connection = db_session.get(ReceiptGmailConnection, 1)
+    assert connection.refresh_token != "refresh-token"
+    assert Fernet(key).decrypt(connection.refresh_token.encode()) == b"refresh-token"
+    assert client.get(path).json()["email"] == "radar@example.test"
+
+    owner_id = 2
+    other = client.post(path + "/connect")
+    other_state = parse_qs(urlsplit(other.json()["url"]).query)["state"][0]
+    result = client.get(path + "/callback", params={"state": other_state, "code": "peer"}, follow_redirects=False)
+    assert "in_use" in result.headers["location"]
+    assert client.get(path).json()["email"] is None
+    owner_id = 1
+
+    now = datetime.now(timezone.utc)
+    connection.checked_through = now - timedelta(minutes=2)
+    connection.next_check_at = connection.checked_through
+    db_session.commit()
+    raw_message = EmailMessage()
+    raw_message["From"] = "noreply.livin@bankmandiri.co.id"
+    raw_message["Subject"] = "Livin Mandiri"
+    raw_message.set_content(MANDIRI_SAMPLE_HTML, subtype="html")
+    raw = base64.urlsafe_b64encode(raw_message.as_bytes()).decode().rstrip("=")
+
+    monkeypatch.setattr(receipt_gmail, "request_token", Mock(return_value={"access_token": "poll-token"}))
+
+    def gmail_get(token, gmail_path, **params):
+        assert token == "poll-token"
+        if gmail_path == "messages":
+            assert "from:noreply.livin@bankmandiri.co.id" in params["q"]
+            return {"messages": [{"id": "old"}, {"id": "gone"}, {"id": "new"}]}
+        if gmail_path.endswith("gone"):
+            raise receipt_gmail.GmailMessageSkipped
+        received = now - timedelta(minutes=3 if gmail_path.endswith("old") else 1)
+        return {"raw": raw, "internalDate": str(int(received.timestamp() * 1000))}
+
+    monkeypatch.setattr(receipt_gmail, "gmail_get", gmail_get)
+    telegram = Mock(return_value=Mock(ok=True, json=lambda: {"ok": True}))
+    monkeypatch.setattr(radar.requests, "post", telegram)
+    receipt_gmail.poll_gmail_receipts()
+    db_session.expire_all()
+    item = db_session.query(ReceiptRadarDraft).one()
+    assert item.user_id == 1 and item.source == "gmail" and item.notified_at
+    assert item.payload["nominal"] == 10000
+    assert telegram.call_args.kwargs["json"]["chat_id"] == 54321
+    assert db_session.query(Transaction).count() == 0
+    assert client.get(path).json()["last_checked_at"]
+    assert "refresh-token" not in json.dumps(client.get(path).json())
+
+    revoke = Mock(return_value=True)
+    monkeypatch.setattr(endpoint, "revoke_refresh_token", revoke)
+    assert client.delete(path).json() == {"revoked": True}
+    assert client.get(path).json()["status"] == "disconnected"
+    assert db_session.get(ReceiptGmailConnection, 1) is None
+    assert db_session.query(ReceiptRadarDraft).one().status == "discarded"
+    receipt_gmail.poll_gmail_receipts()
+    assert telegram.call_count == 1
+    revoke.assert_called_once()

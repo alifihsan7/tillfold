@@ -15,6 +15,7 @@ export interface TelegramWebAppData {
   ready: () => void;
   expand: () => void;
   close: () => void;
+  openLink?: (url: string) => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   isExpanded?: boolean;

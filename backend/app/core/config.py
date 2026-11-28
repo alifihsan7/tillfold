@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     # Web App URL
     APP_BASE_URL: str = os.getenv("APP_BASE_URL", "http://localhost:8080")
 
+    RECEIPT_RADAR_DOMAIN: str = ""
+    RECEIPT_RADAR_INGRESS_TOKEN: str = ""
+    RECEIPT_GMAIL_CLIENT_ID: str = ""
+    RECEIPT_GMAIL_CLIENT_SECRET: str = ""
+    RECEIPT_GMAIL_ENCRYPTION_KEY: str = ""
+
     # Timezone
     TIMEZONE: str = "Asia/Jakarta"
 

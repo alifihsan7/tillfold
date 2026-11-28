@@ -665,6 +665,43 @@ def test_receipt_radar_category_picker_records_selected_category(db_session, mon
     assert saved.category == "Pilihan 08"
 
 
+def test_receipt_category_choices_rank_by_own_expense_count(db_session):
+    from app.bot.bot import receipt_category_keyboard
+
+    db_session.add(User(id=2, username="other", hashed_password="pw", is_active=True, full_name="Other"))
+    makan = Category(user_id=1, type="expense", name="Makan")
+    db_session.add_all([
+        makan,
+        Category(user_id=1, type="expense", name="Belanja"),
+        Category(user_id=1, type="expense", name="Galon"),
+        Category(user_id=1, type="expense", name="Dana"),
+        Category(user_id=1, type="expense", name="Air"),
+        Category(user_id=1, type="income", name="Gaji"),
+        Category(user_id=2, type="expense", name="Pribadi"),
+    ])
+    for category, count, user_id, kind in [
+        ("Makan", 10, 1, "expense"),
+        ("Belanja", 7, 1, "expense"),
+        ("Galon", 2, 1, "expense"),
+        ("Galon", 10, 2, "expense"),
+        ("Belanja", 4, 1, "transfer_out"),
+        ("Air", 10, 1, "income"),
+    ]:
+        db_session.add_all([
+            Transaction(user_id=user_id, type=kind, description="Uji kategori", category=category,
+                        account="Mandiri", amount=1000, date=date(2026, 11, 8))
+            for _ in range(count)
+        ])
+    db_session.flush()
+
+    def labels(suggestion):
+        return [row[0]["text"] for row in receipt_category_keyboard(db_session, 1, "test", 1, suggestion, 0)]
+
+    assert labels(None) == ["Makan", "Belanja", "Galon", "Air", "Dana", "Abaikan struk"]
+    galon = db_session.query(Category).filter_by(user_id=1, name="Galon").one()
+    assert labels(galon) == ["Pakai saran · Galon", "Makan", "Belanja", "Air", "Dana", "Abaikan struk"]
+
+
 def test_receipt_suggestion_uses_own_category_and_consistent_merchant_history(db_session):
     from app.bot.bot import suggest_receipt_category
 

@@ -2291,12 +2291,19 @@ def suggest_receipt_category(db: Session, user_id: int, merchant: str, hint: str
 
 def receipt_category_keyboard(db: Session, user_id: int, key: str, account_id: int, suggested: Category | None, page: int) -> list:
     page_size = 8
-    query = db.query(Category).filter(Category.user_id == user_id, Category.type == "expense")
+    usage = db.query(Transaction.category, func.count().label("transaction_count")).filter(
+        Transaction.user_id == user_id, Transaction.type == "expense",
+    ).group_by(Transaction.category).subquery()
+    query = db.query(Category).outerjoin(usage, usage.c.category == Category.name).filter(
+        Category.user_id == user_id, Category.type == "expense",
+    )
     rows = []
     if suggested is not None:
         query = query.filter(Category.id != suggested.id)
         rows.append([{"text": f"Pakai saran · {suggested.name[:45]}", "callback_data": f"rcpt_save:{key}:{account_id}:{suggested.id}"}])
-    categories = query.order_by(func.lower(Category.name), Category.id).offset(page * page_size).limit(page_size + 1).all()
+    categories = query.order_by(
+        func.coalesce(usage.c.transaction_count, 0).desc(), func.lower(Category.name), Category.id,
+    ).offset(page * page_size).limit(page_size + 1).all()
     rows.extend([
         {"text": category.name, "callback_data": f"rcpt_save:{key}:{account_id}:{category.id}"}
     ] for category in categories[:page_size])

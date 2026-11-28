@@ -21,7 +21,7 @@ const benefits = [
 ];
 
 const steps = [
-  { icon: UserPlus, title: "Masuk atau buat akun", description: "Buka dashboard Tillfold untuk mulai." },
+  { icon: UserPlus, title: "Masuk atau buat akun", description: "Simpan catatan keuangan di akun Tillfold kamu." },
   { icon: Wallet, title: "Tambahkan rekening", description: "Masukkan rekening atau dompet yang kamu pakai dan saldo awalnya." },
   { icon: Receipt, title: "Catat transaksi pertama", description: "Catat dari dashboard atau hubungkan Telegram di pengaturan akun untuk mencatat lewat chat." },
   { icon: ArrowLeftRight, title: "Atur pembagian gaji", description: "Saat gajian, isi nominal tiap rekening tujuan dan cek batas belanja harianmu." },
@@ -90,7 +90,7 @@ export default function LandingPage() {
           <a href="#cara-kerja">Cara kerja</a>
           <a href="#faq">FAQ</a>
         </nav>
-        <a className={styles.headerAction} href="/dashboard">Buka dashboard</a>
+        <a className={styles.headerAction} href="/dashboard">Masuk</a>
       </header>
 
       <main id="main-content" className={`${styles.shell} ${styles.sections}`}>

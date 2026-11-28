@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import requests
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -26,6 +26,11 @@ VERIFICATION_TTL = timedelta(days=1)
 DRAFT_TTL = timedelta(days=14)
 ACCOUNT_PAGE_SIZE = 8
 DRAFT_PARSE_MODE = "HTML"
+RECEIPT_SENDERS = (
+    "noreply.livin@bankmandiri.co.id",
+    "bankbri@bri.co.id",
+    "googleplay-noreply@google.com",
+)
 
 
 def parse_email(raw: bytes) -> EmailMessage:
@@ -125,10 +130,13 @@ def normalize_receipt(receipt: dict) -> tuple[str, dict] | None:
     }
 
 
-def account_keyboard(db: Session, user_id: int, reference: str, page: int) -> dict:
+def account_keyboard(db: Session, user_id: int, reference: str, page: int, *, preferred: str | None = None) -> dict:
     accounts = db.query(Account.id, Account.name).filter(
         Account.user_id == user_id, Account.is_archived.is_(False),
-    ).order_by(func.lower(Account.name), Account.id).offset(page * ACCOUNT_PAGE_SIZE).limit(ACCOUNT_PAGE_SIZE + 1).all()
+    ).order_by(
+        case((func.lower(Account.name) == (preferred or "").casefold(), 0), else_=1),
+        func.lower(Account.name), Account.id,
+    ).offset(page * ACCOUNT_PAGE_SIZE).limit(ACCOUNT_PAGE_SIZE + 1).all()
     rows = [[{"text": f"✅ Catat di {name}", "callback_data": f"rcpt_pick:{reference}:{account_id}"}]
             for account_id, name in accounts[:ACCOUNT_PAGE_SIZE]]
     navigation = []

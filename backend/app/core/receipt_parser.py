@@ -683,6 +683,25 @@ def parse_brimo_receipt(html_content: str, raw_subject: str = "") -> Optional[Di
     }
 
 
+GOOGLE_PLAY_NONPAYMENT = re.compile(
+    r"\b(?:"
+    r"(?:payment|order|purchase)(?:\s+status)?\s*[:\-]?\s*(?:(?:is|was|still)\s+)*(?:pending|failed|declined|cancelled|canceled|in progress|refunded)"
+    r"|(?:pending|awaiting)\s+(?:payment|purchase)"
+    r"|payment\s+(?:instructions|required|unsuccessful)"
+    r"|(?:complete|finish)\s+(?:your|the)\s+payment"
+    r"|(?:pembayaran|pesanan|pembelian)(?:\s+anda)?\s*[:\-]?\s*(?:(?:masih|telah)\s+)*(?:tertunda|gagal|ditolak|dibatalkan|belum (?:dibayar|selesai)|sedang diproses)"
+    r"|menunggu\s+pembayaran|selesaikan\s+pembayaran|petunjuk\s+pembayaran"
+    r")\b",
+    re.IGNORECASE,
+)
+GOOGLE_PLAY_PAID = re.compile(
+    r"\b(?:order receipt|purchase receipt|tanda terima (?:pesanan|pembelian)|payment (?:successful|complete|completed)|"
+    r"pembayaran berhasil|pembayaran selesai|thank you for your (?:order|purchase)|"
+    r"terima kasih atas (?:pesanan|pembelian)|anda (?:telah )?melakukan pembelian)\b",
+    re.IGNORECASE,
+)
+
+
 def parse_google_play_receipt(html_or_text: str, raw_subject: str = "") -> Optional[Dict[str, Any]]:
     """
     Parses Google Play order receipts (googleplay-noreply@google.com).
@@ -705,6 +724,13 @@ def parse_google_play_receipt(html_or_text: str, raw_subject: str = "") -> Optio
         or "gpa." in text.lower()
     )
     if not (valid_source and has_order_marker):
+        return None
+
+    subject = " ".join(raw_subject.split())
+    body = " ".join(text.split())
+    if (re.search(r"\b(?:pending|tertunda|awaiting payment|menunggu pembayaran|cancelled|canceled|dibatalkan)\b", subject, re.I)
+            or GOOGLE_PLAY_NONPAYMENT.search(body)
+            or not (GOOGLE_PLAY_PAID.search(subject) or GOOGLE_PLAY_PAID.search(body))):
         return None
 
     lines = [line.strip() for line in text.splitlines() if line.strip()]

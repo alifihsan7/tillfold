@@ -78,3 +78,16 @@ def delete_pending_receipt(ref_number: str) -> bool:
     except Exception as e:
         logger.error("Failed to delete pending receipt %s: %s", ref_number, e)
         return False
+
+
+
+def mark_receipt_notified(ref_number: str) -> bool:
+    try:
+        with _locked_store():
+            pending = list_pending_receipts()
+            if ref_number in pending:
+                pending[ref_number]["notified"] = True
+                _write_pending(pending)
+        return True
+    except (OSError, TypeError, ValueError):
+        return False

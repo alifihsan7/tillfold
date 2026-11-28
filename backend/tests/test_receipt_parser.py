@@ -1220,3 +1220,119 @@ def test_receipt_card_uses_legacy_layout_and_masks_source_account():
     assert "1234567890" not in text
     assert "28 Nov 2026 10:20 WIB" in text
     assert "REF123" in text
+
+
+@pytest.mark.parametrize(("subject", "status"), [
+    ("Your Google Play payment is pending", ""),
+    ("Pesanan Google Play Anda tertunda", ""),
+    ("Google Play Order Receipt", "Payment is pending."),
+    ("Tanda terima pesanan Google Play", "Status pembayaran: masih tertunda"),
+    ("Google Play Order Receipt", "Complete your payment."),
+    ("Google Play Order Receipt", "Payment was declined."),
+])
+def test_google_play_pending_or_failed_orders_are_not_receipts(subject, status):
+    assert parse_google_play_receipt(GOOGLE_PLAY_SAMPLE_TEXT + "\n" + status, subject) is None
+
+
+def test_google_play_order_needs_confirmation_even_with_total_and_payment_method():
+    data = GOOGLE_PLAY_SAMPLE_TEXT.replace("Thank you for your order.", "")
+    assert parse_google_play_receipt(data, "Google Play order notice") is None
+
+
+def test_personal_radar_skips_pending_and_retries_unsent_card(db_session, monkeypatch, tmp_path):
+    from email.message import EmailMessage
+    from unittest.mock import Mock
+
+    from app.bot import bot
+    from app.core import receipt_store
+    from app.models.account import Account
+    from app.services import personal_receipt_radar as radar
+
+    owner = db_session.get(User, 1)
+    owner.telegram_chat_id = 54321
+    db_session.add(User(id=2, username="peer-radar", full_name="Peer", hashed_password="unused",
+                        is_active=True, telegram_chat_id=54322))
+    db_session.add(Account(id=40, user_id=2, name="Peer bank", type="operasional"))
+    db_session.add(Account(id=41, user_id=1, name="Archived bank", type="operasional", is_archived=True))
+    db_session.commit()
+    owner_id = owner.id
+    monkeypatch.setattr(radar, "SessionLocal", TestingSessionLocal)
+    monkeypatch.setattr(receipt_store, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(receipt_store, "PENDING_FILE", tmp_path / "pending.json")
+    send = Mock(side_effect=[False, True])
+    monkeypatch.setattr(radar, "_send_card", send)
+    cfg = radar.PersonalRadarConfig("user@example.test", "local-test", "local", tmp_path / "uid", 54321, -100, 1)
+    mail = EmailMessage()
+    mail["From"] = "googleplay-noreply@google.com"
+    mail["Subject"] = "Google Play payment pending"
+    mail.set_content(GOOGLE_PLAY_SAMPLE_TEXT + "\nYour payment is pending.")
+    assert radar.handle_mail(cfg, mail.as_bytes())
+    send.assert_not_called()
+    assert not receipt_store.list_pending_receipts()
+
+    mail.replace_header("Subject", "Google Play Order Receipt")
+    mail.set_content(GOOGLE_PLAY_SAMPLE_TEXT)
+    raw = mail.as_bytes()
+    assert not radar.handle_mail(cfg, raw)
+    pending = receipt_store.list_pending_receipts()
+    assert len(pending) == 1 and not next(iter(pending.values())).get("notified")
+    assert radar.handle_mail(cfg, raw)
+    assert radar.handle_mail(cfg, raw)
+    assert send.call_count == 2
+    pending = receipt_store.list_pending_receipts()
+    draft = next(iter(pending.values()))
+    assert draft["user_id"] == owner_id and draft["telegram_user_id"] == 54321 and draft["notified"]
+    text, markup = send.call_args.args[1:]
+    assert "RECEIPT RADAR: GOOGLE PLAY" in text
+    buttons = [button for row in markup["inline_keyboard"] for button in row]
+    assert buttons[0]["text"] == "✅ Catat di BRI 1"
+    assert all("Peer bank" not in button["text"] and "Archived bank" not in button["text"] for button in buttons)
+    assert all(len(button["callback_data"].encode()) <= 64 for button in buttons)
+    assert db_session.query(Transaction).count() == 0
+
+    monkeypatch.setattr(bot, "SessionLocal", TestingSessionLocal)
+    monkeypatch.setattr(bot, "get_safe_to_spend_snippet", lambda *args, **kwargs: "")
+    updates = []
+    monkeypatch.setattr(bot.requests, "post", lambda url, **kwargs: updates.append(kwargs["json"]) if url.endswith("/editMessageText") else None)
+
+    def press(value, sender):
+        bot.handle_callback_query({
+            "id": "personal-radar", "from": {"id": sender}, "data": value,
+            "message": {"message_id": 45, "chat": {"id": -100, "type": "supergroup"}},
+        })
+
+    button = buttons[0]["callback_data"]
+    press(button, 54322)
+    assert not updates
+    press(button, 54321)
+    category = next(btn["callback_data"] for row in updates[-1]["reply_markup"]["inline_keyboard"] for btn in row
+                    if btn["text"] == "Pakai saran · Tagihan")
+    press(category, 54321)
+    saved = db_session.query(Transaction).one()
+    assert saved.user_id == 1 and saved.account == "BRI 1" and saved.amount == 26_900
+    assert "[receipt_radar:ref_GPA.1234-5678-9012-34567]" in saved.raw_text
+
+
+def test_personal_radar_checkpoint_stops_at_unsent_receipt(monkeypatch, tmp_path):
+    from unittest.mock import MagicMock
+
+    from app.services import personal_receipt_radar as radar
+
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.select.return_value = ("OK", [])
+    client.uid.side_effect = [
+        ("OK", [b"11 12 13"]),
+        ("OK", [(b"11", b"first")]),
+        ("OK", [(b"12", b"second")]),
+    ]
+    monkeypatch.setattr(radar.imaplib, "IMAP4_SSL", lambda *args, **kwargs: client)
+    def handle(_cfg, raw):
+        return raw == b"first"
+    monkeypatch.setattr(radar, "handle_mail", handle)
+    cfg = radar.PersonalRadarConfig("user@example.test", "local", "local", tmp_path / "uid", 123, -100, 12)
+    cfg.checkpoint.write_text("10")
+    radar.check_mail(cfg)
+    assert cfg.checkpoint.read_text() == "11"
+    assert client.uid.call_count == 3
+    assert client.select.call_args.kwargs["readonly"] is True

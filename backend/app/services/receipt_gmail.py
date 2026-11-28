@@ -15,7 +15,7 @@ from app.db.session import SessionLocal
 from app.models.receipt_radar import ReceiptGmailConnection, ReceiptRadarDraft
 from app.models.user import User
 from app.services.receipt_radar import (
-    MAX_EMAIL_BYTES, ReceiptDeliveryError, ReceiptLimitReached, deliver_receipt,
+    MAX_EMAIL_BYTES, RECEIPT_SENDERS as SENDERS, ReceiptDeliveryError, ReceiptLimitReached, deliver_receipt,
     has_receipt_sender, normalize_receipt, parse_email, parse_forwarded_receipt, stage_receipt,
     utc_datetime,
 )
@@ -25,11 +25,6 @@ GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 CONSENT_CALLBACK = "/api/v1/receipt-radar/gmail/callback"
-SENDERS = (
-    "noreply.livin@bankmandiri.co.id",
-    "bankbri@bri.co.id",
-    "googleplay-noreply@google.com",
-)
 POLL_INTERVAL = timedelta(minutes=2)
 FORWARDED_SUBJECTS = (
     "livin", "mandiri", "brimo", "bri", '"google play"', "transaksi",

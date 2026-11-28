@@ -53,6 +53,7 @@ from app.models.user import User, TelegramAmountDraft, TelegramProcessedMessage
 
 from app.services.analytics import compute_safe_to_spend_metrics, resolve_pocket_account
 from app.services.paycheck_cycles import recorded_cycle_ends, receipt_allocations
+from app.services.personal_receipt_radar import PERSONAL_RECEIPT_PREFIX, card as personal_receipt_card
 from app.services.receipt_radar import DRAFT_PARSE_MODE, DRAFT_TTL, RECEIPT_PREFIX, account_keyboard, draft_text, resolve_draft
 from app.api.v1.endpoints.analytics import get_monthly_date_bounds
 
@@ -2368,6 +2369,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
         from app.core.receipt_store import get_pending_receipt, delete_pending_receipt, list_pending_receipts
 
         forwarded = None
+        personal = ref_num.startswith(PERSONAL_RECEIPT_PREFIX)
         is_forwarded = ref_num.startswith(RECEIPT_PREFIX)
         if is_forwarded:
             if (action not in {"rcpt_pick", "rcpt_accounts", "rcpt_cat", "rcpt_save", "rcpt_drop"}
@@ -2396,9 +2398,9 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     edit_transaction_message(chat_id, msg_id, text, markup, token, parse_mode=DRAFT_PARSE_MODE)
                 return
         else:
-            if action in {"rcpt_pick", "rcpt_accounts"}:
+            if action in {"rcpt_pick", "rcpt_accounts", "rcpt_move"} and not personal:
                 return
-            if action in {"rcpt_cat", "rcpt_save", "rcpt_drop"}:
+            if action in {"rcpt_cat", "rcpt_save", "rcpt_drop"} and not personal:
                 # Legacy buttons are tied to the account holder and the original message.
                 ref_num = next((ref for ref in list_pending_receipts()
                                 if receipt_callback_key(ref, user.id, chat_id, msg_id) == ref_num), "")
@@ -2408,6 +2410,20 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 owner_telegram_id = entry.get("telegram_user_id") or (settings.ALLOWED_USER_ID if not owner_id else None)
                 if ((owner_id and str(owner_id) != str(user.id))
                         or (owner_telegram_id and str(owner_telegram_id) != str(sender_id))):
+                    return
+            if personal:
+                if not entry:
+                    edit_transaction_message(chat_id, msg_id, "Draf struk tidak tersedia atau sudah diproses.",
+                                             {"inline_keyboard": []}, token)
+                    return
+                if (action not in {"rcpt_pick", "rcpt_accounts", "rcpt_move", "rcpt_cat", "rcpt_save", "rcpt_drop"}
+                        or not entry.get("user_id") or not entry.get("telegram_user_id")
+                        or token != settings.TELEGRAM_BOT_TOKEN or user.telegram_mode != "shared"):
+                    return
+                if action == "rcpt_accounts":
+                    if len(parts) == 3 and re.fullmatch(r"[0-9]{1,5}", parts[2]):
+                        text, markup = personal_receipt_card(db, user.id, entry, int(parts[2]))
+                        edit_transaction_message(chat_id, msg_id, text, markup, token, parse_mode=DRAFT_PARSE_MODE)
                     return
 
         if action in ("rcpt_ign", "rcpt_drop") and entry:
@@ -2467,9 +2483,9 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 send_message(chat_id, "Nominal struk tidak valid.", reply_to_message_id=msg_id, bot_token=token)
                 return
 
-            key = ref_num if forwarded else receipt_callback_key(ref_num, user.id, chat_id, msg_id)
+            key = ref_num if forwarded or personal else receipt_callback_key(ref_num, user.id, chat_id, msg_id)
             references = [ref_num]
-            if forwarded and p.get("source_ref"):
+            if (forwarded or personal) and p.get("source_ref"):
                 references.append(p["source_ref"])
             same_reference = db.query(Transaction.account, Transaction.date).filter(
                 Transaction.user_id == user.id,
@@ -2545,7 +2561,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 edit_text = f"Struk {ref_num} sudah tercatat di Tillfold."
             else:
                 raw_ref = f"[receipt_radar:ref_{ref_num}]"
-                if forwarded and p.get("source_ref"):
+                if (forwarded or personal) and p.get("source_ref"):
                     raw_ref += f" [receipt_radar:ref_{p['source_ref']}]"
                 tx = Transaction(
                     user_id=user.id,
@@ -2588,7 +2604,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     f"{merchant[:255]} · {format_rp(nominal)}\n"
                     f"Rekening: {chosen_acc}\n"
                     f"Kategori: {cat_name}\n"
-                    f"No. referensi: {ref_num}\n\n"
+                    f"No. referensi: {p.get('source_ref') or ref_num}\n\n"
                     f"{s2s_snippet}"
                 )
 
@@ -2599,7 +2615,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 "reply_markup": markup,
             }, timeout=8)
 
-        elif action == "rcpt_xfer":
+        elif action in {"rcpt_xfer", "rcpt_move"}:
             # format: rcpt_xfer:<ref_num>:<source_acc>:<dest_acc>:<admin_fee>
             source_acc = parts[2] if len(parts) > 2 else "Mandiri"
             dest_acc = parts[3] if len(parts) > 3 else "Bank Jago"
@@ -2620,18 +2636,42 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                 return
 
             p = entry.get("parsed", entry)
+            if action == "rcpt_move":
+                if len(parts) != 4 or any(not re.fullmatch(r"[0-9]{1,10}", field) for field in parts[2:]):
+                    return
+                accounts = {item.id: item.name for item in db.query(Account.id, Account.name).filter(
+                    Account.user_id == user.id, Account.is_archived.is_(False),
+                    Account.id.in_((int(parts[2]), int(parts[3]))),
+                ).all()}
+                source_acc, dest_acc = accounts.get(int(parts[2])), accounts.get(int(parts[3]))
+                if (not p.get("is_internal_transfer") or source_acc != p.get("preferred_account")
+                        or dest_acc != p.get("destination_account_candidate")):
+                    return
+                admin_fee = p["admin_fee"]
+            owned = db.query(Account.id).filter(
+                Account.user_id == user.id, Account.is_archived.is_(False), Account.name.in_((source_acc, dest_acc)),
+            ).count()
+            if not source_acc or not dest_acc or source_acc == dest_acc or owned != 2:
+                send_message(chat_id, "Rekening transfer sudah tidak tersedia.", reply_to_message_id=msg_id, bot_token=token)
+                return
             nominal = p.get("nominal", 0)
+            if type(nominal) is not int or not 0 < nominal <= 9_000_000_000_000_000 or admin_fee < 0:
+                return
             tx_date_str = p.get("date")
+            native = p.get("source_ref") or ref_num
 
             try:
                 tx_date = datetime.fromisoformat(tx_date_str).date()
             except Exception:
                 tx_date = datetime.now(WIB).date()
 
-            existing = db.query(Transaction).filter(
+            db.query(User.id).filter(User.id == user.id).with_for_update().one()
+            refs = {ref_num, native}
+            existing = db.query(Transaction.id).filter(
                 Transaction.user_id == user.id,
-                Transaction.raw_text.like(f"%[receipt_radar:ref_{ref_num}]%"),
+                or_(*(Transaction.raw_text.contains(f"[receipt_radar:ref_{ref}]", autoescape=True) for ref in refs)),
             ).first()
+            raw_ref = " ".join(f"[receipt_radar:ref_{ref}]" for ref in sorted(refs))
 
             if existing:
                 edit_text = (
@@ -2645,8 +2685,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     account=source_acc,
                     amount=nominal,
                     category="Transfer",
-                    description=f"Transfer ke {dest_acc} (Ref: {ref_num})",
-                    raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded transfer",
+                    description=f"Transfer ke {dest_acc} (Ref: {native})"[:255],
+                    raw_text=f"{raw_ref} Auto-recorded transfer",
                     date=tx_date,
                 )
                 tx_in = Transaction(
@@ -2655,8 +2695,8 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     account=dest_acc,
                     amount=nominal,
                     category="Transfer",
-                    description=f"Transfer dari {source_acc} (Ref: {ref_num})",
-                    raw_text=f"[receipt_radar:ref_{ref_num}] Auto-recorded transfer",
+                    description=f"Transfer dari {source_acc} (Ref: {native})"[:255],
+                    raw_text=f"{raw_ref} Auto-recorded transfer",
                     date=tx_date,
                 )
                 db.add(tx_out)
@@ -2689,7 +2729,7 @@ def handle_callback_query(callback_query: dict, bot_token: Optional[str] = None)
                     f"• **Ke**: `{dest_acc}`\n"
                     f"• **Nominal**: `Rp {nominal:,}`\n"
                     f"• **Biaya Admin**: `Rp {admin_fee:,}`\n"
-                    f"• **No. Ref**: `{ref_num}`"
+                    f"• **No. Ref**: `{native}`"
                 )
 
             requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={

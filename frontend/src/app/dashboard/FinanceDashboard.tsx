@@ -642,10 +642,15 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
         window.location.hash = targetHash;
       }
     }
-    if (mainContentRef.current) {
-      mainContentRef.current.scrollTop = 0;
-    }
+    mainContentRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [activeNav]);
+
+  const navigateView = (name: string) => {
+    if (name === activeNav) mainContentRef.current?.scrollTo({ top: 0 });
+    setActiveNav(name);
+    const slug = NAV_SLUGS[name];
+    if (slug && window.location.hash !== slug) window.location.hash = slug;
+  };
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { newIds: newTransactionIds, observe: observeTransactions } = useTransactionHighlights();
@@ -1242,11 +1247,7 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
               return (
                 <button
                   key={item.name}
-                  onClick={() => {
-                    setActiveNav(item.name);
-                    const slug = NAV_SLUGS[item.name];
-                    if (slug) window.location.hash = slug;
-                  }}
+                  onClick={() => navigateView(item.name)}
                   aria-current={isActive ? "page" : undefined}
                   aria-label={item.name}
                   title={sidebarCollapsed ? item.name : undefined}
@@ -1269,11 +1270,7 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
           <nav aria-label="Navigasi sekunder" className="flex flex-col space-y-1">
             <button
               type="button"
-              onClick={() => {
-                setActiveNav("Pengaturan");
-                const slug = NAV_SLUGS["Pengaturan"];
-                if (slug) window.location.hash = slug;
-              }}
+              onClick={() => navigateView("Pengaturan")}
               aria-current={activeNav === "Pengaturan" ? "page" : undefined}
               aria-label="Pengaturan"
               title={sidebarCollapsed ? "Pengaturan" : undefined}
@@ -1437,9 +1434,7 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
                     <button
                       key={item.name}
                       onClick={() => {
-                        setActiveNav(item.name);
-                        const slug = NAV_SLUGS[item.name];
-                        if (slug) window.location.hash = slug;
+                        navigateView(item.name);
                         setIsMobileDrawerOpen(false);
                       }}
                       aria-current={isActive ? "page" : undefined}
@@ -1461,9 +1456,8 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
                 <nav aria-label="Navigasi sekunder">
                   <button
                     onClick={() => {
-                      setActiveNav("Pengaturan");
+                      navigateView("Pengaturan");
                       setSettingsSubTab("rekening");
-                      window.location.hash = "#/settings";
                       setIsMobileDrawerOpen(false);
                     }}
                     aria-current={activeNav === "Pengaturan" ? "page" : undefined}
@@ -1588,21 +1582,18 @@ export default function FinanceDashboard({ onLogout }: { onLogout?: () => void }
       {/* MOBILE BOTTOM NAVIGATION BAR — 5 Core Menus */}
       <nav className="luma-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-1.5 py-1.5 flex items-center justify-around safe-bottom" aria-label="Navigasi utama">
         {[
-          { name: "Ringkasan", slug: "#/overview", icon: LayoutDashboard },
-          { name: "Transaksi", slug: "#/transactions", icon: Receipt },
-          { name: "Anggaran", slug: "#/budget", icon: WalletCards },
-          { name: "Rencana", slug: "#/plan", icon: Target },
-          { name: "Laporan", slug: "#/reports", icon: BarChart2 },
+          { name: "Ringkasan", icon: LayoutDashboard },
+          { name: "Transaksi", icon: Receipt },
+          { name: "Anggaran", icon: WalletCards },
+          { name: "Rencana", icon: Target },
+          { name: "Laporan", icon: BarChart2 },
         ].map((item) => {
           const isActive = activeNav === item.name;
           const Icon = item.icon;
           return (
             <button
               key={item.name}
-              onClick={() => {
-                setActiveNav(item.name);
-                window.location.hash = item.slug;
-              }}
+              onClick={() => navigateView(item.name)}
               aria-current={isActive ? "page" : undefined}
               className={`luma-touch flex flex-col items-center justify-center py-1 px-1.5 rounded-2xl transition min-w-[52px] min-h-[44px] select-none ${
                 isActive

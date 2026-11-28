@@ -854,6 +854,8 @@ html:not(.light) .fold-hero {
 .light .fold-choice-rail[data-tone="income"] > .fold-choice-indicator { background: var(--fold-income-control); }
 
 @media (prefers-reduced-motion: no-preference) {
+  .tillfold-fold .luma-main { scroll-behavior: smooth; }
+
   /* A short stagger reveals groups without moving financial figures or controls. */
   :is(.fold-grid, .fold-lists, .fold-stagger) > :not(.fold-loading) {
     animation: fold-card-enter 360ms var(--luma-motion-out) backwards;
@@ -863,6 +865,24 @@ html:not(.light) .fold-hero {
   :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(3) { animation-delay: 90ms; }
   :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(4) { animation-delay: 135ms; }
   :is(.fold-grid, .fold-lists, .fold-stagger) > :nth-child(n + 5) { animation-delay: 180ms; }
+  @supports (animation-timeline: view()) and (animation-range: entry 0% entry 60%) {
+    .tillfold-fold .fold-lists > :not(.fold-loading) {
+      animation: fold-scroll-enter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+    .tillfold-fold .fold-lists > :focus-within {
+      opacity: 1;
+      translate: none;
+      animation: none;
+    }
+  }
+
+  @keyframes fold-scroll-enter {
+    from { opacity: .84; translate: 0 10px; }
+    to { opacity: 1; translate: none; }
+  }
+
   .fold-choice-indicator {
     transition: translate 260ms var(--luma-motion-out), width 260ms var(--luma-motion-out),
       height 260ms var(--luma-motion-out), background-color var(--luma-motion-quick) ease-out;

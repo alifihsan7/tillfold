@@ -1145,3 +1145,16 @@ def test_gmail_once_consent_polls_only_new_mail_and_disconnects(db_session, monk
     receipt_gmail.poll_gmail_receipts()
     assert telegram.call_count == 1
     revoke.assert_called_once()
+
+
+def test_empty_gmail_listing_accepts_no_content(monkeypatch):
+    from unittest.mock import MagicMock, Mock
+
+    from app.services import receipt_gmail
+
+    response = MagicMock(status_code=204, ok=True)
+    response.__enter__.return_value = response
+    get = Mock(return_value=response)
+    monkeypatch.setattr(receipt_gmail.requests, "get", get)
+    assert receipt_gmail.gmail_get("test-token", "messages", fields="messages(id),nextPageToken") == {}
+    response.iter_content.assert_not_called()

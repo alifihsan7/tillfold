@@ -111,6 +111,9 @@ def gmail_get(token: str, path: str, *, max_bytes: int = 128 * 1024, **params: s
     try:
         with requests.get(f"{GMAIL_API}/{path}", params=params, headers={"Authorization": f"Bearer {token}"},
                           timeout=10, stream=True) as response:
+            # Gmail can return no body when every selected list field is empty.
+            if path == "messages" and response.status_code == 204:
+                return {}
             if response.status_code == 401:
                 raise GmailReauthorization
             if response.status_code == 404:

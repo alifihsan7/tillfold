@@ -1708,6 +1708,32 @@ def handle_sheets(chat_id: int, db: Session, user: Optional[User] = None, bot_to
     except Exception as e:
         send_message(chat_id, f"❌ Gagal sinkronisasi ke Google Sheets: {str(e)}", bot_token=bot_token)
 
+def category_from_text(
+    db: Session, user_id: int, kind: str, description: str, category_names: list[str],
+) -> str | None:
+    text = description.lower()
+    if not category_names or text in {"lainnya", "pemasukan", "transaksi telegram"}:
+        return None
+
+    history = db.query(Transaction.category).filter(
+        Transaction.user_id == user_id, Transaction.type == kind,
+        func.lower(Transaction.description) == text,
+        Transaction.category.in_(category_names),
+    ).order_by(Transaction.created_at.desc(), Transaction.id.desc()).first()
+    if history:
+        return history[0]
+
+    names = [(name, " ".join(re.sub(r"[^\w\s-]", "", name.lower()).split())) for name in category_names]
+    exact = [name for name, phrase in names if phrase == text]
+    if len(exact) == 1:
+        return exact[0]
+    matches = [
+        name for name, phrase in names
+        if phrase and re.search(r"(?<!\w)" + re.escape(phrase) + r"(?!\w)", text)
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
 def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
     from app.schemas.transaction import TransactionCreate
     accounts = db.query(Account).filter(Account.user_id == user_id, Account.is_archived == False).order_by(Account.id).with_for_update().all()
@@ -1719,6 +1745,15 @@ def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
     normalized = []
     if not isinstance(items, list) or not items:
         raise ValueError("Tidak ada transaksi yang dapat dicatat.")
+
+    category_names = {"expense": [], "income": []}
+    if text_items:
+        for kind, name in db.query(Category.type, Category.name).filter(
+            Category.user_id == user_id, Category.type.in_(category_names),
+        ).order_by(Category.id):
+            if name.lower() not in {"lainnya", "pemasukan"}:
+                category_names[kind].append(name)
+
     for original in items:
         if not isinstance(original, dict):
             raise ValueError("Rincian transaksi tidak valid. Belum ada transaksi yang dicatat.")
@@ -1750,6 +1785,10 @@ def prepare_bot_items(items, db: Session, user_id: int, text_items=False):
         item["category"] = str(item.get("category") or "Lainnya").strip()
         if len(item["description"]) > 255 or len(item["category"]) > 100:
             raise ValueError("Keterangan atau kategori terlalu panjang.")
+        if text_items:
+            detected = category_from_text(db, user_id, kind, item["description"], category_names[kind])
+            if detected:
+                item["category"] = detected
         if kind == "transfer":
             for field in ("from_account", "to_account"):
                 item[field] = normalize_account(item.get(field), db, user_id=user_id)

@@ -445,6 +445,41 @@ def test_transaction_buttons_edit_and_cancel_only_the_selected_transaction(teleg
     assert [tx.id for tx in rows(db)] == [second_id]
 
 
+def test_text_category_uses_account_categories_and_learns_from_correction(telegram, monkeypatch):
+    from app.models.category import Category
+
+    db, _, _, send, _ = telegram
+    db.add_all([
+        Category(user_id=2, name="Kopi & Teh", type="expense"),
+        Category(user_id=2, name="Ngopi", type="expense"),
+        Category(user_id=2, name="Galon", type="income"),
+        Category(user_id=3, name="Jajan / Ngopi", type="expense"),
+    ])
+    db.commit()
+    edits = []
+    monkeypatch.setattr(bot, "edit_transaction_message", lambda *args: edits.append(args[3]))
+
+    def press(markup, label):
+        data = next(button["callback_data"] for row in markup["inline_keyboard"] for button in row if button["text"] == label)
+        bot.process_update({"callback_query": {
+            "id": "test-learn-category", "from": {"id": 222}, "data": data,
+            "message": {"chat": {"id": 222, "type": "private"}, "message_id": 120},
+        }})
+
+    monkeypatch.setattr(bot.requests, "post", Mock())
+    bot.process_update(update(120, "beli kopi & teh 20k Bank Uji"))
+    assert rows(db)[-1].category == "Kopi & Teh"
+    press(send.call_args.kwargs["reply_markup"], "🏷️ Ubah kategori")
+    press(edits[-1], "Ngopi")
+
+    bot.process_update(update(121, "BELI KOPI & TEH 25k Cash"))
+    assert (rows(db)[-1].category, rows(db)[-1].account) == ("Ngopi", "Cash")
+    bot.process_update(update(122, "beli kopi & teh 25k Peer Bank", chat_id=333))
+    assert rows(db)[-1].category == "Jajan / Ngopi"
+    bot.process_update(update(123, "galon 18k Cash"))
+    assert rows(db)[-1].category == "Galon & Air"
+
+
 def test_ambiguous_amount_waits_for_confirmation_and_records_once(telegram, monkeypatch):
     from app.models.user import TelegramAmountDraft
 

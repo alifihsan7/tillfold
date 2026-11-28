@@ -5,7 +5,6 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email.errors import MessageError
-from email.utils import parseaddr
 
 import requests
 from cryptography.fernet import Fernet, InvalidToken
@@ -17,7 +16,7 @@ from app.models.receipt_radar import ReceiptGmailConnection, ReceiptRadarDraft
 from app.models.user import User
 from app.services.receipt_radar import (
     MAX_EMAIL_BYTES, ReceiptDeliveryError, ReceiptLimitReached, deliver_receipt,
-    normalize_receipt, parse_email, parse_forwarded_receipt, stage_receipt,
+    has_receipt_sender, normalize_receipt, parse_email, parse_forwarded_receipt, stage_receipt,
     utc_datetime,
 )
 
@@ -32,6 +31,17 @@ SENDERS = (
     "googleplay-noreply@google.com",
 )
 POLL_INTERVAL = timedelta(minutes=2)
+FORWARDED_SUBJECTS = (
+    "livin", "mandiri", "brimo", "bri", '"google play"', "transaksi",
+    "pembayaran", "receipt", "qris",
+)
+
+
+def receipt_search(after: int, before: int) -> str:
+    direct = " ".join(f"from:{sender}" for sender in SENDERS)
+    forward_prefixes = "{subject:fwd subject:fw subject:terusan subject:tr}"
+    receipt_subjects = "{" + " ".join(f"subject:{subject}" for subject in FORWARDED_SUBJECTS) + "}"
+    return f"after:{after} before:{before} {{{direct} ({forward_prefixes} {receipt_subjects})}}"
 
 
 class GmailError(Exception):
@@ -188,9 +198,8 @@ def _scan_mailbox(mailbox: Mailbox, until: datetime) -> None:
                           refresh_token=_decrypt_refresh_token(mailbox.refresh_token))["access_token"]
     after = int(mailbox.checked_through.timestamp()) - 1
     before = int(until.timestamp()) + 1
-    query = f"after:{after} before:{before} " + "{" + " ".join(f"from:{sender}" for sender in SENDERS) + "}"
     seen_pages = set()
-    params = {"q": query, "maxResults": 50, "fields": "messages(id),nextPageToken"}
+    params = {"q": receipt_search(after, before), "maxResults": 50, "fields": "messages(id),nextPageToken"}
     while True:
         page = gmail_get(token, "messages", **params)
         for entry in page.get("messages", []):
@@ -212,7 +221,7 @@ def _scan_mailbox(mailbox: Mailbox, until: datetime) -> None:
                 if len(content) > MAX_EMAIL_BYTES:
                     continue
                 message = parse_email(content)
-                if parseaddr(str(message.get("From", "")))[1].lower() not in SENDERS:
+                if not has_receipt_sender(message, SENDERS):
                     continue
                 parsed = normalize_receipt(parse_forwarded_receipt(message) or {})
             except (KeyError, MessageError, LookupError, TypeError, ValueError, OverflowError):

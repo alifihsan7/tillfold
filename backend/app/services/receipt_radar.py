@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from email import policy
 from email.message import EmailMessage
 from email.parser import BytesParser
+from email.utils import parseaddr
 from hashlib import sha256
 from html import unescape
 from urllib.parse import urlsplit
@@ -50,6 +51,21 @@ def forwarding_verification(message: EmailMessage, envelope_sender: str) -> tupl
             link = candidate
             break
     return match.group(1) if match else None, link
+
+
+def has_receipt_sender(message: EmailMessage, senders: tuple[str, ...]) -> bool:
+    if parseaddr(str(message.get("From", "")))[1].lower() in senders:
+        return True
+    subject = str(message.get("Subject", ""))
+    if not re.match(r"\s*(?:fwd|fw|terusan|tr)\s*:", subject, re.I):
+        return False
+    for part in message.iter_attachments():
+        if part.get_content_type() == "message/rfc822" and isinstance(part.get_payload(), list):
+            for original in part.get_payload()[:1]:
+                if isinstance(original, EmailMessage) and parseaddr(str(original.get("From", "")))[1].lower() in senders:
+                    return True
+    inline = unescape(_body(message)).lower()
+    return any(re.search(rf"(?<![\w.+-]){re.escape(sender)}(?![\w.-])", inline) for sender in senders)
 
 
 def parse_forwarded_receipt(message: EmailMessage) -> dict | None:

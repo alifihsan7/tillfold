@@ -1109,7 +1109,14 @@ def test_gmail_once_consent_polls_only_new_mail_and_disconnects(db_session, monk
     raw_message["From"] = "noreply.livin@bankmandiri.co.id"
     raw_message["Subject"] = "Livin Mandiri"
     raw_message.set_content(MANDIRI_SAMPLE_HTML, subtype="html")
-    raw = base64.urlsafe_b64encode(raw_message.as_bytes()).decode().rstrip("=")
+    inline_forward = EmailMessage()
+    inline_forward["From"] = "owner@example.test"
+    inline_forward["Subject"] = "Fwd: Pembayaran Berhasil"
+    inline_forward.set_content(
+        '<p>From: <a href="mailto:noreply.livin@bankmandiri.co.id">Bank Mandiri</a></p>' + MANDIRI_SAMPLE_HTML,
+        subtype="html",
+    )
+    raw = base64.urlsafe_b64encode(inline_forward.as_bytes()).decode().rstrip("=")
 
     monkeypatch.setattr(receipt_gmail, "request_token", Mock(return_value={"access_token": "poll-token"}))
 
@@ -1117,6 +1124,7 @@ def test_gmail_once_consent_polls_only_new_mail_and_disconnects(db_session, monk
         assert token == "poll-token"
         if gmail_path == "messages":
             assert "from:noreply.livin@bankmandiri.co.id" in params["q"]
+            assert "subject:fwd" in params["q"] and "subject:pembayaran" in params["q"]
             return {"messages": [{"id": "old"}, {"id": "gone"}, {"id": "new"}]}
         if gmail_path.endswith("gone"):
             raise receipt_gmail.GmailMessageSkipped
@@ -1158,3 +1166,22 @@ def test_empty_gmail_listing_accepts_no_content(monkeypatch):
     monkeypatch.setattr(receipt_gmail.requests, "get", get)
     assert receipt_gmail.gmail_get("test-token", "messages", fields="messages(id),nextPageToken") == {}
     response.iter_content.assert_not_called()
+
+
+
+def test_forwarded_receipt_requires_original_sender_match():
+    from email.message import EmailMessage
+    from app.services.receipt_gmail import SENDERS
+    from app.services.receipt_radar import has_receipt_sender
+
+    mail = EmailMessage()
+    mail["From"] = "forwarder@example.test"
+    mail["Subject"] = "Fwd: Pembayaran Berhasil"
+    mail.set_content("From: noreply.livin@bankmandiri.co.id.example.test")
+    assert not has_receipt_sender(mail, SENDERS)
+
+    original = EmailMessage()
+    original["From"] = "Bank BRI <BankBRI@bri.co.id>"
+    original.set_content("Receipt")
+    mail.add_attachment(original)
+    assert has_receipt_sender(mail, SENDERS)

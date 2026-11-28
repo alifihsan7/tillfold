@@ -48,6 +48,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.tf-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--ui-control-bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tf-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 15%, var(--tf-skeleton-shine, rgb(255 255 255 / .12)) 50%, transparent 85%);
+    animation: tf-skeleton-sweep 1.65s ease-in-out infinite;
+  }
+  .light .tf-skeleton { --tf-skeleton-shine: rgb(255 255 255 / .56); }
+
+  @keyframes tf-skeleton-sweep {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
+}
+
 /* Custom Scrollbar for Both Themes */
 ::-webkit-scrollbar {
   width: 6px;
@@ -269,11 +291,6 @@ input[type="range"].tillfold-range { appearance: none; min-height: 44px; border:
   }
   button:is(.bg-mintRise, .bg-coralFall, .bg-cyanHub, .bg-amberGold) .text-slate-950 {
     color: var(--luma-charcoal);
-  }
-
-  /* Pulse skeletons in light mode */
-  .animate-pulse[class*="bg-white/"] {
-    background-color: #E2E8F0;
   }
 
   /* Dark tooltips & legacy hex toast wrappers */

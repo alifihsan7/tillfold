@@ -1,14 +1,27 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import { authFetch, getAuthToken } from "@/lib/api";
 import { hasTelegramLaunch } from "@/lib/telegramLaunch";
 import styles from "./landing.module.css";
 
+function SessionLoader({ checkingSession = false }: { checkingSession?: boolean }) {
+  return (
+    <div className={checkingSession ? `${styles.sessionStatus} ${styles.sessionCheck}` : styles.sessionStatus} role="status">
+      <div className={styles.sessionIndicator}>
+        <Image src="/tillfold.svg" width={48} height={48} alt="" unoptimized />
+        <span>{checkingSession ? "Memeriksa sesi…" : "Memuat dashboard…"}</span>
+        <div className={styles.sessionTrack} aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
 const FinanceDashboard = dynamic(() => import("../dashboard/FinanceDashboard"), {
   ssr: false,
-  loading: () => <div className={styles.sessionStatus} role="status">Memuat dashboard…</div>,
+  loading: () => <SessionLoader />,
 });
 
 const sessionCheck = "data-tillfold-session-check";
@@ -72,7 +85,7 @@ export function LandingEntry({ children }: { children: ReactNode }) {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: checkBeforePaint }} />
-      <div className={`${styles.sessionStatus} ${styles.sessionCheck}`} role="status">Memeriksa sesi…</div>
+      <SessionLoader checkingSession />
       {children}
     </>
   );

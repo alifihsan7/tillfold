@@ -95,7 +95,7 @@ export function TransactionTable({
           <tbody className="divide-y divide-luma-smokeline">
             {loading ? (
               [1, 2, 3, 4, 5].map((i) => (
-                <tr key={i} className="animate-pulse">
+                <tr key={i}>
                   <td className="py-4 px-4 sm:px-6">
                     <Skeleton className="w-20 h-4 rounded-full" />
                   </td>

@@ -817,7 +817,10 @@ html:not(.light) .fold-hero {
 .fold-budget .fold-message { padding: 4px 0; }
 .fold-card.fold-loading { display: grid; place-items: center; padding: 20px; }
 .fold-hero.fold-loading { gap: 20px; }
-.fold-hero .animate-pulse { background: rgb(var(--fold-hero-tint) / .16); }
+.tillfold-fold .fold-hero .tf-skeleton {
+  background-color: rgb(var(--fold-hero-tint) / .16);
+  --tf-skeleton-shine: rgb(var(--fold-hero-tint) / .19);
+}
 
 /* One compact line system; decorative marks do not need a colored tile. */
 .fold-icon { display: inline-block; vertical-align: -.125em; flex-shrink: 0; }

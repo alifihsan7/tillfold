@@ -7,6 +7,40 @@
 :global(html[data-tillfold-session-check]) .sessionCheck { display: grid; }
 :global(html[data-tillfold-session-check]) .site { display: none; }
 
+.sessionIndicator {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  color: var(--slate-primary);
+  font-size: .875rem;
+}
+.sessionTrack {
+  position: relative;
+  overflow: hidden;
+  width: 96px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ui-control-bg);
+}
+.sessionTrack::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 30%;
+  width: 40%;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: .6;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sessionTrack::after { animation: session-sweep 1.35s ease-in-out infinite; }
+
+  @keyframes session-sweep {
+    from { transform: translateX(-175%); }
+    to { transform: translateX(175%); }
+  }
+}
+
 .site {
   display: flow-root;
   --landing-gutter: clamp(.75rem, 1.4vw, 1.5rem);

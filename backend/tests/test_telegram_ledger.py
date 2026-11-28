@@ -96,6 +96,17 @@ def test_same_message_is_once_but_new_messages_are_independent(telegram):
     assert rows(db)[-1].user_id == 3
 
 
+@pytest.mark.parametrize("message", ["makan 20k Cash", "makan 20k Cash; kopi 15k Cash"])
+def test_expense_reply_shows_only_shared_daily_spending_status(telegram, message):
+    db, _, _, send, _ = telegram
+    bot.process_update(update(1, message))
+
+    assert len(rows(db)) == message.count(";") + 1
+    reply = send.call_args.args[1]
+    assert reply.count("Status belanja") == 1
+    assert "Status Amplop Belanja Harian" not in reply
+
+
 def test_transfer_and_undo_retries_do_not_repeat_financial_changes(telegram):
     db, engine, client, send, extract = telegram
     bot.process_update(update(1, "/gajian 1000"))

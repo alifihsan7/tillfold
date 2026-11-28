@@ -467,40 +467,6 @@ def test_pockets_dynamic_account_resolution(client, db_session, test_user):
     assert data["total_jago_balance"] == 250_000
 
 
-def test_pocket_envelopes_bot_generalization(db_session, test_user):
-    """Verifies bot pocket envelope calculations and dynamic pocket matching."""
-    from app.bot.bot import (
-        get_pocket_envelopes,
-        get_mandiri_envelopes,
-        is_matching_pocket_account,
-        get_pocket_account_variants,
-    )
-
-    # 1. Verification of get_pocket_envelopes & backward compat alias
-    env_pocket = get_pocket_envelopes(30)
-    env_mandiri = get_mandiri_envelopes(30)
-    assert env_pocket == env_mandiri
-    assert env_pocket["Makanan & Minuman"] == 450_000
-    assert env_pocket["Jajan / Ngopi"] == 100_000
-
-    # 2. Matching with custom bank/pocket accounts
-    assert is_matching_pocket_account("BCA", "BCA") is True
-    assert is_matching_pocket_account("bca", "BCA") is True
-    assert is_matching_pocket_account("BRI", "BCA") is False
-
-    # 3. Inter-compatibility for operational/mandiri/saku defaults
-    assert is_matching_pocket_account("Mandiri", "Rekening Utama") is True
-    assert is_matching_pocket_account("saku", "operasional") is True
-
-    # 4. Variants generation
-    variants_custom = get_pocket_account_variants("BCA")
-    assert "bca" in variants_custom
-
-    variants_mandiri = get_pocket_account_variants("Mandiri")
-    assert "mandiri" in variants_mandiri
-    assert "rekening utama" in variants_mandiri
-
-
 def test_pockets_deprecated_jago_pockets_alias_backward_compatibility(client, test_user):
     """
     Verifies that legacy /api/v1/jago-pockets route remains operational as a

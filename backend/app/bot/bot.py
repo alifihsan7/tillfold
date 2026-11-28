@@ -139,39 +139,6 @@ def get_user_cycle_info(db: Session, user_id: int) -> dict:
         "latest_paycheck": latest_paycheck
     }
 
-def get_pocket_envelopes(cycle_days: int) -> dict:
-    base_ratio = cycle_days / 30.0
-    # Plafon dasar (referensi 30 hari / 1 bulan)
-    base_limits = {
-        "Makanan & Minuman": 450000,
-        "Jajan / Ngopi": 100000,
-        "Laundry": 70000,
-        "Galon & Air": 44000,
-    }
-    return {cat: int(round(limit * base_ratio)) for cat, limit in base_limits.items()}
-
-# Backward compatibility alias
-get_mandiri_envelopes = get_pocket_envelopes
-
-
-def is_matching_pocket_account(acc_name: Optional[str], pocket_account: str) -> bool:
-    if not acc_name:
-        return False
-    a_low = acc_name.strip().lower()
-    p_low = pocket_account.strip().lower()
-    if a_low == p_low:
-        return True
-    if a_low in ["mandiri", "saku", "operasional", "rekening utama"] and p_low in ["mandiri", "saku", "operasional", "rekening utama"]:
-        return True
-    return False
-
-
-def get_pocket_account_variants(pocket_account: str) -> List[str]:
-    variants = {pocket_account.strip().lower()}
-    if pocket_account.strip().lower() in ["mandiri", "saku", "operasional", "rekening utama"]:
-        variants.update(["mandiri", "saku", "operasional", "rekening utama"])
-    return list(variants)
-
 def get_safe_to_spend_snippet(db: Session, user_id: int) -> str:
     c_info = get_user_cycle_info(db, user_id=user_id)
     cycle_start = c_info["cycle_start"]
@@ -1950,15 +1917,6 @@ def record_text_items(
     now_wib = datetime.now(WIB)
     time_str = now_wib.strftime("%Y-%m-%d %H:%M:%S")
 
-    c_info = get_user_cycle_info(db, user_id=user_id)
-    cycle_start = c_info["cycle_start"]
-    cycle_end = c_info["cycle_end"]
-    cycle_days = c_info["cycle_days"]
-    cycle_label = c_info["cycle_label"]
-    pocket_account = c_info["pocket_account"]
-    POCKET_ENVELOPES = get_pocket_envelopes(cycle_days)
-    MANDIRI_ENVELOPES = POCKET_ENVELOPES
-
     # If single transaction
     if len(items) == 1:
         parsed = items[0]
@@ -1993,23 +1951,6 @@ def record_text_items(
         if pocket_label:
             reply += f"\n👜 **Kantong:** {pocket_label}"
 
-        if tx.type == "expense" and is_matching_pocket_account(tx.account, pocket_account) and tx.category in POCKET_ENVELOPES:
-            limit = POCKET_ENVELOPES[tx.category]
-            pocket_variants = get_pocket_account_variants(pocket_account)
-            spent = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-                Transaction.user_id == user_id,
-                func.lower(Transaction.account).in_(pocket_variants),
-                Transaction.type == "expense",
-                Transaction.category == tx.category,
-                Transaction.date >= cycle_start,
-                Transaction.date <= cycle_end
-            ).scalar()
-            spent_int = int(spent or 0)
-            rem = limit - spent_int
-            pct = round(spent_int / limit * 100, 1) if limit > 0 else 0
-            status_icon = "⚠️" if pct > 85 else "📊"
-            reply += f"\n\n{status_icon} **Status Amplop Belanja Harian ({cycle_label}):**\n• Kuota Terpakai: {format_rp(spent_int)} / {format_rp(limit)} ({pct}%)\n• Sisa Kuota: **{format_rp(rem)}**"
-
         if tx.type == "expense":
             reply += f"\n\n{get_safe_to_spend_snippet(db, user_id=user_id)}"
 
@@ -2020,7 +1961,6 @@ def record_text_items(
     # If multiple transactions in one message
     created_txs = []
     total_amount = 0
-    categories_touched = set()
 
     for parsed in items:
         tx = Transaction(
@@ -2037,8 +1977,6 @@ def record_text_items(
         db.add(tx)
         created_txs.append(tx)
         total_amount += tx.amount
-        if is_matching_pocket_account(tx.account, pocket_account) and tx.type == "expense":
-            categories_touched.add(tx.category)
 
     with media_stage("persist"):
         db.commit()
@@ -2054,28 +1992,6 @@ def record_text_items(
 
     lines.append(f"\n💵 **Total:** {format_rp(total_amount)}")
     lines.append(f"🕒 _{time_str} WIB_")
-
-    # Add envelope updates for all affected pocket categories
-    pocket_status_lines = []
-    pocket_variants = get_pocket_account_variants(pocket_account)
-    for cat in categories_touched:
-        if cat in POCKET_ENVELOPES:
-            limit = POCKET_ENVELOPES[cat]
-            spent = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-                Transaction.user_id == user_id,
-                func.lower(Transaction.account).in_(pocket_variants),
-                Transaction.type == "expense",
-                Transaction.category == cat,
-                Transaction.date >= cycle_start,
-                Transaction.date <= cycle_end
-            ).scalar()
-            spent_int = int(spent or 0)
-            rem = limit - spent_int
-            pct = round(spent_int / limit * 100, 1) if limit > 0 else 0
-            pocket_status_lines.append(f"• **{cat}:** {format_rp(spent_int)} / {format_rp(limit)} ({pct}%) ➔ Sisa: {format_rp(rem)}")
-
-    if pocket_status_lines:
-        lines.append(f"\n📊 **Status Amplop Belanja Harian ({cycle_label}):**\n" + "\n".join(pocket_status_lines))
 
     lines.append(f"\n{get_safe_to_spend_snippet(db, user_id=user_id)}")
 
